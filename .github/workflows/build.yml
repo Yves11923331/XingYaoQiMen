@@ -28,7 +28,8 @@ jobs:
       - name: 装配构建工具链（android.jar / r8 / ecj / jsdom）
         run: |
           set -e
-          # runner 是普通用户，/root 需要 sudo 建目录后再授权
+          # runner 是普通用户：/root 默认 700 无法进入，需放开进入权限后授权子目录
+          sudo chmod 755 /root
           sudo mkdir -p /root/at /root/dl /root/dsh-dom
           sudo chown -R "$(id -un)" /root/at /root/dl /root/dsh-dom
 
