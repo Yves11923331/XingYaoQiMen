@@ -4,6 +4,7 @@
 
 <img src="docs/screenshots/poster.png" alt="星曜奇门海报" width="100%">
 
+[![Build APK](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml/badge.svg)](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-2.6.0-orange)
 ![Android](https://img.shields.io/badge/Android-10%2B%20(minSdk%2029)-blue)
