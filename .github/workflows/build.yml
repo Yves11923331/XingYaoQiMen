@@ -28,13 +28,16 @@ jobs:
       - name: 装配构建工具链（android.jar / r8 / ecj / jsdom）
         run: |
           set -e
-          mkdir -p /root/at /root/dl /root/dsh-dom
+          # runner 是普通用户，/root 需要 sudo 建目录后再授权
+          sudo mkdir -p /root/at /root/dl /root/dsh-dom
+          sudo chown -R "$(id -un)" /root/at /root/dl /root/dsh-dom
 
           # android.jar（API 34，AOSP SDK 桩）
-          curl -fSL -o /tmp/platform-34.zip \
+          mkdir -p /tmp/tools && cd /tmp/tools
+          curl -fSL -o platform-34.zip \
             https://dl.google.com/android/repository/platform-34-ext7_r03.zip
-          cd /tmp && unzip -o -q platform-34.zip
-          cp "$(find /tmp -name android.jar -path '*34*' | head -1)" /root/at/android.jar
+          unzip -o -q platform-34.zip
+          cp "$(find /tmp/tools -name android.jar | head -1)" /root/at/android.jar
           test -s /root/at/android.jar
 
           # D8/R8 9.5.26（与本地工具链同版本）
