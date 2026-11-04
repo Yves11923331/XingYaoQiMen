@@ -1,0 +1,1304 @@
+/* ============================================================================
+ * 星曜奇门 · 主题令牌 + 外壳（四套：玄夜 / 墨玉 / 铜仪 / 素白）
+ * ----------------------------------------------------------------------------
+ * 全部走 CSS 变量：切主题只换 <html data-theme> 上的一个属性。
+ * 盘面自己的变量在 pan.css，这里只管 App 外壳与组件。
+ * ========================================================================== */
+
+/* ---------------------------------------------------------------- 基础 */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "HarmonyOS Sans SC", "PingFang SC",
+    "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { border: 0; background: none; cursor: pointer; padding: 0; }
+
+/* ---------------------------------------------------------------- 四套主题 */
+/* 玄夜（默认・描金） */
+html[data-theme="blue"] {
+  --bg: #080c16;
+  --bg-2: #0d1422;
+  --surface: #101827;
+  --surface-2: #16203247;
+  --line: rgba(190,206,232,.13);
+  --line-2: rgba(190,206,232,.07);
+  --ink: #eaf0f8;
+  --ink-2: #a9b8ce;
+  --ink-3: #6f7f97;
+  --accent: #d8b45f;
+  --accent-2: #f2dda6;
+  --accent-bg: rgba(216,180,95,.12);
+  --accent-line: rgba(216,180,95,.42);
+  --ji: #63d6a0; --xiong: #ff8574; --ping: #a9b8ce;
+  --shadow: 0 12px 34px rgba(0,0,0,.5);
+  --sheet-shadow: 0 -10px 40px rgba(0,0,0,.45);
+  --el-wood:#63d6a0; --el-fire:#ff8574; --el-earth:#e8c877; --el-metal:#c7d0dc; --el-water:#6fb4f5;
+}
+/* 墨玉 */
+html[data-theme="slate"] {
+  --bg: #080f0d;
+  --bg-2: #0c1512;
+  --surface: #101a17;
+  --surface-2: #16221e47;
+  --line: rgba(196,222,212,.13);
+  --line-2: rgba(196,222,212,.07);
+  --ink: #e8f2ee;
+  --ink-2: #a3bcb3;
+  --ink-3: #6c867d;
+  --accent: #69b79b;
+  --accent-2: #a7e0c9;
+  --accent-bg: rgba(105,183,155,.12);
+  --accent-line: rgba(105,183,155,.40);
+  --ji: #7fd6a4; --xiong: #ff8a7a; --ping: #a3bcb3;
+  --shadow: 0 12px 34px rgba(0,0,0,.55);
+  --sheet-shadow: 0 -10px 40px rgba(0,0,0,.45);
+  --el-wood:#63d6a0; --el-fire:#ff8574; --el-earth:#e8c877; --el-metal:#c7d0dc; --el-water:#6fb4f5;
+}
+/* 铜仪 */
+html[data-theme="brown"] {
+  --bg: #120c08;
+  --bg-2: #1a120c;
+  --surface: #1e150e;
+  --surface-2: #2a1e1447;
+  --line: rgba(226,206,182,.13);
+  --line-2: rgba(226,206,182,.07);
+  --ink: #f3ece2;
+  --ink-2: #c0ad97;
+  --ink-3: #86735f;
+  --accent: #cf8f4e;
+  --accent-2: #f0c48c;
+  --accent-bg: rgba(207,143,78,.13);
+  --accent-line: rgba(207,143,78,.42);
+  --ji: #8fd6a0; --xiong: #ff8a70; --ping: #c0ad97;
+  --shadow: 0 12px 34px rgba(0,0,0,.55);
+  --sheet-shadow: 0 -10px 40px rgba(0,0,0,.45);
+  --el-wood:#63d6a0; --el-fire:#ff8574; --el-earth:#e8c877; --el-metal:#c7d0dc; --el-water:#6fb4f5;
+}
+/* 素白 */
+html[data-theme="white"] {
+  /* 原本的素白配色（已回滚）—— 只有 --bg 换成标准白。
+     线 / 次级字 / 阴影都是原来那套冷中性，一个都没动。 */
+  --bg: #ffffff;   /* 标准白（2026-09-26 定） */
+  --bg-2: #ffffff;
+  --surface: #ffffff;
+  --surface-2: rgba(24,34,52,.035);
+  --line: rgba(28,38,58,.11);
+  --line-2: rgba(28,38,58,.06);
+  --ink: #1b2028;
+  --ink-2: #4b5565;
+  --ink-3: #8d97a6;
+  --accent: #a8842c;
+  --accent-2: #7d611c;
+  --accent-bg: rgba(168,132,44,.08);
+  --accent-line: rgba(168,132,44,.35);
+  --ji: #0f7a4d; --xiong: #c0392b; --ping: #5d6772;
+  --shadow: 0 10px 28px rgba(40,44,60,.13);
+  --sheet-shadow: 0 -6px 24px rgba(40,44,60,.12);
+  --el-wood:#0f7a4d; --el-fire:#c0392b; --el-earth:#9c7a24; --el-metal:#5d6772; --el-water:#16558f;
+}
+
+/* ---------------------------------------------------------------- 外壳 */
+.app { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+@supports not (height: 100dvh) { .app { height: 100vh; } }
+
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 10px;
+  /* edge-to-edge 后要避开状态栏（刘海/挖孔），否则标题被状态栏压住 */
+  padding: calc(11px + env(safe-area-inset-top)) 14px 10px;
+  /* 实底，不用半透明 + 毛玻璃：素白下那会变成一条糊掉的灰带（底部尤其明显） */
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+}
+.topbar h1 {
+  margin: 0; font-size: 16px; font-weight: 700; letter-spacing: .12em;
+  font-family: "QM Serif", "Songti SC", serif;
+  color: var(--ink); flex: 1;
+}
+.topbar h1 b { color: var(--accent); font-weight: 700; }
+.topbar .tb-btn {
+  width: 32px; height: 32px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-2); border: 1px solid var(--line);
+  font-size: 15px; line-height: 1;
+}
+.topbar .tb-btn:active { transform: scale(.94); }
+/* 「关于」两个字放不进 32×32，让它自己撑宽（设置页右上角那一枚） */
+.topbar .tb-btn.wide { width: auto; min-width: 32px; padding: 0 9px; font-size: 12.5px; letter-spacing: .04em; }
+.topbar .tb-btn.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-bg); }
+
+.scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.view { display: none; }
+.view.on { display: block; }
+
+/* ---------------------------------------------------------------- 信息卡 */
+/* ---------------------------------------------------------------- 四柱 */
+/* 年→月→日→时。排法用「无缝矩阵」：
+   4 柱 × 2 块（干 `.t-g` / 支 `.t-z`），块间只留 2px 缝、块本身不倒圆角，
+   整片拼成一张 4×2 五行色阵，只有最外圈收圆。
+   ★ 柱名（年/月/日/时）刻意放在矩阵**外面**（见 index.html 的 .plabel）——
+  这样容器里只剩色阵本身，更"整片"、也更矮（约 69px，比早先那版省 25px）。
+   五行着色走 color-mix，四套主题自动跟随。 */
+.pillars {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+.pillars .p { text-align: center; min-width: 0; }
+.pillars .tiles { display: flex; flex-direction: column; gap: 2px; }
+.pillars .tile {
+  display: block;
+  font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", serif;
+  font-weight: 700;
+  font-size: 16px; line-height: 1.42;
+  letter-spacing: .04em;
+  border-radius: 0;
+}
+.pillars .tile.wood  { color: var(--el-wood);  background: color-mix(in srgb, var(--el-wood) 22%, transparent); }
+.pillars .tile.fire  { color: var(--el-fire);  background: color-mix(in srgb, var(--el-fire) 22%, transparent); }
+.pillars .tile.earth { color: var(--el-earth); background: color-mix(in srgb, var(--el-earth) 24%, transparent); }
+.pillars .tile.metal { color: var(--el-metal); background: color-mix(in srgb, var(--el-metal) 22%, transparent); }
+.pillars .tile.water { color: var(--el-water); background: color-mix(in srgb, var(--el-water) 22%, transparent); }
+/* 外圈四角收圆（内缝保持直角，才有"整片"的感觉） */
+/* 手动起局没有日期：年月日柱画「—」 */
+.pillars .tile.t-none {
+  color: var(--ink-3);
+  background: color-mix(in srgb, var(--ink-3) 8%, transparent);
+}
+.pillars .p:first-child .t-g { border-radius: 6px 0 0 0; }
+.pillars .p:first-child .t-z { border-radius: 0 0 0 6px; }
+.pillars .p:last-child  .t-g { border-radius: 0 6px 0 0; }
+.pillars .p:last-child  .t-z { border-radius: 0 0 6px 0; }
+
+/* ---------------------------------------------------------------- 信息卡 */
+/* ---------------------------------------------------------------- 四柱 */
+/* 年→月→日→时。排法用「无缝矩阵」：
+   4 柱 × 2 块（干/支），块间只留 2px 缝、块本身不倒圆角，整片拼成一张 4×2 五行色阵，
+   只有最外圈收圆。天干在上、地支在下，日柱用金线勾一圈。
+   五行着色走 color-mix，四套主题自动跟随。 */
+.pillars {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+.pillars .p { text-align: center; min-width: 0; }
+.pillars .lb {
+  display: block; font-size: 9.5px; letter-spacing: .16em; color: var(--ink-3);
+  margin-bottom: 5px;
+}
+.pillars .p.day .lb { color: var(--accent); }
+.pillars .tiles { display: flex; flex-direction: column; gap: 2px; }
+.pillars .tile {
+  display: block;
+  font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", serif;
+  font-weight: 700;
+  font-size: 19px; line-height: 1.62;
+  letter-spacing: .04em;
+  border-radius: 0;
+}
+.pillars .tile.wood  { color: var(--el-wood);  background: color-mix(in srgb, var(--el-wood) 22%, transparent); }
+.pillars .tile.fire  { color: var(--el-fire);  background: color-mix(in srgb, var(--el-fire) 22%, transparent); }
+.pillars .tile.earth { color: var(--el-earth); background: color-mix(in srgb, var(--el-earth) 24%, transparent); }
+.pillars .tile.metal { color: var(--el-metal); background: color-mix(in srgb, var(--el-metal) 22%, transparent); }
+.pillars .tile.water { color: var(--el-water); background: color-mix(in srgb, var(--el-water) 22%, transparent); }
+/* 外圈四角收圆（内缝保持直角，才有"整片"的感觉） */
+/* 手动起局没有日期：年月日柱画「—」 */
+.pillars .tile.t-none {
+  color: var(--ink-3);
+  background: color-mix(in srgb, var(--ink-3) 8%, transparent);
+}
+.pillars .p:first-child .t-g { border-radius: 6px 0 0 0; }
+.pillars .p:first-child .t-z { border-radius: 0 0 0 6px; }
+.pillars .p:last-child  .t-g { border-radius: 0 6px 0 0; }
+.pillars .p:last-child  .t-z { border-radius: 0 0 6px 0; }
+
+/* ---------------------------------------------------------------- 信息卡 */
+/* ---------------------------------------------------------------- 四柱 */
+/* 年→月→日→时（老软件是「时→日→月→年」，这版改过来并按四柱列式排） */
+.pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 10px; }
+.pillars .p {
+  position: relative; text-align: center; padding: 8px 2px 9px;
+  border-radius: 11px; background: var(--surface); border: 1px solid var(--line);
+}
+.pillars .p .lb { display: block; font-size: 10px; letter-spacing: .18em; color: var(--ink-3); margin-bottom: 4px; }
+.pillars .p .ch {
+  display: block; font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", serif;
+  font-size: 22px; font-weight: 700; line-height: 1.28; letter-spacing: .02em;
+}
+.pillars .p .ch.zhi { font-size: 20px; opacity: .9; }
+.pillars .p.day { border-color: var(--accent-line); background: var(--accent-bg); }
+.pillars .p.day .lb { color: var(--accent); }
+
+.info { padding: 13px 14px 4px; }
+.gz {
+  display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 9px;
+}
+.gz .c {
+  flex: 1 1 0; min-width: 0; text-align: center;
+  padding: 7px 4px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--line);
+}
+.gz .c .k { display: block; font-size: 10px; color: var(--ink-3); letter-spacing: .18em; margin-bottom: 3px; }
+.gz .c .v {
+  display: block; font-size: 17px; font-weight: 700; letter-spacing: .06em;
+  font-family: "QM Serif", "Songti SC", serif; color: var(--ink);
+}
+.gz .c.hi .v { color: var(--accent); }
+
+
+.tag {
+  font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--ink-2); background: var(--surface-2);
+}
+.tag.ji { color: var(--ji); border-color: color-mix(in srgb, var(--ji) 40%, transparent); background: color-mix(in srgb, var(--ji) 10%, transparent); }
+.tag.xiong { color: var(--xiong); border-color: color-mix(in srgb, var(--xiong) 40%, transparent); background: color-mix(in srgb, var(--xiong) 10%, transparent); }
+.tag.accent { color: var(--accent); border-color: var(--accent-line); background: var(--accent-bg); }
+
+/* ---------------------------------------------------------------- 卡片 / 段落 */
+.card {
+  margin: 12px 14px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--line);
+  padding: 13px 14px; box-shadow: var(--shadow);
+}
+.card > h3 {
+  margin: 0 0 10px; font-size: 12px; letter-spacing: .2em; color: var(--accent);
+  font-weight: 700;
+}
+.card .row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line-2);
+  font-size: 13.5px;
+}
+.card .row:last-child { border-bottom: 0; }
+.card .row .k { color: var(--ink-3); flex: 0 0 auto; }
+.card .row .v { color: var(--ink); text-align: right; }
+
+/* 宫位详情 · 行内对齐（2026-10-07，用户要"整齐"）：
+   ① 标签列定宽 —— 「宫位」2 字与「天盘干」3 字不等宽，不定宽则值起点跟着漂；
+   ② 干行的「干（五行）」与「长生」各占定宽栏；
+   ③ 长生按「支·阶段」包成定宽小块：阶段名一字（衰）两字（帝旺）混杂，不补齐就永远参差；
+   ④ 值符九星 / 值使八门不写「· 值符」后缀，改为整值加黑（.v.duty），附注仍轻。
+   ⚠ 星曜行（.slrow）不在此列 —— 用户明确"星曜不用动"。 */
+.card .row:not(.slrow) .k { flex: 0 0 3.8em; }
+.card .row:not(.slrow) .v { flex: 1 1 auto; min-width: 0; text-align: left; }
+.card .row .v .aux { font-style: normal; font-size: .86em; color: var(--ink-3); }
+.card .row .v .sep, .card .row .v .dot { font-style: normal; color: var(--ink-3); }
+.card .row .v .dot { margin: 0 .12em; }
+.card .row .v.duty { font-weight: 700; }
+.card .row .v.duty .aux { font-weight: 400; }
+.card .row .v.ganrow { display: flex; gap: 10px; justify-content: flex-start; }
+.card .row .v.ganrow .main { flex: 0 0 4.4em; }
+.card .row .v.ganrow .csg { color: var(--ink-2); }
+.card .row .v .cs { display: inline-block; white-space: nowrap; min-width: 3.3em; }
+.card .row .v .cs + .cs { margin-left: 10px; }
+.card .row .v .cs .zhi, .card .row .v .cs .stg { font-style: normal; }
+.card .row .v .cs .stg { display: inline-block; min-width: 2em; }
+/* 标签下方的副注（如寄宫干的「天禽飞携」）：小字、浅色 —— 替掉原来那句长括注 */
+.card .row .k .ksub { display: block; font-style: normal; font-weight: 400;
+  font-size: .78em; letter-spacing: .05em; color: var(--ink-3); margin-top: 1px; }
+
+/* 宫位详情 · 星曜：一颗一格，一行排两三个（列宽够就三个），用高度换整齐 */
+.card .row.slrow { align-items: flex-start; }
+/* ⚠ .row 是 flex + space-between，.v 不吃余宽 —— 不显式撑开的话网格会被压成一列 */
+.card .row.slrow .v { flex: 1 1 auto; min-width: 0; }
+.slist { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px 6px; text-align: left; }
+.slist .sl-i { display: block; font-weight: 700; font-size: 13px; line-height: 1.2; }
+.slist .sl-i i { font-style: normal; }
+.slist .sl-i em { display: block; margin-top: 1px; font-style: normal; font-weight: 400;
+  font-size: 10.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* 十二长生表的「十天干对照」：一行 12 格横排太宽（手机放不下），走 6 列 × 2 排网格。
+   ⚠ 与 .slrow 同理：.row 是 flex + space-between，.v 不吃余宽，不显式撑开会被压成一列。 */
+.card .row.csrow { align-items: flex-start; }
+.card .row.csrow .v { flex: 1 1 auto; min-width: 0; }
+.cs-t { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px 4px; text-align: left; }
+.cs-t b { font-weight: 400; font-size: 10.5px; line-height: 1.3; color: var(--ink-2); white-space: nowrap; }
+.cs-t b i { font-style: normal; color: var(--ink-3); margin-right: 1px; }
+
+/* 十二长生 · 本盘九宫：与盘面同一套洛书排布（巽4 离9 坤2 / 震3 中5 兑7 / 艮8 坎1 乾6），
+   格内是「支做表头 + 每干一行」的两栏式 ——
+       ┌───────────────┐
+       │ 坤2    未   申 │  支表头（只写支名；中五宫不写）
+       │ 己    冠带 沐浴 │  天盘干（第一行）
+       │ 己    冠带 沐浴 │  地盘干（第二行）
+       │┄壬┄    养  长生 │  寄干（**固定放最下面**，虚框）
+       │ 己    冠带 沐浴 │  地盘干（最后一行）
+       └───────────────┘
+   ⚠ 用户点名「寄干的排布位置要让人看得出来」：所以三种干**不靠颜色区分**，
+     靠 ①行序固定（天→地→**寄**，寄干永远末行）②只有寄干带虚框（**这套长生表自己的形制**；盘面 2026-10-21 已改成「天盘干章右上角角注」，两者不再同形）。
+     ⚠ 寄干原本夹在中间，用户说「放中间挺膈应的」→ 改末行。别再改回去。
+   ⚠ 三干 × 双支（坤2/巽4/乾6/艮8 最满时的形态）＝ 表头 1 行 + 干行 3 行 = 4 行，
+     是全表最高的格子；列宽必须容得下「沐浴」二字不折行。 */
+.cs-pal { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.cs-pal .cs-c {
+  border: 1px solid var(--line); border-radius: 9px; padding: 5px 6px 6px;
+  min-height: 66px; display: flex; flex-direction: column; gap: 2px;
+}
+/* 表头：左宫名、右支名（双支宫连写「未申」，与 PAL_ZHI 读序一致） */
+.cs-pal .cs-h { display: flex; align-items: baseline; justify-content: space-between; gap: 2px; }
+.cs-pal .cs-h i { font-style: normal; font-size: 9.5px; line-height: 1.1; color: var(--ink-3); }
+.cs-pal .cs-h .cs-z { font-size: 9.5px; line-height: 1.1; color: var(--ink-3); letter-spacing: .06em; }
+/* 干行：干字 | 阶段(支1) | 阶段(支2)。单支宫第三列空着，换来九宫内部对齐一致 */
+.cs-pal .cs-g { display: grid; grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1fr);
+  align-items: baseline; gap: 0 1px; }
+/* 干字：三个干一律同字号同字重，**颜色按五行**走（与盘面/snapshot 的干字画法同源）。
+   ⚠ 天盘干与地盘干**不加任何形制差异** —— 用户口径「只靠位置」区分（第一行＝天、末行＝地）。
+   由于八宫里两者常是同一个字，同色同形是有意为之，别自作主张再给地盘干降对比度。 */
+.cs-pal .cs-gn { font-weight: 700; font-size: 12px; line-height: 1.25; color: var(--ink); }
+.cs-pal .cs-gn.el-wood  { color: var(--el-wood); }
+.cs-pal .cs-gn.el-fire  { color: var(--el-fire); }
+.cs-pal .cs-gn.el-earth { color: var(--el-earth); }
+.cs-pal .cs-gn.el-metal { color: var(--el-metal); }
+.cs-pal .cs-gn.el-water { color: var(--el-water); }
+/* 寄干（天禽带来的中宫干）：**虚框** —— 这套长生表自己的形制（盘面已改成角注，别照抄）。
+   这是「寄干排布一眼看得出来」的唯一抓手 —— 全表只有它带框，别去掉、别改成实线。
+   字号收一档是为了让虚框不把格子撑宽（列宽只有 18px）。 */
+.cs-pal .cs-gn.cs-ji {
+  border: 1px dashed var(--line); border-radius: 4px; padding: 0 1px;
+  font-size: 11px; text-align: center;
+}
+.cs-pal .cs-s { font-size: 9.5px; line-height: 1.3; color: var(--ink-2); text-align: center; }
+.cs-pal .cs-s.none { color: var(--ink-3); font-size: 9px; text-align: left; }
+/* 中五宫不纳支，给一层浅底跟八宫区分 */
+.cs-pal .cs-mid { background: var(--surface-2, rgba(0,0,0,.025)); }
+
+/* ---------------- 象义卡片词典（卖点） ----------------
+   搜索 + 事象反查 + 分类浏览 + 关联符号跳转；卡片极简素净 + 现代扁平。
+   断语是「占断要诀」放大突出，类象做小标签，关联符号可点跳转。 */
+.xytabs {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 0 8px;
+}
+.xytabs button {
+  flex: 0 0 auto; padding: 7px 11px; border-radius: 9px; font-size: 12.5px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-3);
+}
+.xytabs button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
+
+/* 搜索框（符号名 / 事象关键字都能搜） */
+.xysearch { padding: 8px 0 6px; }
+.xysearch input {
+  width: 100%; box-sizing: border-box; padding: 10px 13px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+  font-size: 13px;
+}
+.xysearch input::placeholder { color: var(--ink-3); }
+.xysearch input:focus { outline: none; border-color: var(--accent-line); }
+
+/* 事象反查标签（横向滚动） */
+.xyshitags {
+  display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto;
+  padding: 2px 0 4px; scrollbar-width: none; -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.xyshitags::-webkit-scrollbar { display: none; }
+.xyshitags button {
+  flex: 0 0 auto; padding: 6px 11px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2);
+}
+.xyshitags button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
+
+/* 卡片列表 + 单张卡片 */
+.xycards { padding-bottom: 16px; }
+.xycard {
+  border: 1px solid var(--line); border-radius: 14px;
+  background: var(--surface); padding: 13px 14px 12px; margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+.xycard.flash { animation: xyflash 1.3s ease-out; }
+@keyframes xyflash {
+  0% { border-color: var(--accent); background: var(--accent-bg); }
+  100% { border-color: var(--line); background: var(--surface); }
+}
+.xyc-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+.xyc-name { font-family: "QM Serif", "Songti SC", serif; font-size: 18px; font-weight: 800; color: var(--ink); }
+.xyc-cat {
+  font-size: 10px; font-weight: 600; color: var(--ink-3);
+  background: var(--surface-2); border-radius: 5px; padding: 1px 6px;
+}
+.xyc-wx { font-size: 11px; color: var(--ink-3); }
+.xyc-duan {
+  font-size: 13.5px; line-height: 1.65; font-weight: 600; color: var(--ink);
+  padding: 9px 11px; border-radius: 10px; background: var(--accent-bg);
+  border: 1px solid var(--accent-line); margin-bottom: 10px;
+}
+.xyc-fields { display: flex; flex-direction: column; gap: 6px; }
+.xyf { display: flex; gap: 8px; align-items: baseline; }
+.xyf > i { flex: 0 0 30px; font-style: normal; font-size: 11px; color: var(--ink-3); }
+.xyf > span { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 5px; }
+.xyc-tag {
+  font-size: 11.5px; font-weight: 500; color: var(--ink-2);
+  background: var(--surface-2); border-radius: 6px; padding: 2px 7px;
+}
+.xyc-rel { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--line); }
+.xyc-rel > i { font-style: normal; font-size: 11px; color: var(--ink-3); margin-right: 2px; }
+.xyrel {
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  background: var(--accent-bg); border: 1px solid var(--accent-line);
+  border-radius: 8px; padding: 4px 9px;
+}
+.xyrel:active { opacity: .7; }
+.slist .sl-i.down { opacity: .45; }
+
+.plist { list-style: none; margin: 0; padding: 0; }
+.plist li {
+  display: flex; gap: 9px; padding: 9px 0; border-bottom: 1px solid var(--line-2);
+  font-size: 13px; align-items: flex-start;
+}
+.plist li:last-child { border-bottom: 0; }
+.plist .dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 6px; flex: 0 0 auto; background: var(--ping); }
+.plist .dot.ji { background: var(--ji); }
+.plist .dot.xiong { background: var(--xiong); }
+.plist .nm { font-weight: 700; color: var(--ink); flex: 0 0 auto; }
+.plist .nm.ji { color: var(--ji); }
+.plist .nm.xiong { color: var(--xiong); }
+.plist .ds { color: var(--ink-2); font-size: 12.5px; }
+
+.empty { text-align: center; color: var(--ink-3); font-size: 13px; padding: 26px 0; }
+
+/* ---------------------------------------------------------------- 表单件 */
+.field { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line-2); }
+.field:last-child { border-bottom: 0; }
+.field > label { flex: 1; font-size: 13.5px; color: var(--ink); }
+.field > label small { display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+input[type="datetime-local"], select, input[type="text"] {
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 9px;
+  padding: 8px 10px; font-size: 13.5px; color: var(--ink); min-width: 0;
+}
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 14px; border-radius: 11px; font-size: 13.5px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
+}
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
+.btn.wide { width: 100%; }
+.btnrow { display: flex; gap: 8px; margin-top: 10px; }
+.btnrow .btn { flex: 1; }
+
+.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.swatch {
+  border-radius: 11px; border: 1px solid var(--line); padding: 9px 4px 8px;
+  text-align: center; font-size: 12px; font-weight: 600; color: var(--ink-2);
+  background: var(--surface-2);
+}
+.swatch:active { transform: scale(.96); }
+.swatch.on { border-color: var(--accent-line); color: var(--accent); background: var(--accent-bg); }
+.swatch i { display: block; height: 22px; border-radius: 7px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,.12); }
+.sw-blue i { background: linear-gradient(135deg, #0a0f1c 0 55%, #d8b45f 55% 100%); }
+.sw-slate i { background: linear-gradient(135deg, #0b1310 0 55%, #69b79b 55% 100%); }
+.sw-brown i { background: linear-gradient(135deg, #150f0a 0 55%, #cf8f4e 55% 100%); }
+.sw-white i { background: linear-gradient(135deg, #ffffff 0 55%, #b08b3a 55% 100%); }
+
+/* 分段控件 */
+.seg { display: flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.seg button {
+  flex: 1; padding: 7px 4px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--ink-3);
+}
+.seg button.on { background: var(--accent-bg); color: var(--accent); }
+/* 起局方式四档（此时刻 / 自选局 / 随机 / 心盘）：挤一点才不换行 */
+.seg.modes.four button { font-size: 12px; padding: 7px 2px; }
+/* 定局法三档（拆补法 / 置闰法 / 阴盘）：按钮变窄，字号再收一档 */
+#segJu button { font-size: 11.5px; padding: 7px 2px; }
+/* 壁纸比例：7 个选项按内容宽排、放不下换行 */
+#segBgAspect { flex-wrap: wrap; }
+#segBgAspect button { flex: 0 0 auto; padding: 6px 8px; font-size: 12px; }
+
+/* ---------------------------------------------------------------- 记录 */
+.rec {
+  display: flex; align-items: center; gap: 11px; padding: 11px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.rec:last-child { border-bottom: 0; }
+.rec .mini {
+  width: 40px; height: 40px; border-radius: 9px; flex: 0 0 auto;
+  background: var(--surface-2); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  font-family: "QM Serif", serif; font-size: 15px; color: var(--accent);
+}
+.rec .bd { flex: 1; min-width: 0; }
+.rec .bd b { display: block; font-size: 13.5px; font-weight: 700; }
+.rec .bd span { display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+.rec .del { color: var(--ink-3); font-size: 16px; padding: 4px 6px; }
+
+/* ---------------------------------------------------------------- 底栏 */
+.tabbar {
+  flex: 0 0 auto; z-index: 20;
+  display: flex; padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+  background: var(--bg-2);
+  border-top: 1px solid var(--line);
+}
+.tabbar button {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 5px 0; font-size: 10.5px; color: var(--ink-3); border-radius: 10px;
+}
+.tabbar button .ic { font-size: 17px; line-height: 1; }
+.tabbar button.on { color: var(--accent); }
+
+/* ================================================================ 串星（加干）
+ * 「串星」底栏 → 起课页（骨架同起盘页）→「起课」→ 串星课。
+ * 课页排布是用户定的：**上面四格 天宫 / 地宫 / 人宫 / 主体**，
+ * 下面三格是三宫对主体的六亲 —— 正好落在前三个宫下面，主体那列下面留空。
+ * 天宫＝值符星 · 地宫＝时干星 · 人宫＝值使宫星 · 主体＝时干。
+ * 四款格只差皮肤：默认 k1（五行着色），k2 素白 / k3 印章 / k4 线格 留着备选。
+ * ============================================================== */
+#view-chuanxing.on { display: flex; flex-direction: column; height: 100%; }
+
+
+/* 起课页纵向位置（2026-10-07 用户点的：LOGO 小上移 / 时间栏较大上移）：
+   .home 是 justify-content:center，加一点下内边距就是把整块整体上抬（抬一半）；
+   想再整体上调/下调，只改下面这条 padding-bottom（每 +2px ≈ 整体上移 1px）。 */
+#view-chuanxing .home { padding-bottom: 62px; }          /* 整体上移（这一个是总旋钮） */
+#view-chuanxing .home .logo { margin-bottom: 10px; }
+
+.cxempty { padding: 10px 0; text-align: center; font-size: 12px; color: var(--ink-3); }
+
+/* ⚠ 整体尺寸系数 --xk-s：课块做 transform 缩放时用它。
+   .xk 是课容器的通用底座（现在只剩「盘面同显」的 #xkMini 用）；
+   #xkMini 的 --xk-top 是 0，margin-top 跟着变 0。 */
+.xk { --xk-s: .82; --xk-h: 67px; --xk-top: 154px; padding: 0 14px 18px;
+  margin-top: var(--xk-top, 88px); }
+.xk .xhead { text-align: center; margin-bottom: 14px; }
+.xk .xhead .t { font-family: "QM Serif", "Songti SC", serif; font-size: 17px; font-weight: 700;
+  letter-spacing: .04em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.xk .xhead .p { margin-top: 5px; font-family: "QM Serif", "Songti SC", serif; font-size: 13px;
+  color: var(--accent); letter-spacing: .08em; }
+.xk .xhead .s { margin-top: 4px; font-size: 11px; color: var(--ink-3); }
+
+/* 「大小」＝**整块等比缩放**：对课块做 transform，格子宽高、间距、圆角、字号一起缩。
+   （之前那版只缩字号，格子还撑满宽，所以看着不像缩放 —— 已改。） */
+.xkbody { transform: scale(var(--xk-s, 1)); transform-origin: top center; }
+/* 行距故意收紧（2px）：第二行的六亲是**上面那格的修饰语**，不能跟它平起平坐 */
+/* 课块的两种装饰（用户要比着看）：
+   frame＝简洁长方形细框把它框住 · rule＝一条简洁底线托底。
+   挂在 .xkbody 上，所以线条跟着整块的缩放一起缩。 */
+.xk.frame .xkbody { border: 1px solid var(--line); border-radius: 10px; padding: 9px 8px; }
+.xk.rule .xkbody { border-bottom: 1px solid var(--line); padding-bottom: 9px; }
+
+.xgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px 6px; }
+.xcell { text-align: center; }
+.xcell .lb { display: block; font-size: 10px; letter-spacing: .1em; color: var(--ink-3); margin-bottom: 4px; }
+/* 串星课的九星 / 天干（主体）/ 六亲：font-weight 由 @font-face 那边的合成加粗落地（见 index.html）。
+   ⚠ 那个 face 的 font-weight 必须是 `400`，写成 `400 900` 这里就白写了。 */
+.xcell .nm { font-family: "QM Serif", "Songti SC", serif; font-weight: 800; line-height: 1.15;
+  font-size: 20px; }
+.xcell .sub { display: block; font-size: 9.5px; color: var(--ink-3); margin-top: 3px; }
+.xcell.qin .lb { opacity: .0; }
+
+/* 「盘面同显」里的课：**跟课页一样是完整尺寸**（--xk-s 就不覆盖了，继承 0.82）。
+   只去掉课页那个 154px 的"距顶"（这里是内嵌，不需要），盘那块空间本来就有上下余量，
+   九宫盘自然被挤下去；真装不下时 fitPan() 会自己缩。 */
+/* ★ 2026-10-07 用户第 3 条：盘面同显里那块课**也要有底色卡片**（跟课页/起课页同一张卡）。
+   两条要点：
+   ① box-sizing: content-box —— renderMiniLesson 把 grid.offsetHeight × --xk-s 写回 style.height，
+      全局 border-box 会把 padding/描边吃掉，字就漏到卡外；
+   ② 左右 margin 取 21.5px，与九宫盘（350 宽）左右边对齐。 */
+.xk.xk-mini {
+  --xk-top: 0; flex: 0 0 auto;
+  box-sizing: content-box;
+  margin-left: 21.5px; margin-right: 21.5px;
+  padding: 10px 8px 10px;
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 16px;                     /* 不做投影 */
+}
+
+/* 款 1 · 纯文字（用户选定）：**没有格子框**，每项就是一行文字（标签 + 星名）。
+   着色规矩：**只有九星的字跟五行走**，标签 / 六亲 / 主体（天干）一律不着色。 */
+.k1 .xcell { padding: 1px 0; }
+.k1 .xcell .lb { display: inline; margin: 0 6px 0 0; font-size: 10px; letter-spacing: .1em; color: var(--ink-3); }
+.k1 .xcell .nm { display: inline; font-size: 20px; color: var(--tint, var(--ink)); }
+/* 六亲＝对卦象（星）的修饰语：小字 + 淡色 + 常规字重，别抢上面那格的戏 */
+.k1 .xcell.qin .nm { font-size: 13px; font-weight: 600; letter-spacing: .08em; color: var(--ink-3); }
+.k1 .xcell.plain .nm { color: var(--ink); }
+
+/* 款 2 · 素白格 */
+.k2 .xcell { padding: 10px 2px 9px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.k2 .xcell .nm { color: var(--tint); }
+.k2 .xcell.qin { border-style: dashed; }
+.k2 .xcell.qin .nm { font-size: 17px; color: var(--accent); }
+
+/* 款 3 · 印章格 */
+.k3 .xcell .seal { width: 100%; aspect-ratio: 1 / 1; border-radius: 9px;
+  border: 1.5px solid var(--tint); display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--tint) 7%, var(--surface)); }
+.k3 .xcell .seal .nm { font-size: 15px; color: var(--tint); }
+.k3 .xcell.qin .seal { border-color: var(--accent-line); background: var(--accent-bg); }
+.k3 .xcell.qin .seal .nm { color: var(--accent); }
+
+/* 款 4 · 线格 */
+.k4 .xr { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.k4 .xr.r2 { grid-template-columns: repeat(3, 1fr); margin-top: 6px; }
+.k4 .xcell { background: var(--bg-2); padding: 11px 2px 10px; }
+.k4 .xcell .nm { color: var(--tint); }
+.k4 .xcell.qin .nm { font-size: 16px; color: var(--accent); }
+
+/* 设置行里的小示意框：三种用途三种形状（满屏竖 / 盘竖 / 课横），都按真实出图比例画 */
+.shapehint { display: flex; align-items: flex-end; gap: 16px; margin: 8px 0 2px; }
+.shapehint .sh { display: flex; flex-direction: column; align-items: center; gap: 5px;
+  font-size: 10px; letter-spacing: .04em; color: var(--ink-3); }
+.shapehint .sh em { display: block; border: 1px solid var(--accent-line);
+  background: var(--accent-bg); border-radius: 3px; }
+.shapehint .sh.pan em { width: 18px; height: 25px; }      /* 1000 ÷ 1370 ≈ 0.73 */
+.shapehint .sh.lesson em { width: 36px; height: 17px; }   /* 1000 ÷ 460 ≈ 2.17 */
+
+/* 截图渲染背景 · 选图弹层：每种用途配一个**对应形状的示意框**（按出图比例画） */
+.rendpick { display: flex; gap: 10px; }
+.rendpick .rp {
+  flex: 1 1 0; padding: 14px 8px 11px; text-align: center; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+}
+.rendpick .rp:active { background: var(--surface-2); }
+.rendpick .rp em {
+  display: block; margin: 0 auto 10px; font-style: normal;
+  border: 1px solid var(--accent-line); background: var(--accent-bg); border-radius: 3px;
+}
+.rendpick .rp.pan em { width: 40px; height: 55px; }        /* 1000 × 1370 ≈ 0.73 */
+.rendpick .rp.lesson em { width: 78px; height: 36px; }     /* 1000 × 460 ≈ 2.17 */
+.rendpick .rp b { display: block; font-size: 13px; font-weight: 700; color: var(--ink); }
+.rendpick .rp i { display: block; margin-top: 3px; font-style: normal; font-size: 10.5px; color: var(--ink-3); }
+
+/* ---------------------------------------------------------------- 弹层 */
+.sheet-mask {
+  position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.5);
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.sheet-mask.on { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 41;
+  max-height: 82vh; overflow-y: auto;
+  background: var(--bg-2); border-radius: 18px 18px 0 0;
+  border-top: 1px solid var(--accent-line);
+  padding: 14px 16px calc(20px + env(safe-area-inset-bottom));
+  transform: translateY(102%); transition: transform .26s cubic-bezier(.32,.72,0,1);
+  box-shadow: var(--sheet-shadow);
+}
+.sheet.on { transform: translateY(0); }
+.sheet .bar { width: 38px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 13px; }
+.sheet h2 {
+  margin: 0 0 3px; font-size: 16px; font-family: "QM Serif", "Songti SC", serif;
+  letter-spacing: .06em;
+}
+.sheet h2 b { color: var(--accent); }
+.sheet .sub { font-size: 12px; color: var(--ink-3); margin-bottom: 12px; }
+
+/* 十干克应：把「哪两个天干」用方章体摆在格名前（壬加戊 小蛇化龙），断语另起一行。
+   宫位弹窗与格局总览共用这一套。 */
+.plist .stems, .ky .stems {
+  font-style: normal; font-family: "QM Serif", "Songti SC", serif; font-weight: 700;
+  color: var(--accent); margin-right: 8px;
+}
+.ky { display: flex; align-items: baseline; }
+.ky b { font-family: "QM Serif", "Songti SC", serif; font-weight: 700; color: var(--ink); letter-spacing: .04em; }
+.ky b.ji { color: var(--ji); }
+.ky b.xiong { color: var(--xiong); }
+.ky-j { margin-top: 7px; font-size: 12.5px; line-height: 1.8; color: var(--ink-2); }
+/* 转盘里天禽寄天芮：**一宫两条克应**（天盘干一条、天禽寄干一条）。
+   两条之间走一道虚线，各带一个「天盘干 / 天禽寄干」标签，免得看成同一格。 */
+.ky-block + .ky-block { margin-top: 11px; padding-top: 11px; border-top: 1px dashed var(--line); }
+.ky .tag2 {
+  align-self: center; flex: 0 0 auto; margin-right: 8px;
+  font-size: 10.5px; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--accent-line); color: var(--accent); background: var(--accent-bg);
+  letter-spacing: .02em; font-family: inherit; font-weight: 600;
+}
+.ky-note {
+  margin-top: 11px; padding-top: 9px; border-top: 1px dashed var(--line);
+  font-size: 11.5px; line-height: 1.75; color: var(--ink-3);
+}
+/* 格局总览里那条「天禽寄干」：小胶囊，跟在宫位 tag 前面 */
+.plist .ds .tag2 {
+  font-size: 10.5px; padding: 1px 6px; border-radius: 6px; margin-right: 6px;
+  border: 1px solid var(--line); color: var(--ink-3); background: var(--surface-2);
+  letter-spacing: .02em; font-family: inherit; font-weight: 600;
+}
+
+.toast {
+  position: fixed; left: 50%; bottom: 92px; z-index: 60;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--surface); border: 1px solid var(--line);
+  color: var(--ink); font-size: 13px; padding: 9px 15px; border-radius: 11px;
+  box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: all .2s;
+  max-width: 84vw; text-align: center;
+}
+.toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .toast, .sheet-mask { transition: none; }
+  .btn:active, .topbar .tb-btn:active, .swatch:active { transform: none; }
+}
+
+/* ---------------------------------------------------------------- 观测位置 */
+/* 一整行按钮：左边 ◎ + 当前地点，右边 ›。比一排小按钮清楚，也不占高度。 */
+.locbtn {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  margin-top: 10px; padding: 11px 12px; border-radius: 11px;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
+  font-size: 13.5px; font-weight: 600; text-align: left;
+}
+.locbtn:active { transform: scale(.99); }
+.locbtn i { font-style: normal; font-size: 13px; color: var(--accent); flex: 0 0 auto; }
+.locbtn span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.locbtn em { font-style: normal; color: var(--ink-3); font-size: 15px; flex: 0 0 auto; }
+
+/* 小字提示：只说清楚"为什么内置一份"，不做强调 */
+.fhint { margin-top: 9px; font-size: 11.5px; line-height: 1.75; color: var(--ink-3); }
+.fhint b { color: var(--ink-2); font-weight: 700; }
+
+/* ---- 道家阴盘 · 心盘 ---- */
+/* 盘的尺寸交给外层 #qmBox（fitPan 量它、上移也作用在它身上）。
+   ★ 阴盘时盒子**自己带 24px 内边距**：外框 = 盘 + 左右各 24 —— 暗干就住在这圈内边距里。
+     这样"盒模型对称"就等价于"整幅图案对称"（盒子由 .panwrap 居中），
+     不依赖 wrap 剩多少余量，也就不会出现某一侧贴屏边。 */
+.qm-box { position: relative; margin: 0 auto; }
+.qm-box.has-ring { padding: 24px; }
+.qm-box > #panHost { width: 100%; height: 100%; }
+/* 阴盘让位时格子不再吃 min-height（否则底排会被裁）；行由 grid 拉伸填满整格 */
+.qm-box.has-ring .qm-cell { min-height: 0; }
+.qm-box > #panHost .qm-text-pan { width: 100%; max-width: none; height: 100%; margin: 0; }
+/* 盘外那一圈：放阴盘的暗干（参考实现就是把暗干排在盘外的八格边上）。
+   位置按宫位钉死：左 4/3/8 · 右 2/7/6 · 上 9 · 下 1；中五无暗干。 */
+.qm-ring { position: absolute; inset: 0; pointer-events: none; }
+.qm-box.has-ring .qm-ring { inset: 24px; }        /* 外圈与盘同框 */
+/* 心盘的符号选择：一行一类符号，点一下选中 */
+.xpl { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 9px; }
+.xpl .k { flex: 0 0 44px; font-size: 12.5px; color: var(--ink-3); line-height: 30px; }
+.xpchips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 auto; }
+.xpchips button {
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2);
+  border-radius: 8px; padding: 5px 10px; font-size: 13px;
+}
+.xpchips button.on { border-color: var(--accent-line); background: var(--accent-bg); color: var(--accent); font-weight: 700; }
+.seg button[disabled] { opacity: .35; }
+
+/* ---- 选城弹层 ---- */
+.cptabs { display: flex; gap: 6px; margin: 12px 0 10px; }
+.cptabs button {
+  flex: 1; padding: 8px 0; border-radius: 9px; font-size: 12.5px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-3);
+}
+.cptabs button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
+.cp3 { display: flex; flex-direction: column; gap: 8px; }
+.cp3 label { display: flex; align-items: center; gap: 10px; }
+.cp3 label i {
+  font-style: normal; flex: 0 0 62px; font-size: 11px; letter-spacing: .1em; color: var(--ink-3);
+}
+.cp3 select { flex: 1 1 auto; }
+.cpprev {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  margin: 12px 0 2px; padding: 11px 12px; border-radius: 11px;
+  background: var(--surface-2); border: 1px solid var(--line);
+}
+.cpprev #cpPrevName { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.cpprev #cpPrevCoord {
+  font-size: 11.5px; color: var(--accent); font-variant-numeric: tabular-nums; flex: 0 0 auto;
+}
+
+
+/* ---------------------------------------------------------------- 背景图与截图渲染背景 */
+/* 缩略条：看得见当前用的是哪张 */
+.bgstrip {
+  height: 44px; margin-top: 9px; border-radius: 10px; overflow: hidden;
+  border: 1px dashed var(--line); background: var(--surface-2) center/cover no-repeat;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11.5px; color: var(--ink-3);
+}
+.bgstrip.has { border-style: solid; }
+.bgstrip.has span { display: none; }
+
+/* 设了 App 背景图之后，把各层实底换成半透 —— 否则底图永远被盖住。
+   不透明度那一档管的是**盘面**，这里管的是 App 的外壳。 */
+/* 背景图交给 ::before 铺满。background-attachment: fixed 在移动 WebView 里是 bug 源
+   （背景按视口定位、却和实际视口对不齐，全面屏底部会留白），改成 fixed 伪元素最稳。 */
+html.bg-custom::before {
+  content: ""; position: fixed; inset: 0; z-index: -2;
+  background-image: var(--app-bg-img);
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  pointer-events: none;
+}
+/* body 自己那层实底会盖住底图，必须让开 */
+html.bg-custom body { background: transparent; }
+/* ★ 遮罩层：夹在底图与界面之间。底图是 body 的背景，这层压在它上面、所有内容之下。
+   没有它的话，一张花哨或深色的照片会把字全吃掉 —— 这也是"加了透明背景之后很多地方看不清"的原因。 */
+html.bg-custom::after {
+  content: ""; position: fixed; inset: 0; z-index: -1;
+  background: var(--bg);
+  opacity: var(--app-scrim, .55);
+  pointer-events: none;
+}
+html.bg-custom .topbar,
+html.bg-custom .tabbar { background: color-mix(in srgb, var(--bg-2) 84%, transparent); }
+html.bg-custom .card,
+html.bg-custom .timecard,
+html.bg-custom .sheet { background: color-mix(in srgb, var(--surface) 90%, transparent); }
+html.bg-custom .swatch,
+html.bg-custom .seg,
+html.bg-custom .btn,
+html.bg-custom .locbtn,
+html.bg-custom .jgrid button { background-color: color-mix(in srgb, var(--surface-2) 84%, transparent); }
+html.bg-custom input[type="text"],
+html.bg-custom input[type="datetime-local"],
+html.bg-custom select { background: color-mix(in srgb, var(--bg-2) 76%, transparent); }
+/* 盘面的底子在 pan.css 里已经永远让开了（不透明度才有东西可露） */
+
+/* ---------------------------------------------------------------- 裁剪浮层 */
+.cropper {
+  position: fixed; inset: 0; z-index: 80; display: none;
+  flex-direction: column; background: #0b0e14;
+}
+.cropper.on { display: flex; }
+.crop-top {
+  display: flex; align-items: center; gap: 10px;
+  /* safe-area 加在**上** padding（避开状态栏）；原来误写在 bottom，edge-to-edge 后按钮被状态栏压住 */
+  padding: calc(12px + env(safe-area-inset-top)) 14px 12px;
+  color: #eef2f8;
+}
+.crop-top .crop-title { flex: 1; text-align: center; font-size: 13.5px; font-weight: 600; letter-spacing: .04em; }
+.crop-btn {
+  padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.16); color: #eef2f8;
+}
+.crop-btn.primary { background: rgba(216,180,95,.22); border-color: rgba(216,180,95,.5); color: #f0d79a; }
+/* 裁剪区＝**出图范围**，这里给一圈明确的描金示意框 + 四角标记：
+   原来只有舞台自身 1px、22% 白的细线，压在近黑底上几乎看不见，
+   也看不出"这一张是竖是横、出图多大"。 */
+.crop-stage {
+  /* ★★ flex: 1 1 auto 是个坑：裁剪浮层是**纵向 flex**，写 1 1 auto 就等于"高度由 flex 分配"，
+     于是 cropLayout() 按比例算出的 height 被直接吃掉 —— 舞台永远填满剩余高度（实测 608px），
+     结果盘（0.73）与课（2.17）的示意框长得一模一样。必须 flex: 0 0 auto，让 JS 给的高度生效。 */
+  flex: 0 0 auto; position: relative; overflow: hidden;
+  margin: auto;                       /* 在剩余空间里居中（横竖都居中） */
+  background: #05070b; touch-action: none;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1.5px rgba(216,180,95,.85), 0 0 0 4.5px rgba(216,180,95,.16), 0 14px 40px rgba(0,0,0,.6);
+}
+/* 四角小标记（在框内） */
+.crop-stage::before {
+  content: ""; position: absolute; inset: 7px; pointer-events: none; z-index: 2;
+  background:
+    linear-gradient(rgba(240,215,154,.95), rgba(240,215,154,.95)) left top / 14px 2px no-repeat,
+    linear-gradient(rgba(240,215,154,.95), rgba(240,215,154,.95)) left top / 2px 14px no-repeat,
+    linear-gradient(rgba(240,215,154,.95), rgba(240,215,154,.95)) right top / 14px 2px no-repeat,
+    linear-gradient(rgba(240,215,154,.95), rgba(240,215,154,.95)) right top / 2px 14px no-repeat,
+    linear-gradient(rgba(240,215,154,.95), rgba(240,215,154,.95)) left bottom / 14px 2px no-repeat,
+    linear-gradient(rgba(240,215,154,.95), rgba(240,215,154,.95)) left bottom / 2px 14px no-repeat,
+    linear-gradient(rgba(240,215,154,.95), rgba(240,215,154,.95)) right bottom / 14px 2px no-repeat,
+    linear-gradient(rgba(240,215,154,.95), rgba(240,215,154,.95)) right bottom / 2px 14px no-repeat;
+}
+.crop-shape {
+  text-align: center; font-size: 12px; letter-spacing: .06em;
+  color: rgba(240,215,154,.92); margin-bottom: 8px;
+}
+.crop-stage img {
+  position: absolute; left: 50%; top: 50%;
+  /* ★ 必须把图片的**中心**对到 left/top 那个点上。
+     少了这一句，图片的左上角会落在舞台中心，预览整体往右下偏一大截；
+     而 cropCollect 的算式是按"中心对齐"推的 —— 于是**看到的和导出的不是同一块区域**。 */
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+  user-select: none; -webkit-user-drag: none; pointer-events: none;
+}
+.crop-stage::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.22) inset;
+}
+/* 裁剪界面里的壁纸比例条（只在「App 背景」裁剪时显示） */
+.crop-aspects { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 2px; align-items: center; }
+.crop-aspects .ca-lab { font-size: 11.5px; color: rgba(255,255,255,.55); margin-right: 2px; }
+.crop-aspects button {
+  padding: 6px 9px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.75);
+}
+.crop-aspects button.on { background: rgba(216,180,95,.22); border-color: rgba(216,180,95,.5); color: #f0d79a; }
+.crop-aspect-custom { padding: 6px 14px 0; }
+.crop-aspect-custom input {
+  width: 100%; padding: 8px 10px; border-radius: 8px; font-size: 13px;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); color: #eef2f8;
+}
+.crop-bottom { padding: 14px 18px calc(18px + env(safe-area-inset-bottom)); }
+.crop-bottom .crop-hint { display: block; text-align: center; font-size: 11.5px; color: rgba(255,255,255,.55); margin-bottom: 10px; }
+.crop-bottom input[type="range"] { width: 100%; accent-color: #d8b45f; }
+
+
+/* ---------------------------------------------------------------- 可折叠卡片 */
+/* 标题栏整条可点；收起时只剩一行标题 + 一句状态摘要。
+   用在"盘面外观"这类——项多但多数时候不用动的分组上。 */
+.card.foldable > h3 {
+  display: flex; align-items: baseline; gap: 8px;
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+}
+.card.foldable > h3 .csum {
+  font-style: normal; font-size: 10.5px; font-weight: 500; letter-spacing: 0;
+  color: var(--ink-3); margin-left: auto;
+  max-width: 66%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.card.foldable > h3 .chev {
+  flex: 0 0 auto; font-size: 11px; line-height: 1; color: var(--ink-3);
+  transition: transform .18s;
+}
+.card.foldable.closed > h3 { margin-bottom: 0; }
+.card.foldable.closed > h3 .chev { transform: rotate(-90deg); }
+.card.foldable.closed .foldbody { display: none; }
+.card.foldable > h3:active { opacity: .7; }
+@media (prefers-reduced-motion: reduce) { .card.foldable > h3 .chev { transition: none; } }
+
+
+
+
+/* ---------------------------------------------------------------- 旺衰（宫位弹窗） */
+/* 一宫五个：星内 · 星外 · 门内 · 门外 · 宫位。
+   左边是"哪一档"，中间一个状态字，右边写清哪两个五行、什么关系。 */
+.plist.vlist li { align-items: baseline; gap: 8px; padding: 7px 0; }
+.plist.vlist .tag2 {
+  flex: 0 0 auto; font-size: 10.5px; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid var(--line); color: var(--ink-3); background: var(--surface-2);
+  letter-spacing: .02em;
+}
+.plist.vlist .vst {
+  flex: 0 0 auto; width: 18px; text-align: center;
+  font-family: "QM Serif", "Songti SC", serif; font-weight: 700; font-size: 14px;
+  color: var(--ink);
+}
+.plist.vlist .vst.v-旺 { color: var(--ji); }
+.plist.vlist .vst.v-相 { color: var(--accent); }
+.plist.vlist .vst.v-休 { color: var(--ink-2); }
+.plist.vlist .vst.v-囚 { color: var(--xiong); }
+.plist.vlist .vst.v-死 { color: var(--xiong); }
+.plist.vlist .vst.v-废 { color: var(--ink-3); }
+.vgnote {
+  margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--line);
+  font-size: 11.5px; line-height: 1.8; color: var(--ink-3);
+}
+
+
+/* ------------------------------------------------- 设置页 · 顶部分段（方案 B） */
+/* 一屏只看一类：外观 / 排法 / 星曜 / 关于。切组只切 display —— 控件与事件都不重建。 */
+.setchips {
+  display: flex; gap: 6px; padding: 10px 14px 6px;
+  position: sticky; top: 0; z-index: 3; background: var(--bg);
+}
+.setchips button {
+  flex: 1; padding: 8px 0; border-radius: 10px; font-size: 12.5px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-3);
+}
+.setchips button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
+.setgroup { display: none; padding-bottom: 24px; }
+.setgroup.on { display: block; }
+
+/* 小节标题：小字宽距 + 发丝线 + 右侧状态摘要（视觉顺序：标题 | 线 | 摘要） */
+.sline { display: flex; align-items: baseline; gap: 8px; margin: 16px 14px 2px; }
+.sline > b { flex: 0 0 auto; font-size: 11px; letter-spacing: .2em; font-weight: 700; color: var(--ink-3); }
+.sline::after { content: ""; order: 1; flex: 1 1 auto; height: 1px; background: var(--line); align-self: center; }
+.sline > small {
+  order: 2; flex: 0 1 auto; max-width: 64%; font-size: 10.5px; color: var(--ink-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sbody { margin: 0 14px; }
+.sbody .field { padding: 9px 0; border-bottom: 1px solid var(--line-2); }
+.sbody .field:last-child { border-bottom: 0; }
+.sbody .fhint { margin-top: 2px; }
+.rk { font-size: 13px; font-weight: 600; min-width: 46px; text-align: right; color: var(--ink); }
+.rk2 { font-size: 11.5px; font-weight: 600; min-width: 104px; text-align: right; color: var(--ink-3); }
+
+/* 排法 · 二列网格（用户挑的方案 3）：一项一格，标签在上、分段在下。
+   ⚠ 定局法与晚子时不进网格 —— 它们在下面单独一节用通栏行。 */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 14px 0; }
+/* 卡片边框：双层发丝框 —— 外 1px + 3px 空隙 + 内 1px，圆角内外递进（14 → 11）。
+   内框只画线、不吃点击（pointer-events:none），四套主题共用 --line / --line-2。 */
+.grid2 > .g {
+  position: relative; border: 1px solid var(--line); border-radius: 14px;
+  padding: 11px 12px 11px; background: var(--surface);
+}
+.grid2 > .g::before {
+  content: ""; position: absolute; inset: 3px; pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--accent-line) 27%, transparent); border-radius: 11px;
+}
+.grid2 > .g > i { display: block; font-style: normal; font-size: 11.5px; color: var(--ink-2); margin-bottom: 7px; }
+.grid2 > .g .seg { display: flex; }
+.grid2 > .g .seg button {
+  flex: 1; min-width: 0; padding: 7px 2px; border-radius: 8px; font-size: 11.5px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.grid2 > .g .seg button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
+.grid2 + .fhint { margin-top: 8px; }
+
+/* 插件页（2026-10-21）：一个插件一张卡 —— 标题 + 开关 + 说明。
+   卡片形制沿用排法里 .g 的双层发丝框（外 1px + 3px 空隙 + 内 1px），视觉与设置页其余部分一致。 */
+.pk-card {
+  position: relative; margin: 8px 14px 0; padding: 12px 13px 13px;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
+}
+.pk-card::before {
+  content: ""; position: absolute; inset: 3px; pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--accent-line) 27%, transparent); border-radius: 11px;
+}
+.pk-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+.pk-head > b { font-size: 13.5px; letter-spacing: .08em; color: var(--ink); }
+.pk-head .seg { display: flex; width: 122px; }
+.pk-head .seg button {
+  flex: 1; min-width: 0; padding: 6px 2px; border-radius: 8px;
+  font-size: 11.5px; font-weight: 600; white-space: nowrap;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-3);
+}
+.pk-head .seg button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
+.pk-body { font-size: 12.5px; line-height: 1.85; color: var(--ink-2); }
+.pk-note { margin-top: 8px; font-size: 11px; line-height: 1.75; color: var(--ink-3); }
+.pk-note b { color: var(--ink-2); font-weight: 700; }
+
+/* 设置里的小提示符号：点开弹一段说明（"显示星曜"那一栏用） */
+.infobtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; margin-left: 6px; padding: 0;
+  border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2);
+  color: var(--ink-3); font-size: 11px; font-weight: 700; line-height: 1;
+  font-family: Georgia, "Times New Roman", serif; font-style: italic;
+  vertical-align: 1px; cursor: pointer; -webkit-user-select: none; user-select: none;
+}
+.infobtn:active { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
+
+/* 十一曜释义（设置 → 星曜 → ⓘ 弹层）
+   ⚠ 前缀章的式样是用户从六款里选定的「素文字」（S3）：**不要框**，宋体 + 字距 + 一个间隔点，
+   三色区分（古＝次级墨、今＝描金、歧＝三级灰）。别再给它加底色/边框。 */
+.tg {
+  display: inline; min-width: 0; width: auto; height: auto; padding: 0; border: 0; background: none;
+  font-family: "QM Serif", "Songti SC", serif; font-size: 11.5px; letter-spacing: .12em;
+  font-style: normal;
+}
+.tg::after { content: "·"; margin: 0 5px 0 3px; color: var(--line); letter-spacing: 0; }
+.tg.gu { color: var(--ink-2); }
+.tg.jin { color: var(--accent); }
+.tg.qi { color: var(--ink-3); }
+/* 释义弹层的折叠行（用户选的样本 3）：默认只露「名字 + 别称 + 古义前半句」，点开才展开古／今／歧。
+   ⚠⚠ 这块在 2026-09-26 被一次"区间替换"误删过（改 .tg 时跨块把它一起吃掉了），
+   后果是十一条全部一直展开、箭头不转。**动 .tg 只替换 .tg 那几行，别用跨块区间。**
+   兜底：node 校验/_check_css.js 会报缺。 */
+.fold { border-bottom: 1px solid var(--line-2); }
+.fold:last-child { border-bottom: 0; }
+.fold > b {
+  display: flex; align-items: baseline; gap: 7px; padding: 9px 0; cursor: pointer;
+  font-family: "QM Serif", "Songti SC", serif; font-weight: 700; font-size: 13px; color: var(--ink);
+}
+.fold > b em { font-style: normal; font-weight: 400; font-size: 10px; color: var(--ink-3); letter-spacing: .06em; }
+.fold > b i { font-style: normal; flex: 1 1 auto; font-family: inherit; font-weight: 400;
+  font-size: 11.5px; color: var(--ink-3); }
+.fold > b u { text-decoration: none; color: var(--ink-3); font-size: 11px; }
+.fold .bd { display: none; padding: 0 0 10px; font-size: 12.5px; line-height: 1.7; color: var(--ink); }
+.fold .bd > div + div { margin-top: 3px; }
+.fold .bd .soft { color: var(--ink-3); }
+.fold.on .bd { display: block; }
+.fold.on > b u { display: inline-block; transform: rotate(180deg); }
+
+.docp { margin: 0 0 7px; font-size: 12px; line-height: 1.7; color: var(--ink-2); }
+.docp:last-child { margin-bottom: 0; }
+.docp b { color: var(--ink); }
+
+/* ⚠ 用户报的 bug：「排法」那一组下面的小字贴到屏幕左边缘了（被切）。
+   原因：那几行 `.fhint` 直接挂在 `.setgroup` 上，而 `.fhint` 只有 margin-top，
+   左右内缩原本是靠 `.card` / `.sbody` 给的 —— 这里没有，于是文字从 x=0 开始。
+   统一按 14px 对齐（与 .sline / .sbody / .grid2 同一档）。 */
+.setgroup > .fhint { margin-left: 14px; margin-right: 14px; }
+.setgroup > .fhint + .fhint { margin-top: 3px; }
+
+/* ============================================================================
+ * 随机类型选择 + 串星课弹层（2026-10-21）
+ * ----------------------------------------------------------------------------
+ * 随机：面板里两个按钮只选类型（不是点了就抽），真正随机在「起盘 / 起课」那一刻。
+ * 串星：起课后不跳页，就在同一页用弹层展示课页，底部「返回 / 重排」。
+ * ========================================================================== */
+#btnRandTime.on, #btnRandJu.on {
+  border-color: var(--accent-line);
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+/* 串星课弹层（2026-10-21 用户定版）：底部三按钮 返回 / 截图 / 重排
+   压在页面之上、sheet（40/41）之下，读法弹层仍能盖住它。
+   间距沿用打磨后的紧凑值：标题 28px 行高、副标题 2px、课卡→按钮 10px。 */
+.cxpop-mask {
+  position: fixed; inset: 0; z-index: 38; background: rgba(0, 0, 0, .42);
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.cxpop-mask.on { opacity: 1; pointer-events: auto; }
+/* ★ 2026-10-26 用户定版「展签」（方案 A）：
+   弹层是一张居中展签 —— 顶部一道短金线 + 小字距的「串 星 课」，课卡外套一层发丝框，
+   课块放大；底部「返回 / 截图」退成无框小字，只把「重排」留成主按钮。
+   ⚠ 课卡里**不要**加「天宫 / 地宫 / 人宫 / 主体」那排小字（用户明确去掉）。 */
+.cxpop {
+  position: fixed; left: 20px; right: 20px; top: 50%; z-index: 39;
+  max-height: 78dvh; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--accent-line); border-radius: 24px;
+  box-shadow: 0 20px 55px rgba(20,18,12,.2); padding: 22px 20px 14px;
+  opacity: 0; pointer-events: none; transform: translateY(-48%) scale(.96);
+  transition: opacity .2s, transform .2s;
+}
+.cxpop.on { opacity: 1; pointer-events: auto; transform: translateY(-50%) scale(1); }
+.cxpop-head { position: relative; text-align: center; margin-bottom: 0; }
+/* 2026-11-03：读法入口不再用汉字，改成设置页「显示星曜」旁边那颗同款信息符号：
+   视觉完全沿用 .infobtn（16px 圆 + i），这里只负责把它钉在弹窗标题右上角。 */
+.cxpop-help {
+  position: absolute; right: 14px; top: 2px;
+  margin: 0;
+}
+.cxpop-head b {
+  display: block; height: auto; line-height: 1.4;
+  font-family: "QM Serif", "Songti SC", serif;
+  font-size: 15px; font-weight: 600; letter-spacing: .46em; text-indent: .46em;
+  color: var(--ink-2);
+}
+.cxpop-head b::before {
+  content: ""; display: block; width: 30px; height: 1px;
+  background: var(--accent-line); margin: 0 auto 13px;
+}
+.cxpop-head span { display: block; margin-top: 7px; font-size: 11px; letter-spacing: .04em; color: var(--ink-3); }
+.cxpop-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 18px 0 4px; }
+.cxpop-card {
+  /* ⚠ 必须把全局的 --xk-s 缩放关掉：.xkbody 的 transform: scale(.82) **不占布局**，
+     布局按 100% 高排、视觉只画 82%，底部就空出一截 —— 字看起来会整体往上移。
+     展签这里空间足够，字号直接按 26px 排，视觉盒与布局盒一致，上下才真居中。 */
+  --xk-s: 1;
+  margin: 0; padding: 12px 8px 10px;
+  border: 1px solid var(--line); border-radius: 16px;
+  background: color-mix(in srgb, var(--bg-2) 50%, transparent);
+}
+/* 外框已经框住了，去掉 k1.rule 那条底线 */
+.cxpop-card.rule .xkbody { border-bottom: 0; padding-bottom: 0; }
+.cxpop-card .xkbody { padding: 2px 2px 0; }
+/* 2026-11-02 用户：九星与六亲原来脱节（26 vs 13 差一倍）—— 九星收小、六亲放大，三列对齐 */
+.cxpop-card .xgrid { grid-template-columns: repeat(4, 1fr); gap: 12px 10px; }
+.cxpop-card .xcell .nm { font-size: 22px; }
+.cxpop-card .xcell.qin .nm { font-size: 15px; margin-top: 3px; letter-spacing: .06em; }
+/* 底部：返回/截图退成小字，重排是唯一的主按钮 */
+.cxpop-btns {
+  display: flex; align-items: center; gap: 16px;
+  margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--line-2);
+}
+.cxpop-btns .btn {
+  flex: 0 0 auto; border: 0; background: none; padding: 8px 0;
+  font-size: 12.5px; color: var(--ink-3);
+  -webkit-tap-highlight-color: transparent;
+}
+/* ⚠ 自定义壁纸下 html.bg-custom .btn 会给所有按钮补底色（特异性 0,2,1
+   高过上面这条 0,2,0）——「返回 / 截图」这两枚小字键会被染出一块灰底，
+   这里显式压回透明；重排是主按钮，不吃这条。 */
+html.bg-custom .cxpop-btns .btn:not(#cxPopAgain) { background-color: transparent; }
+.cxpop-btns #cxPopAgain {
+  flex: 1 1 auto; border: 1px solid var(--accent-line);
+  background: var(--accent-bg); color: var(--accent);
+  font-weight: 700; font-size: 14px; padding: 11px 0; border-radius: 12px;
+}
+
+/* 阴盘/心盘锁定四层时：只做视觉提示，点击会自动切回「此时刻」 */
+.seg button.lock { opacity: .45; }
+
+/* ============================================================================
+ * 插件 · 四柱ui（id: sizhu）—— 2026-11-01 用户从 20 套里选的「05 五行色字」
+ * ----------------------------------------------------------------------------
+ * 不铺底、不画框：干支直接取五行色，柱间只一道发丝竖线。
+ * 尺寸与原先的无缝矩阵同一档（整体 ≈69px，比原 88.5 还矮），抬头不涨、盘子不动。
+ * 类名一律 sz- 前缀；.pk-sz 是插件根（plugins/sizhu.js 吐的 HTML）。
+ * 阴盘不渲染（插件不入阴盘，见 plugins.js blockedInYin）。
+ * ========================================================================== */
+/* 2026-11-01 用户：给四柱加个框 —— 没框时上下都与旁边（值符/值使那列）对不齐。
+   2026-11-03 用户选「设计 C · 标签带」：柱名 12.5px 独占一条带，带底一道发丝；
+   干支区竖线只在带下面；字重降到 600，整体更轻。 */
+.pk-sz {
+  margin: 0; width: 100%;
+  padding: 4px 8px 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+html[data-theme="white"] .pk-sz { border-color: rgba(28,38,58,.14); }
+.pk-sz .sz-lb {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+  padding: 1px 0 4px; margin-bottom: 0;
+  border-bottom: 1px solid var(--line-2);
+  /* padding 左右/gap 必须为 0：柱名与干支共用同一套四等分，否则「时」会偏 2px */
+}
+.pk-sz .sz-lb i {
+  font-style: normal; text-align: center;
+  font-size: 12.5px; letter-spacing: .1em; color: var(--ink-3); line-height: 1.4;
+}
+.pk-sz .sz-g4 { display: grid; grid-template-columns: repeat(4, 1fr); }
+.pk-sz .sz-p {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 0; text-align: center;
+  padding: 1px 0;
+  border-left: 1px solid var(--line-2);
+}
+.pk-sz .sz-p:first-child { border-left: 0; }
+.pk-sz .sz-g, .pk-sz .sz-z {
+  font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", serif;
+  font-weight: 600; line-height: 1.16; letter-spacing: .02em;
+}
+/* 2026-11-02 严格体检后修正：干支**等大** 22px、行距 1.3、内边距收小；
+   2026-11-03 设计 C：加标签带后盒高约 93.7px（默认四柱 88.5，属可接受范围）。 */
+.pk-sz .sz-g,
+.pk-sz .sz-z { font-size: 22px; line-height: 1.3; }
+/* 五行色：与盘面同源（--el-* 四套主题自动跟随） */
+.pk-sz .sz-wood  { color: var(--el-wood); }
+.pk-sz .sz-fire  { color: var(--el-fire); }
+.pk-sz .sz-earth { color: var(--el-earth); }
+.pk-sz .sz-metal { color: var(--el-metal); }
+.pk-sz .sz-water { color: var(--el-water); }
+/* 手动/三层：没有的那一柱画「—」 */
+.pk-sz .sz-none { color: var(--ink-3); }
+
+/* ============================================================================
+ * 十二长生 · 含义环盘（2026-11-01 定稿）
+ * ----------------------------------------------------------------------------
+ * 只出现在「盘面 → 旬空下横线 → 折叠页 → 长生」那个子页面里（.sheet 内），
+ * 不占设置、不跟插件开关。环盘是 SVG viewBox 360 等比缩放，390/360/320 均不溢出。
+ * ========================================================================== */
+.cs-ring { width: 100%; display: flex; justify-content: center; margin-top: 2px; }
+.cs-svg { display: block; width: 100%; max-width: 320px; height: auto; overflow: visible; }
+.cs-svg .cs-lab {
+  font-family: "QM Serif", "Songti SC", serif;
+  fill: var(--ink-2); letter-spacing: .02em;
+  transition: fill .18s;
+}
+.cs-svg .cs-lab.on { fill: var(--accent); font-weight: 700; }
+.cs-svg .cs-dot { transition: r .18s, opacity .18s; }
+.cs-svg .cs-hit { cursor: pointer; }
+.cs-svg .cs-now {
+  font-family: "QM Serif", "Songti SC", serif;
+  fill: var(--ink); letter-spacing: .12em;
+}
+.cs-svg .cs-now-badge { letter-spacing: .08em; }
+.cs-svg .cs-now-yu { fill: var(--ink-3); letter-spacing: .02em; }
+
+.cs-detail {
+  margin: 8px 2px 0; padding: 10px 12px 11px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg);
+}
+.cs-d-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.cs-d-top b { font-family: "QM Serif", serif; font-size: 19px; letter-spacing: .06em; }
+.cs-d-top em {
+  font-style: normal; font-size: 9.5px; line-height: 1.5; padding: 0 5px;
+  border: 1px solid currentColor; border-radius: 4px;
+}
+.cs-d-top em.c1 { color: var(--accent); }
+.cs-d-top em.c2 { color: var(--ink-3); }
+.cs-d-top em.c3 { color: var(--ji); }
+.cs-d-top span { font-size: 10.5px; color: var(--ink-3); }
+.cs-d-yu { margin: 6px 0 0; font-size: 11.5px; color: var(--ink-2); }
+.cs-d-txt { margin: 5px 0 0; font-size: 12.5px; line-height: 1.72; color: var(--ink); }
+.cs-note { margin: 0 0 6px; font-size: 10.5px; line-height: 1.8; color: var(--ink-3); }

@@ -1,0 +1,920 @@
+/* ============================================================================
+ * 星曜奇门 · 九宫盘（搬自 mQimen 侧已验证的 v4 设计，改挂到 App 主题上）
+ * ----------------------------------------------------------------------------
+ * 结构：卦宫名(左上) / 空亡·驿马朱青印(右上) / 八神 / 九星行(星名＋天盘干章·寄干为右上角角注) /
+ *       八门行(门名＋地盘干章·阴盘坤二另有地盘寄干) / 星曜(底行)
+ * 切主题不重画盘面，只换变量。
+ * ========================================================================== */
+/* ============================================================
+   星曜奇门 · 文字九宫盘 v5（长方形 · 九张卡片）
+   ------------------------------------------------------------
+   设计要点（2026-10-07 用户定版）：整盘是**长方形（高 > 宽）**，
+   九宫拆成**九张彼此独立、严格等大的卡片**，卡片之间留 7px 的缝 ——
+   缝里露的是 App 底色/壁纸，所以整盘**不再画外框、也不再有贯穿的格子线**：
+   分家交给缝，边框交给每张卡片自己那一圈**简洁黑线**（用户原话
+   「边框换成简洁的黑线吧，感觉更大气一点，线条不要太淡了」）。
+   卡片尺寸：整盘 **350×509** → 单卡 **112×165**（3×112+2×7=350 / 3×165+2×7=509），
+   ⚠ 宽度试过三档：370（原来）→ 365（跟上方信息区那行对齐，x=14→379）→
+     **350（用户定）**：365 那版离屏幕边只有 14px，用户说「距离屏幕边缘太近了」，
+     现在左右各留 21.5px（= 常规手机边距），不再跟信息区对齐。
+   几何由 ui.js 的 fitPan() 按同一比例算给屏幕、snapshot.js 按同一比例重画导出图。
+   中宫仍是「天枢」金环，八神/九星八门/星曜分三级字阶，
+   天干按五行上色做成方章、时干套金环，空亡驿马改朱/青印，
+   卦象不画在卡片里（点中宫切到「卦象面」才看）。
+   主题只留 4 套：玄夜(blue) / 墨玉(slate) / 铜仪(brown) / 素白(white)。
+   颜色一律走变量，JS 只负责给格子底色（backgroundColor，不能用 background 简写，
+   否则会把这里的渐变/星野一起清掉）。
+   ============================================================ */
+
+
+.qm-text-pan {
+    position: relative;
+    display: grid;
+    /* ★ 列宽写成 calc 而不是 1fr：(350-14)/3 = 112 是整数，两者本来就相等；
+       写成 calc 是为了**别的屏宽**（整盘会被按比例缩小）时也不会把除不尽的余数
+       摊给某一列 —— 用户要求「每个卡片严格相等」，这里一律三列同一个数。 */
+    grid-template-columns: repeat(3, calc((100% - 2 * var(--qm-gap, 7px)) / 3));
+    grid-template-rows: repeat(3, 1fr);
+    /* ★ 九张卡片之间的缝（用户规格 7/7）：缝里露 App 底色/壁纸，就是"分家" */
+    gap: var(--qm-gap, 7px);
+    width: 100%;
+    /* ★ 长方形盘：宽 350（左右各留 21.5px） × 高 509（高 > 宽）。
+       屏幕上的实际边长由 ui.js 的 fitPan() 按这个比例算；这里的
+       max-width / aspect-ratio 是没 JS 时的兜底。 */
+    max-width: 350px;
+    aspect-ratio: 350 / 509;
+    margin: 0 auto;
+    /* 整盘不再有外框（描金双框已随卡片版式退场），边框在每张卡片自己身上 */
+    border: 0;
+    border-radius: 0;
+    overflow: hidden;
+    isolation: isolate;
+    /* ★ 底子永远让开，盘面的颜色由**各宫自己的 rgba** 提供。
+       这样"不透明度"才有东西可露 —— 有背景图就露背景图，没背景图就露 App 底色，
+       而不是像原先那样只能露出盘面自己那层实底（=看起来毫无反应）。 */
+    background-color: transparent;
+    /* 星野（只深色主题可见，素白里 --qm-dots 置 none） */
+    --qm-dots:
+        radial-gradient(1.2px 1.2px at 11% 16%, rgba(255,255,255,.42), transparent),
+        radial-gradient(.9px .9px at 37% 8%, rgba(200,222,255,.36), transparent),
+        radial-gradient(1px 1px at 68% 21%, rgba(255,255,255,.28), transparent),
+        radial-gradient(.8px .8px at 88% 11%, rgba(210,228,255,.34), transparent),
+        radial-gradient(.9px .9px at 21% 47%, rgba(255,255,255,.22), transparent),
+        radial-gradient(.8px .8px at 79% 58%, rgba(210,228,255,.26), transparent),
+        radial-gradient(1.1px 1.1px at 52% 88%, rgba(255,255,255,.26), transparent),
+        radial-gradient(.8px .8px at 14% 82%, rgba(210,228,255,.22), transparent),
+        radial-gradient(.9px .9px at 91% 91%, rgba(255,255,255,.26), transparent),
+        radial-gradient(.8px .8px at 45% 33%, rgba(255,245,220,.20), transparent),
+        radial-gradient(.8px .8px at 62% 72%, rgba(255,245,220,.18), transparent);
+    /* 整盘不再投影：九张卡片各自是平的，整盘一块阴影框反而把缝糊住 */
+}
+
+/* ⚠ 原来这里还有一层「描金双框的内圈」（::before + --qm-frame-in / --qm-ring-in）。
+   卡片版式下整盘没有外框了，内圈自然一起退场 —— 变量仍留在主题里（导出图/别处可复用）。 */
+
+/* 星野 + 天枢光晕 + 暗角。跟着"不透明度"一起淡（--qm-cell-a 由 ui.js 写） */
+.qm-text-pan::after {
+    opacity: var(--qm-cell-a, 1);
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+    border-radius: inherit;
+    background-image: var(--qm-dots), var(--qm-halo), var(--qm-vig);
+    background-size: 100% 100%, 100% 100%, 100% 100%;
+    background-repeat: no-repeat, no-repeat, no-repeat;
+}
+
+/* ---- 玄夜（默认・深色旗舰） ---- */
+html[data-theme="blue"] .qm-text-pan, .qm-text-pan {
+    --qm-accent: #d8b45f;
+    /* ★ 卡片描边：深色主题下用中性亮线（黑线在深底上看不见）；
+       2026-10-07 用户「可以稍微淡一点」→ 不透明度 .62 → .45 */
+    --qm-frame: rgba(232,238,246,.45);
+    --qm-frame-in: rgba(216,180,95,.16);
+    --qm-line: rgba(190,206,232,.14);
+    --qm-hair: rgba(190,206,232,.17);
+    --qm-ink: #eaf0f8;
+    --qm-ink-soft: #aab9ce;
+    --qm-dim: #7d8ca4;
+    --qm-sheen: rgba(255,255,255,.055);
+    --qm-chip-bg: rgba(255,255,255,.055);
+    --qm-chip-line: rgba(255,255,255,.14);
+    --qm-chip-bg-2: rgba(255,255,255,.11);
+    --qm-pan-c: #0a0f1c;
+    --qm-halo: radial-gradient(46% 40% at 50% 50%, rgba(216,180,95,.20), rgba(0,0,0,0) 72%);
+    --qm-vig: radial-gradient(126% 108% at 50% 44%, rgba(0,0,0,0) 40%, rgba(0,0,0,.46) 100%);
+    --qm-shadow: 0 14px 40px rgba(0,0,0,.55), 0 2px 10px rgba(0,0,0,.45);
+    --qm-glow2: rgba(216,180,95,.42);
+    --qm-glowmid: rgba(216,180,95,.12);
+    --qm-seal-void-bg: rgba(198,72,60,.17);
+    --qm-seal-void-line: rgba(232,120,104,.48);
+    --qm-seal-void-ink: #ee9a8d;
+    --qm-seal-horse-bg: rgba(86,164,198,.15);
+    --qm-seal-horse-line: rgba(120,196,226,.44);
+    --qm-seal-horse-ink: #90cfe8;
+    /* 五行（深色底用亮色） */
+    --qm-el-wood: #63d6a0; --qm-el-fire: #ff8574; --qm-el-earth: #e8c877;
+    --qm-el-metal: #c7d0dc; --qm-el-water: #6fb4f5;
+    /* 八神 */
+    --qm-shen-1: #e8c877; --qm-shen-2: #ff8a7a; --qm-shen-3: #b9c6da; --qm-shen-4: #7fd6a4;
+    --qm-shen-5: #f2f5f9; --qm-shen-6: #8aa8ff; --qm-shen-7: #d9a86a; --qm-shen-8: #c9a2ff;
+    --qm-shen-9: #d9a86a; --qm-shen-10: #ff8a7a;
+    /* 九星 */
+    --qm-tian-1: #6fb4f5; --qm-tian-2: #e8c877; --qm-tian-3: #63d6a0; --qm-tian-4: #63d6a0;
+    --qm-tian-5: #e8c877; --qm-tian-6: #c7d0dc; --qm-tian-7: #c7d0dc; --qm-tian-8: #e8c877;
+    --qm-tian-9: #ff8574;
+    /* 八门 */
+    --qm-men-1: #6fb4f5; --qm-men-2: #c8ab6e; --qm-men-3: #63d6a0; --qm-men-4: #63d6a0;
+    --qm-men-6: #c7d0dc; --qm-men-7: #c7d0dc; --qm-men-8: #e8c877; --qm-men-9: #ff8574;
+    /* 星曜 */
+    --qm-star-0: #f2a850; --qm-star-1: #b9c4d4; --qm-star-2: #5fd39b; --qm-star-3: #ff8574;
+    --qm-star-4: #e8c877; --qm-star-5: #cfd6de; --qm-star-6: #6fb4f5; --qm-star-7: #59c396;
+    --qm-star-8: #e0735f; --qm-star-9: #d9b64a; --qm-star-10: #8fa0b5;
+}
+
+/* ---- 墨玉（深青灰：玉青描边，去金） ---- */
+html[data-theme="slate"] .qm-text-pan {
+    --qm-accent: #69b79b;
+    --qm-frame: rgba(230,244,238,.45);
+    --qm-frame-in: rgba(105,183,155,.15);
+    --qm-line: rgba(196,222,212,.13);
+    --qm-hair: rgba(196,222,212,.16);
+    --qm-ink: #e8f2ee;
+    --qm-ink-soft: #a3bcb3;
+    --qm-dim: #78958b;
+    --qm-pan-c: #0b1310;
+    --qm-halo: radial-gradient(46% 40% at 50% 50%, rgba(105,183,155,.20), rgba(0,0,0,0) 72%);
+    --qm-shadow: 0 14px 40px rgba(0,0,0,.58), 0 2px 10px rgba(0,0,0,.45);
+    --qm-glow2: rgba(105,183,155,.40);
+    --qm-glowmid: rgba(105,183,155,.13);
+    --qm-star-0: #f0b070; --qm-star-5: #d3dcd8;
+}
+
+/* ---- 铜仪（深棕：古铜色） ---- */
+html[data-theme="brown"] .qm-text-pan {
+    --qm-accent: #cf8f4e;
+    --qm-frame: rgba(244,232,218,.45);
+    --qm-frame-in: rgba(207,143,78,.17);
+    --qm-line: rgba(226,206,182,.13);
+    --qm-hair: rgba(226,206,182,.16);
+    --qm-ink: #f3ece2;
+    --qm-ink-soft: #c0ad97;
+    --qm-dim: #93816d;
+    --qm-pan-c: #150f0a;
+    --qm-halo: radial-gradient(46% 40% at 50% 50%, rgba(207,143,78,.20), rgba(0,0,0,0) 72%);
+    --qm-shadow: 0 14px 40px rgba(0,0,0,.58), 0 2px 10px rgba(0,0,0,.45);
+    --qm-glow2: rgba(207,143,78,.40);
+    --qm-glowmid: rgba(207,143,78,.13);
+    --qm-star-0: #f6b45c; --qm-star-2: #66d3a0; --qm-star-6: #77b8f5;
+}
+
+/* ---- 素白（浅色） ---- */
+html[data-theme="white"] .qm-text-pan {
+    --qm-accent: #b08b3a;
+    /* ★ 卡片描边：简洁黑线。先给的是实心 #1f232b，用户 2026-10-07 说「稍微淡一点」
+       → 改成同一个墨色压到 .62（白底上约 #6d7076，仍是灰黑线，但不那么抢）。 */
+    --qm-frame: rgba(31,35,43,.62);
+    --qm-frame-in: rgba(158,124,50,.15);
+    --qm-line: rgba(28,38,58,.11);
+    --qm-hair: rgba(28,38,58,.13);
+    --qm-ink: #1b2028;
+    --qm-ink-soft: #4b5565;
+    --qm-dim: #9099a8;
+    --qm-sheen: rgba(255,255,255,.9);
+    --qm-chip-bg: rgba(18,24,36,.045);
+    --qm-chip-line: rgba(18,24,36,.13);
+    --qm-chip-bg-2: rgba(18,24,36,.10);
+    --qm-pan-c: #ffffff;
+    --qm-dots: none;
+    /* 素白：盘心那道光晕去掉（正压在中宫上，显脏）。深色三套的描金光晕保留。 */
+    --qm-halo: none;
+    --qm-vig: radial-gradient(128% 110% at 50% 44%, rgba(255,255,255,0) 50%, rgba(64,52,26,.11) 100%);
+    --qm-shadow: 0 12px 30px rgba(52,42,18,.15), 0 2px 6px rgba(52,42,18,.09);
+    --qm-glow2: transparent;
+    --qm-glowmid: rgba(150,124,60,.075);
+    --qm-seal-void-bg: rgba(190,60,48,.075);
+    --qm-seal-void-line: rgba(190,60,48,.32);
+    --qm-seal-void-ink: #b23a2c;
+    --qm-seal-horse-bg: rgba(46,120,160,.075);
+    --qm-seal-horse-line: rgba(46,120,160,.30);
+    --qm-seal-horse-ink: #2b6f94;
+    --qm-el-wood: #0f7a4d; --qm-el-fire: #c0392b; --qm-el-earth: #9c7a24;
+    --qm-el-metal: #5d6772; --qm-el-water: #16558f;
+    --qm-shen-1: #9c7a24; --qm-shen-2: #c0392b; --qm-shen-3: #5c6b80; --qm-shen-4: #0f7a4d;
+    --qm-shen-5: #4a5460; --qm-shen-6: #2c4a9e; --qm-shen-7: #8a5f22; --qm-shen-8: #6b3fa0;
+    --qm-shen-9: #8a5f22; --qm-shen-10: #c0392b;
+    --qm-tian-1: #16558f; --qm-tian-2: #9c7a24; --qm-tian-3: #0f7a4d; --qm-tian-4: #0f7a4d;
+    --qm-tian-5: #9c7a24; --qm-tian-6: #5d6772; --qm-tian-7: #5d6772; --qm-tian-8: #9c7a24;
+    --qm-tian-9: #c0392b;
+    --qm-men-1: #16558f; --qm-men-2: #8a6f2e; --qm-men-3: #0f7a4d; --qm-men-4: #0f7a4d;
+    --qm-men-6: #5d6772; --qm-men-7: #5d6772; --qm-men-8: #9c7a24; --qm-men-9: #c0392b;
+    --qm-star-0: #c07a1c; --qm-star-1: #5c6b80; --qm-star-2: #0f7a4d; --qm-star-3: #c0392b;
+    --qm-star-4: #9c7a24; --qm-star-5: #5d6772; --qm-star-6: #16558f; --qm-star-7: #147a52;
+    --qm-star-8: #a83a2a; --qm-star-9: #8a7420; --qm-star-10: #59636f;
+}
+
+/* ---------------- 宫格 ---------------- */
+.qm-cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 0;
+    /* 底边留白只给星曜那一行：八门行（右侧地盘干方章）不会压到它 */
+    padding: 8px 7px 22px;
+    font-size: .88em;
+    line-height: 1.45;
+    /* ★ 一宫一张卡：四边一圈简洁黑线 + 圆角。卡片之间不再共用格线 ——
+       缝（gap 7px）就是分家，边框各归各的，所以 nth-child 那两条"去边"规则也一并删了。 */
+    border: 1px solid var(--qm-frame);
+    border-radius: 6px;
+    box-shadow: inset 0 1px 0 var(--qm-sheen);
+    color: var(--qm-ink);
+}
+
+/* 卦宫名：左上 */
+.qm-pal {
+    position: absolute;
+    top: 7px;
+    left: 9px;
+    font-size: .81em;             /* 基准 .7em × 1.16 */
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: var(--qm-dim);
+}
+
+/* 空亡 / 驿马：右上角朱印、青印。
+   横排不换行 —— 竖排会往下长，压到下面的八神（实测重叠）。 */
+.qm-void {
+    position: absolute;
+    top: 5px;
+    right: 7px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 3px;
+    max-width: 64%;
+}
+.qm-seal {
+    font-style: normal;
+    font-size: .67em;             /* 基准 .58em × 1.16 */
+    font-weight: 700;
+    letter-spacing: .04em;
+    line-height: 1.2;
+    padding: 1px 3px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+.qm-seal-void {
+    color: var(--qm-seal-void-ink);
+    background: var(--qm-seal-void-bg);
+    border: 1px solid var(--qm-seal-void-line);
+}
+.qm-seal-horse {
+    color: var(--qm-seal-horse-ink);
+    background: var(--qm-seal-horse-bg);
+    border: 1px solid var(--qm-seal-horse-line);
+}
+
+/* 八神：**回基准形制**（疏排小字 + 渐变发丝线），只跟整体放大到 .905em、去加粗。
+   ⚠ 2026-11-02 用户定：八神字号不跟星门等大，仍是顶部那行小字。 */
+.qm-shen {
+    margin-top: var(--qm-shen-mt, 30px);   /* 兜底值；实际由 ui.js 的 DENSITY.sm 写入（390 屏档 30px） */
+    align-self: stretch;
+    text-align: center;
+    font-size: .905em;            /* 基准 .78em × 1.16 */
+    font-weight: 400;
+    letter-spacing: .24em;
+    text-indent: .24em;
+    color: var(--qm-ink-soft);
+    padding-bottom: 4px;
+    background-image: linear-gradient(90deg, transparent, var(--qm-hair) 20%, var(--qm-hair) 80%, transparent);
+    background-size: 100% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+}
+/* ★ 2026-10-07：八神颜色改成**按神名**挂（原来挂在"位置号"上 —— 同一个号在
+   转盘主流 / 转盘勾陈朱雀派 / 飞盘 下是不同的神，所以勾陈拿到白虎的色、朱雀干脆没定义）。
+   五行按通行口径（见 js/qimen.js 的 DEITY_WX）：
+     值符木·腾蛇火·太阴金·六合木·白虎金·玄武水·九地土·九天金·太常土·勾陈土·朱雀火
+   颜色一律复用各主题的五行色变量 → 四套主题自动齐全，不必为八神再配 44 个色号。 */
+.qm-shen-zhifu    { color: var(--qm-el-wood); }    /* 木 */
+.qm-shen-tengshe  { color: var(--qm-el-fire); }    /* 火 */
+.qm-shen-taiyin   { color: var(--qm-el-metal); }   /* 金 */
+.qm-shen-liuhe    { color: var(--qm-el-wood); }    /* 木 */
+.qm-shen-baihu    { color: var(--qm-el-metal); }   /* 金 */
+.qm-shen-xuanwu   { color: var(--qm-el-water); }   /* 水 */
+.qm-shen-jiudi    { color: var(--qm-el-earth); }   /* 土 */
+.qm-shen-jiutian  { color: var(--qm-el-metal); }   /* 金 */
+.qm-shen-taichang { color: var(--qm-el-earth); }   /* 土 */
+.qm-shen-gouchen  { color: var(--qm-el-earth); }   /* 土 */
+.qm-shen-zhuque   { color: var(--qm-el-fire); }    /* 火 */
+/* 旧类名（位置号）保留做兼容：序号含义见 DEITY —— 1值符 2腾蛇 3太阴 4六合 5白虎
+   6玄武 7九地 8九天 9太常 10勾陈 11朱雀。（11 号原来没有定义，字就掉成继承色了。） */
+.qm-shen-1  { color: var(--qm-el-wood); }
+.qm-shen-2  { color: var(--qm-el-fire); }
+.qm-shen-3  { color: var(--qm-el-metal); }
+.qm-shen-4  { color: var(--qm-el-wood); }
+.qm-shen-5  { color: var(--qm-el-metal); }
+.qm-shen-6  { color: var(--qm-el-water); }
+.qm-shen-7  { color: var(--qm-el-earth); }
+.qm-shen-8  { color: var(--qm-el-metal); }
+.qm-shen-9  { color: var(--qm-el-earth); }
+.qm-shen-10 { color: var(--qm-el-earth); }
+.qm-shen-11 { color: var(--qm-el-fire); }
+
+/* 九星行 / 八门行 */
+.qm-line {
+    /* 2026-11-02 用户定：**回基准排法**（星名左 / 干列右），只去加粗 + 字号 ×1.16 + 去方章。
+       ★ 2026-11-03 修「天盘干 / 地盘干不对齐」：
+       原来用 flex + justify-content:space-between。星名 + 干列在 360/320 屏放不下时
+       （星名 1.18em 比门名 1.14em 宽 2.02px，两行总宽都超过内容盒），space-between
+       没有富余空间可分，就退化成 flex-start —— 干列被挤成「紧贴星名之后」，
+       于是天盘干（星行）比地盘干（门行）往右多出星名那 2.02px（390 屏是 0.47px）。
+       改 grid：第一列吃掉星名、第二列恒贴右内边距，两行的干列永远同一个 x。
+       ⚠ 不要改回 space-between，也不要在星名上写 flex 简写去「让」空间 —— 一窄屏就复发。 */
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    width: 100%;
+    /* 2026-11-02 用户定：星门与干各向内侧收 14px（B 档）；不能再动，主章位置要稳 */
+    padding: 0 14px;
+    margin-top: var(--qm-line-mt, 4px);
+}
+.qm-line .qm-name {
+    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    font-size: 1.18em;            /* 基准 1.02em × 1.16 */
+    font-weight: 400;
+    letter-spacing: .02em;
+    white-space: nowrap;
+}
+.qm-men-row .qm-name { font-size: 1.14em; }   /* 基准 .98em × 1.16 */
+/* ★ 八门行**不再**用 margin-top:auto 顶到卡片底部（用户 2026-10-07：
+   「上面的和下面的间距不要那么大，下部分留出留白，之后还有其他用」）——
+   八门紧跟在九星下面，卡片下半截整片留白。
+   想调上下两块的距离只改这一个数；默认与九星行同距（--qm-line-mt）。 */
+.qm-men-row { margin-top: var(--qm-men-mt, var(--qm-line-mt, 4px)); }
+/* 星门左移 4px（2026-11-03 用户从 A/B/C/D 里选 B）：
+   只挪星名/门名（含飞盘的「中五」），干列由上面的 grid 钉在原位，不受影响。
+   ⚠ 老 UI 的 .qm-line padding 只有 4px，再左移会贴住宫格框，所以不跟；
+     阴盘的 10px 内边距仍在，左移后留 6px，安全。
+   ⚠ 导出图 snapshot.js 的 nameX 也要同步减 4 * k，屏幕/截图不能各画各的。 */
+.qm-line > .qm-name { transform: translateX(-4px); }
+.qm-text-pan[data-ui="old"] .qm-line > .qm-name { transform: none; }
+.qm-tian-1 { color: var(--qm-tian-1); }
+.qm-tian-2 { color: var(--qm-tian-2); }
+.qm-tian-3 { color: var(--qm-tian-3); }
+.qm-tian-4 { color: var(--qm-tian-4); }
+.qm-tian-5 { color: var(--qm-tian-5); }
+.qm-tian-6 { color: var(--qm-tian-6); }
+.qm-tian-7 { color: var(--qm-tian-7); }
+.qm-tian-8 { color: var(--qm-tian-8); }
+.qm-tian-9 { color: var(--qm-tian-9); }
+.qm-men-1 { color: var(--qm-men-1); }
+.qm-men-2 { color: var(--qm-men-2); }
+.qm-men-3 { color: var(--qm-men-3); }
+.qm-men-4 { color: var(--qm-men-4); }
+.qm-men-6 { color: var(--qm-men-6); }
+.qm-men-7 { color: var(--qm-men-7); }
+.qm-men-8 { color: var(--qm-men-8); }
+.qm-men-9 { color: var(--qm-men-9); }
+
+.qm-line .qm-gans {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    /* 2026-11-03：2.4em 是方章时代的宽度；现在干是裸字（约 1.07em），
+       2.4em 在 360 屏会把「星名 + 干列」顶出内容盒（见 .qm-line 顶部注释）。
+       留 1.6em：一颗裸字 + 余量；干字仍右对齐到内容盒右缘，寄干角注也从这里右挂。 */
+    min-width: 1.6em;
+    position: relative;
+}
+
+/* 天干 = 裸字（2026-11-02 用户：去掉天地盘干的方章/印章），靠五行色区分 */
+.qm-line .qm-gan {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    font-size: 1.10em;            /* 基准 .95em × 1.16 */
+    font-weight: 400;
+    line-height: 1;
+}
+.qm-el-wood { color: var(--qm-el-wood); }
+.qm-el-fire { color: var(--qm-el-fire); }
+.qm-el-earth { color: var(--qm-el-earth); }
+.qm-el-metal { color: var(--qm-el-metal); }
+.qm-el-water { color: var(--qm-el-water); }
+
+/* 寄宫之干（天禽带来的中宫干）＝ **天盘干方章的右上角角注**。
+   2026-10-21 用户定（原话「放到天盘天干的右上角」）：
+   旧版是「两颗等大的章并排（寄干带虚线框）」，用户嫌不够美观 —— 两章并排会让主次不分，
+   还把八宫唯一整齐的干列顶宽一格。现在的形制：
+     ① 寄干缩成 .68em 小字，绝对定位到干列右上角（不占宽 → .qm-gans 仍是 2.4em，
+        八个宫的干列左右缘完全对齐，实测 33.8px 与无寄干宫一模一样）；
+     ② 四周用**宫底色描边**（--qm-cell-mask，由 ui.js 的 applyOpacity() 写）
+        把章的边框在字处"咬开"一圈 —— 章形完整、不挖方口，也不再出现虚线框的噪点；
+     ③ 主次靠字号＋位置：方章是大字的本宫干，角注是小字的寄干。
+   ⚠ 别再改回「并排虚线小章」，也别做成圆形（阴盘暗干 .qm-agan 就是右上角正圆，会撞形制）。 */
+.qm-line .qm-gan-mid {
+    /* 2026-11-02 用户定 B 档：寄干挂到**天盘干右侧**（与主章间距 5px、不占位、不推挤主章）。
+       定位用 left:100%（相对 .qm-gans = 干字右缘）+ margin-left，换屏/换字号都跟着走；
+       ⚠ 别用 right: em —— em 在绝对定位里是相对元素自身字号，会算错间距（踩过）。 */
+    position: absolute;
+    right: auto;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 2.5px;           /* 2026-11-02 用户定 Q2：寄干贴近主章 2.5px（离宫格框约 10px），主章不动 */
+    width: auto;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    /* 2026-11-02 用户定 P3：寄干 .66em + 600 + 灰墨 —— 显眼但用颜色让出主次
+       （灰墨 = 注释色；主章保留五行色，一眼分得出谁是"寄"来的） */
+    font-size: .66em;
+    font-weight: 600;
+    color: var(--qm-ink-soft);
+    line-height: 1;
+    text-shadow: none;
+}
+
+/* 时干：加粗（2026-11-02 用户：墨线丑，去掉，改回加粗标识） */
+.qm-line .qm-gan.qm-hour {
+    font-weight: 700;
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+/* 寄干恰好是时干：角注只有 9.6px，套金环＋光晕会糊成一团（时干标识本就属于天盘干方章那一层）。
+   ⚠ 特异性必须压过上面那条 .qm-gan.qm-hour，否则清零无效。 */
+.qm-line .qm-gan.qm-gan-mid.qm-hour {
+    border: 0;
+    padding-bottom: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+/* 插件 · 墓星（2026-10-21）：八门行与星曜之间的那片留白，水平居中。
+   绝对定位、不占流 —— 不动星门行、干列、寄干角注、星曜带任何一处。
+   top 用 em（跟着 --qm-cell-fs 一起缩放），**别改成 px**，否则换屏宽会飘。
+   形制：圆顶碑＋碑面十字＋土台（内联 SVG 在 ui.js 的 MU_TOMB_SVG）。
+   口径：只表示「入墓之虚象」，不参与吉凶；一宫最多 3 枚。 */
+.qm-mu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 7.50em;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: .42em;
+    color: var(--qm-ink-soft);
+    line-height: 1;
+}
+.qm-mu .qm-mu-1 { display: flex; }
+.qm-mu svg { display: block; width: .78em; height: .90em; }
+/* 星曜：压在格子底部那条留白带里，整条宽度都归它（卦象已去掉）。
+   ★ 2026-11-02 晚修订：不再用 `flex-wrap: wrap-reverse` 让浏览器自己折行 ——
+     那样 8 颗只放得下 6 颗时，被顶到上一行的是**最后 2 颗**；用户要的是
+     **最前面 2 颗（太阳/太阴）在上、其余 6 颗在下**。
+     现在由 ui.js 的 fitStars() 按实际字宽把星分成「上行 / 下行」两排，
+     结构固定成 .qm-star-row；`.qm-stars` 用 column-reverse（先放的在下），
+     上行自然叠在下面那排之上，整块仍然贴着宫底往上长。
+   ⚠ 改这里要同步 snapshot.js 的 starLines 分排（同一套「前段在上、后段在下」）。 */
+.qm-stars {
+    position: absolute;
+    /* ★ 星曜「丢到左下角靠边」（用户 2026-10-07 定）：贴到卡片左下角。
+       原来是 left/right 7px + bottom .74em（为了躲开内框线），现在整块往角上靠。 */
+    left: 5px;
+    right: 7px;
+    bottom: 4px;
+    display: flex;
+    flex-direction: column-reverse;   /* 先 append 的下行贴底，上行叠在它上面 */
+    align-items: flex-start;
+    justify-content: flex-start;
+    row-gap: 2px;
+    overflow: hidden;
+    font-size: .74em;
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: .02em;
+    white-space: nowrap;
+}
+.qm-star-row {
+    display: flex;
+    align-items: baseline;
+    column-gap: 5px;
+    white-space: nowrap;
+}
+.qm-stars span { white-space: nowrap; }
+/* 放不下时末尾那个省略号（还剩几颗看宫位详情） */
+.qm-star-more { color: var(--ink-3); opacity: .8; }
+/* 在地平线下的星曜（照旧入宫，但压暗） */
+.qm-stars .down { opacity: .4; }
+.qm-star-0 { color: var(--qm-star-0); }
+.qm-star-1 { color: var(--qm-star-1); }
+.qm-star-2 { color: var(--qm-star-2); }
+.qm-star-3 { color: var(--qm-star-3); }
+.qm-star-4 { color: var(--qm-star-4); }
+.qm-star-5 { color: var(--qm-star-5); }
+.qm-star-6 { color: var(--qm-star-6); }
+.qm-star-7 { color: var(--qm-star-7); }
+.qm-star-8 { color: var(--qm-star-8); }
+.qm-star-9 { color: var(--qm-star-9); }
+.qm-star-10 { color: var(--qm-star-10); }
+
+/* ---------------- 阴盘：盘面收一圈 · 暗干排在盘外（传统排法） ----------------
+   ★ 2026-10-28 用户定版（推翻 2026-10-07 的「暗干进宫内」）：
+     ① 阴盘**盘面收小一圈**：.qm-box.has-ring 带 24px 内边距，盘宽 = 盒宽 − 48
+        （390 屏上 350 → 318），给外圈那八颗暗干让位；
+     ② 暗干排在盘外，按宫位钉死：左 4/3/8 · 右 2/7/6 · 上 9 · 下 1，中五无；
+        字号固定 11.5px、无框、主题墨色 —— 不跟格子缩，是"批注"不是"符号"；
+     ③ 宫**内**因此回到普通排法：空亡/驿马在右上角（top:5），八神不再下移。
+        ⇒ 2026-10-28 早先那条「空亡+驿马压八神」的补丁（+26px / top:31）随之一并撤掉。
+     ④ 阴盘仍**不排星曜**、插件不入阴盘。 */
+.qm-ring .qm-rg {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink-2);
+  opacity: .85;
+  pointer-events: none;
+}
+
+/* ---------------- 插件 · 紫微：宫中之宫（2026-10-25 第六版 · 支做列头） ----------------
+   前三版都栽在「三个角」上：星名居中、四化飘右上、地支沉左下 —— 三样东西互不相干，
+   每列还各自撑高度，于是九个宫看着散。第六版换成一张**小表**：
+     ① **地支升成列头**（.44em 极淡小字，一支只写一次，不再沉在角上）；
+     ② 每行一颗星：**星名左对齐 → 亮度紧跟 → 四化贴行右缘**（一列的几个化连成一条竖线）；
+     ③ 四隅宫两栏、四正宫单栏固定占左半 —— 九宫左缘连成一条线；
+     ④ 两栏之间一道发丝竖线（inset 阴影，不占宽 → 两栏等宽）；
+     ⑤ 最挤（2 主星 + 2 带化辅星 = 4 行，实测 0.2% 的盘）用 .dense 收行距，仍不破版。
+   位置紧跟八门行；紫微开着时星曜与其他插件都让位；阴盘一律不渲染（硬规矩）。 */
+.qm-zw2 {
+    position: absolute;
+    left: 8px; right: 8px;
+    /* 紧跟八门行（八门行底 ≈ 6.56em）；块高随内容 —— 支头在同一高度起排，
+       所以"对齐"靠支头与星行，不靠块底（第三版钉块高，空宫反而显得空）。 */
+    top: 6.92em; bottom: .55em;
+    display: flex; align-items: stretch;
+}
+.qm-zw2 .zw-col {
+    flex: 1 1 0; min-width: 0; position: relative; height: 100%;
+    display: flex; flex-direction: column;
+    padding: 0 2px;                        /* 2px：行内「星名+亮度+四化」刚好放得下 39/43px */
+}
+/* 两栏之间的发丝竖线：inset 阴影不占宽（border 会让两栏差 1px） */
+.qm-zw2 .zw-col + .zw-col { box-shadow: inset 1px 0 0 var(--qm-hair); }
+/* 四正宫只有一支：固定占左半栏，与四隅宫的左栏同一位置 */
+.qm-zw2 .zw-col.one { flex: 0 0 50%; max-width: 50%; margin: 0; }
+/* 地支：列头（只写一次） */
+.qm-zw2 .zw-head {
+    font-size: .44em; line-height: 1.6;
+    color: var(--qm-dim); opacity: .68; letter-spacing: .08em;
+}
+.qm-zw2 .zw-rows { display: flex; flex-direction: column; }
+/* 一行一颗星：星名 → 亮度 → 四化（靠 margin-left:auto 推到行右缘） */
+.qm-zw2 .zw-row {
+    display: flex; align-items: baseline; gap: 1px;
+    font-size: .62em; line-height: 1.85; white-space: nowrap;
+}
+.qm-zw2 .zw-row .nm { font-weight: 700; color: var(--qm-ink-soft); }
+.qm-zw2 .zw-row .b { font-size: .76em; opacity: .50; font-weight: 600; margin-left: 1px; }
+/* 四化：加大到接近星名字号（.98em×.62em≈8.5px），加粗更醒目；颜色下更亮 */
+.qm-zw2 .zw-row .h {
+    margin-left: auto; padding-left: 2px;
+    font-size: .98em; font-weight: 800; font-style: normal; line-height: 1;
+}
+/* 辅星行（只显示吃到四化的昌曲辅弼）：比主星淡一档，仍与主星同一套行位 */
+.qm-zw2 .zw-row.mm .nm { font-weight: 600; color: var(--qm-dim); font-size: .90em; }
+/* 最挤的盘：一栏 4 行时收行距（4 × 1.5 × .62em ≈ 53px，仍留得下支头） */
+.qm-zw2 .zw-rows.dense .zw-row { line-height: 1.5; }
+/* 四化：禄（木青）· 权（火朱）· 科（水蓝）· 忌（墨） */
+.qm-zw2 .h.lu { color: var(--qm-el-wood); }
+.qm-zw2 .h.quan { color: var(--qm-el-fire); }
+.qm-zw2 .h.ke { color: var(--qm-el-water); }
+.qm-zw2 .h.ji { color: var(--qm-ink); }
+
+/* ---------------- 阴盘 · 宫内布局（2026-11-02 晚修订） ----------------
+   盘面已恢复全宽（has-ring 撤销，单卡回到 112px），早期为「盘收小一圈」做的
+   内缩 10 / 行距 3 仍保留（用户看惯了这版疏密）。
+   纵向次序（用户 2026-11-02 定）：**暗干 → 空亡/驿马 → 神星门干**。
+     · 暗干方章在右上角（top 4，高 17 → 底 21）；
+     · 空亡/驿马在它下面 top 41（距暗干底 20px）；
+     · **所有宫都预留这一段印章带**：八神统一从 8(padding)+57=65 起
+       —— 有印章的宫，印章落在 41..56，正好在八神上方 9px；
+         没印章的宫，这条带留白，但神星门干与有印章的宫**横排对齐**。
+   ⚠ 用户 2026-11-02 晚点名：有/没有空亡驿马的宫必须对齐，所以这里不再用
+     `.qm-void + .qm-shen` 做「有印章才让位」——一律 57px。
+   ⚠ `!important` 必须留：fitPan() 每帧会往 .qm-text-pan 写 `--qm-shen-mt`，
+     .qm-shen 的 margin-top 读的是那个变量；不压过它，57px 会被 JS 悄悄改回 30。 */
+.qm-text-pan[data-sub="yin"] .qm-shen { margin-top: 57px !important; }
+.qm-text-pan[data-sub="yin"] .qm-line { padding: 0 10px; margin-top: 3px; }
+/* ---------------- 阴盘 · 暗干（用户选定的方章） ----------------
+   2026-11-02 晚：从三选一预览里挑了「方形」这一款 ——
+   17×17 圆角方章、1px 细边、淡底、10.5px 灰墨字，形制与空亡/驿马同族但更小一号。
+   导出图（snapshot.js 的 drawCell）按同一套比例画，别再各画各的。
+   注意：暗干≠寄干 —— 寄干在干列右侧、暗干在右上角方章里，位置分得开。 */
+.qm-cell .qm-ag-in {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    width: 17px;
+    height: 17px;
+    border: 1px solid var(--qm-chip-line);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    font-style: normal;          /* ⚠ 元素是 <i>，不写这条会变斜体 */
+    font-size: 10.5px;
+    line-height: 1;
+    color: var(--qm-ink-soft);
+    background: var(--qm-chip-bg);
+    pointer-events: none;
+}
+/* 坤二有两颗暗干（本宫的 + 中宫寄来的，引擎 anGan 是「辛戊」两字）：
+   同一枚方章横向变宽一点，两字并排、高度不变；右缘仍与单字章对齐。
+   ⚠ 全局是 border-box：两字 9px + 左右 padding 4 + 描边 2 ≈ 24px。 */
+.qm-cell .qm-ag-in.two {
+    width: auto;
+    min-width: 23px;
+    padding: 0 2px;
+    font-size: 9px;
+    letter-spacing: 0;
+}
+/* 阴盘：空亡 / 驿马在**暗干下方**（top 41），不再是宫底。
+   ⚠ 单卡高 165、印章底约 56、八神 65 起、两行内容到 ~140，仍装得下；阴盘不排星曜，
+     底部的星曜带是空的，所以这条带不会撞到别的东西。 */
+.qm-text-pan[data-sub="yin"] .qm-void {
+    top: 41px;
+    bottom: auto;
+    right: 7px;
+}
+/* 阴盘不许插件进来（规矩） */
+.qm-text-pan[data-sub="yin"] .qm-zw2,
+.qm-text-pan[data-sub="yin"] .qm-mu { display: none; }
+
+/* ---------------- 中宫：不放字，只用两圈同心环 ----------------
+   原来圈里写个「中」，实测不好看；现在留白，靠几何本身表示"这里是中心"。
+   ★ 2026-09-26：**把原来那层晕染（--qm-glowmid 的 radial）去掉了** ——
+     用户看它是"脏色的光晕"（素白下是 rgba(150,124,60,.075) 的土金，铺满中宫格）。
+     同心金环（::after / ::before）保留。 */
+.qm-cell.qm-mid {
+    background-image: none;
+}
+/* 中宫一旦有内容（飞盘），同心环不画、**晕染也去掉** ——
+   那是给"空着的中心"垫的底，中宫有星有神有门位之后只会糊住字。 */
+.qm-text-pan[data-fly="1"] .qm-cell.qm-mid::before,
+.qm-text-pan[data-fly="1"] .qm-cell.qm-mid::after { display: none; }
+.qm-text-pan[data-fly="1"] .qm-cell.qm-mid { background-image: none; }
+/* ★ 真正那股黄色的来源不是格子，是**盘面整体的「天枢光晕」**——
+   .qm-text-pan::after 里那张以盘心(50% 50%)为中心的金色 radial，四套主题都有，
+   只是玄夜最亮。飞盘的中宫有字，这张光晕必须一起摘掉，不然字底下永远糊一层金。
+   星野与暗角照留，只去掉中间那张。 */
+.qm-text-pan[data-fly="1"]::after {
+    background-image: var(--qm-dots), var(--qm-vig);
+    background-size: 100% 100%, 100% 100%;
+    background-repeat: no-repeat, no-repeat;
+}
+
+/* 外圈（描金 + 微光） */
+.qm-cell.qm-mid::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: 36%;
+    aspect-ratio: 1 / 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid var(--qm-accent);
+    opacity: .5;
+    box-shadow: 0 0 18px var(--qm-glow2);
+    pointer-events: none;
+}
+/* 内圈：**已去掉**（2026-09-26 用户要求"弄成纯白的，加一个圆环就好"）。
+   中宫现在只有 ::after 那一个圆环，其余留白。 */
+.qm-mid-line {
+    width: 100%;
+    margin-top: auto;
+    padding: 0 4px;
+}
+
+/* ---------------- 卦象·地支面（点中宫切换） ----------------
+   卦象从每宫右下角撤掉之后，它有了自己的一面：整宫中央一枚大卦符 + 该宫所纳地支。
+   纳支按后天八卦方位分属十二支（坎子 / 艮丑寅 / 震卯 / 巽辰巳 / 离午 / 坤未申 / 兑酉 / 乾戌亥）。 */
+.qm-fx {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    pointer-events: none;
+}
+.qm-gua {
+    font-size: 2.1em;
+    line-height: 1;
+    color: var(--qm-accent);
+    opacity: .88;
+}
+.qm-zhi {
+    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    font-size: 1.05em;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-indent: .16em;
+    color: var(--qm-ink);
+}
+.qm-fglb {
+    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    font-size: 1.0em;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-indent: .1em;
+    color: var(--qm-accent);
+}
+.qm-fhint {
+    font-size: .62em;
+    letter-spacing: .06em;
+    color: var(--qm-dim);
+}
+/* 面模式下中宫那两圈同心环让位给标签 */
+.qm-text-pan[data-face="both"] .qm-cell.qm-mid::before,
+.qm-text-pan[data-face="both"] .qm-cell.qm-mid::after { display: none; }
+
+/* ---------------- 飞盘：中宫的中门 ----------------
+   飞盘九宫全占，中宫是实宫，它的本门就是**中门**（五行属土），
+   按门序飞布、落到哪一宫就画哪一宫。
+   ⚠ 2026-10-07 修的 bug：原来这里是 `var(--qm-dim)` + opacity .5 —— 灰白，看着像没上色。
+     根因：八门那套颜色变量只有 --qm-men-1..4 / 6..9（八门里没有第 5 门），
+     **中门是 GATE[10]**，既没有 --qm-men-10 可落，也没人给它上色。
+     现在直接取五行土色 —— 与**天禽星**（--qm-tian-5）同一个值。 */
+.qm-men-mid {
+    color: var(--qm-el-earth);
+    font-weight: 600;
+    letter-spacing: .06em;
+}
+/* 飞盘的中宫有星/神，原来那两圈同心环要让位（内容走正常排布） */
+.qm-text-pan .qm-cell.qm-mid .qm-pal { color: var(--qm-dim); }
+
+/* ============================================================================
+ * 插件 · 长生尺（id: sxm）—— 十二长生尺（2026-11-01 定版）
+ * ----------------------------------------------------------------------------
+ * 每宫底部一条刻度：天盘干一轨、地盘干一轨，十二阶排成 12 格，点亮那格写阶字。
+ * 墓已并入长生，不再单列：**入墓＝字加黑**；**击刑＝朱红**；又墓又刑＝朱红字压黑底线。
+ * 绝对定位贴宫底，不挤神/星/门。
+ * ========================================================================== */
+.sxr {
+  position: absolute; left: 6px; right: 6px; bottom: 18px;   /* 18：上让墓星（top 7.5em，底 119.3）、下让星曜（贴底 4px） */
+  border-top: 1px solid var(--qm-hair);
+  padding-top: 3px;
+  pointer-events: none;
+}
+.sxr-t { display: flex; align-items: flex-end; height: 11px; }
+.sxr-t + .sxr-t { margin-top: 2px; }
+.sxr-k {
+  flex: 0 0 10px; font-size: .4em; line-height: 1;
+  color: var(--qm-dim); letter-spacing: 0;
+}
+.sxr-rail {
+  flex: 1 1 auto; display: grid; grid-template-columns: repeat(12, 1fr);
+  align-items: end;
+  padding-left: 3px;   /* 留一点，免得「生」（长生）贴到天/地两个字上 */
+}
+.sxr-rail i {
+  justify-self: center; display: block; width: 1px; height: 3px;
+  background: var(--qm-hair); border-radius: 1px;
+}
+.sxr-on {
+  position: relative; display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end; width: auto; min-width: 7px; height: 11px;
+  justify-self: center;
+}
+.sxr-on b {
+  font-size: .54em; font-weight: 700; line-height: 1; letter-spacing: 0;
+  color: var(--qm-ink-soft);                /* 平常：淡墨 */
+}
+/* 衰病 / 胎养：相邻两格各写一个字，字略小一点免得贴住 */
+.sxr-pair b { font-size: .5em; }
+/* 点不再画：底线已经承担「墓」的语义，再留一颗点会被误读成下划线 */
+.sxr-on s { display: none; }
+/* 入墓：加粗 + 墨色（浅色主题＝黑、暗色主题自动转白），不画线 */
+.sxr-mu b { color: var(--qm-ink); font-weight: 800; }
+.sxr-mu s { background: var(--qm-ink); }
+/* 击刑：朱红 */
+.sxr-xing b { color: var(--qm-seal-void-ink); }
+
+/* 又墓又刑：朱红字 + 一道横线（线用墨色，浅黑暗白） */
+.sxr-both b {
+  color: var(--qm-seal-void-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--qm-ink);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 1px;
+}
+
+
+
+/* ==========================================================================
+   老 UI（2026-11-02）：墓星 / 紫微 / 长生尺 任一插件开启时，整盘回**基准包**样式。
+   理由：这三个插件按基准盘面的几何设计（方章、字号原大、八神小字+发丝线、寄干角注、
+   星门干贴边），新盘面（去章 / ×1.16 / 八神等大 / 寄干右挂）会跟它们打架。
+   标准 UI（三个都关）＝新样式（上方各规则）。
+   JS 钩子：ui.js 的 oldUIOn() → #qm_text_pan[data-ui="old"]。
+   ========================================================================== */
+.qm-text-pan[data-ui="old"] .qm-line {
+    padding: 0 4px;
+    margin-top: var(--qm-line-mt, 4px);
+}
+.qm-text-pan[data-ui="old"] .qm-line .qm-name {
+    font-size: 1.02em;
+    font-weight: 600;
+    letter-spacing: .02em;
+}
+.qm-text-pan[data-ui="old"] .qm-men-row .qm-name { font-size: .98em; }
+.qm-text-pan[data-ui="old"] .qm-line .qm-gans {
+    justify-content: flex-end;
+    gap: 2px;
+    min-width: 2.4em;
+}
+.qm-text-pan[data-ui="old"] .qm-line .qm-gan {
+    min-width: 1.55em;
+    height: 1.55em;
+    padding: 0 .2em;
+    border-radius: 5px;
+    border: 1px solid var(--qm-chip-line);
+    background: var(--qm-chip-bg);
+    font-size: .95em;
+    font-weight: 700;
+    line-height: 1;
+}
+.qm-text-pan[data-ui="old"] .qm-line .qm-gan.qm-hour {
+    border-color: var(--qm-accent);
+    background: var(--qm-chip-bg-2);
+    box-shadow: 0 0 0 1px var(--qm-accent), 0 0 9px var(--qm-glow2);
+    font-weight: 800;
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+.qm-text-pan[data-ui="old"] .qm-line .qm-gan-mid {
+    position: absolute;
+    left: auto;
+    right: -.16em;
+    top: -.32em;
+    transform: none;
+    margin-left: 0;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: .68em;
+    font-weight: 800;
+    color: inherit;
+    opacity: 1;
+    text-shadow:
+        -1.15px 0 var(--qm-cell-mask, transparent), 1.15px 0 var(--qm-cell-mask, transparent),
+        0 -1.15px var(--qm-cell-mask, transparent), 0 1.15px var(--qm-cell-mask, transparent),
+        -1.15px -1.15px var(--qm-cell-mask, transparent), 1.15px 1.15px var(--qm-cell-mask, transparent),
+        -1.15px 1.15px var(--qm-cell-mask, transparent), 1.15px -1.15px var(--qm-cell-mask, transparent);
+}
+.qm-text-pan[data-ui="old"] .qm-line .qm-gan.qm-gan-mid.qm-hour {
+    border: 0;
+    padding-bottom: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.qm-text-pan[data-ui="old"] .qm-shen {
+    margin-top: 16px;
+    font-size: .78em;
+    font-weight: 700;
+    letter-spacing: .24em;
+    text-indent: .24em;
+    padding-bottom: 4px;
+    background-image: linear-gradient(90deg, transparent, var(--qm-hair) 20%, var(--qm-hair) 80%, transparent);
+    background-size: 100% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+}
+.qm-text-pan[data-ui="old"] .qm-pal { font-size: .7em; }
+.qm-text-pan[data-ui="old"] .qm-seal { font-size: .58em; }
+.qm-text-pan[data-ui="old"] .qm-stars { font-weight: 700; }

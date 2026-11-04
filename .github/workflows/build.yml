@@ -1,0 +1,80 @@
+name: Build APK
+
+# 云端复刻本地构建链：aapt + ecj + r8(D8) + zipalign + apksigner
+# 与开发容器的布局一致：/root/at /root/dl /root/dsh-dom
+# CI 使用一次性临时密钥签名（不可用于覆盖安装官方发布包）。
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@v4
+
+      - name: 安装系统依赖（JDK / aapt / zipalign / apksigner）
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            openjdk-17-jre-headless aapt zipalign apksigner
+          java -version
+          aapt version || true
+
+      - name: 装配构建工具链（android.jar / r8 / ecj / jsdom）
+        run: |
+          set -e
+          mkdir -p /root/at /root/dl /root/dsh-dom
+
+          # android.jar（API 34，AOSP SDK 桩）
+          curl -fSL -o /tmp/platform-34.zip \
+            https://dl.google.com/android/repository/platform-34-ext7_r03.zip
+          cd /tmp && unzip -o -q platform-34.zip
+          cp "$(find /tmp -name android.jar -path '*34*' | head -1)" /root/at/android.jar
+          test -s /root/at/android.jar
+
+          # D8/R8 9.5.26（与本地工具链同版本）
+          curl -fSL -o /root/at/r8.jar \
+            https://dl.google.com/dl/android/maven2/com/android/tools/r8/9.5.26/r8-9.5.26.jar
+          test -s /root/at/r8.jar
+
+          # ECJ 3.33.0
+          curl -fSL -o /root/dl/ecj.jar \
+            https://repo1.maven.org/maven2/org/eclipse/jdt/ecj/3.33.0/ecj-3.33.0.jar
+          test -s /root/dl/ecj.jar
+
+          # jsdom（构建内置门禁用）
+          cd /root/dsh-dom && npm init -y >/dev/null && npm install jsdom@30 --no-audit --no-fund
+
+      - name: 生成 CI 临时签名密钥
+        run: |
+          mkdir -p 密钥
+          keytool -genkeypair -v \
+            -keystore 密钥/xingyaoqimen.jks -alias xingyao \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass ci-temp-pass -keypass ci-temp-pass \
+            -dname "CN=CI Build, OU=OpenSource, O=XingYaoQiMen, L=NA, ST=NA, C=CN"
+          printf 'ci-temp-pass' > 密钥/密码.txt
+
+      - name: 构建 APK（含内置质量门禁）
+        run: |
+          cd app
+          python3 build_xingyao.py
+          ls -la out/
+
+      - name: 验证签名
+        run: |
+          cp app/out/星曜奇门-*.apk /tmp/check.apk
+          java -jar /usr/share/java/apksigner.jar verify --min-sdk-version 29 /tmp/check.apk
+          echo "签名验证通过"
+
+      - name: 上传 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: xingyaoqimen-apk
+          path: app/out/*.apk
+          if-no-files-found: error

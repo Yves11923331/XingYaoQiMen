@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face{font-family:'QM Serif';src:url("../../web/fonts/qm-serif.woff2") format('woff2');}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1600px;height:900px}
+body{
+  position:relative;overflow:hidden;background:#080c16;color:#eaf0f8;
+  font-family:'QM Serif','Noto Serif CJK SC','Noto Serif SC','Source Han Serif SC',serif;
+}
+
+/* 星野底纹：两层径向光晕 + 细网格 */
+.glow{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 900px 520px at 28% -6%, rgba(216,180,95,.13), transparent 60%),
+    radial-gradient(ellipse 760px 620px at 108% 112%, rgba(111,180,245,.07), transparent 60%),
+    radial-gradient(ellipse 500px 400px at 88% 8%, rgba(216,180,95,.05), transparent 70%);
+}
+.grid-bg{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(190,206,232,.042) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(190,206,232,.042) 1px, transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(ellipse 1200px 760px at 50% 42%, #000 30%, transparent 78%);
+  -webkit-mask-image:radial-gradient(ellipse 1200px 760px at 50% 42%, #000 30%, transparent 78%);
+}
+/* 内描金边 + 角标 */
+.frame{position:absolute;inset:26px;border:1px solid rgba(216,180,95,.16);pointer-events:none}
+.frame:before,.frame:after{
+  content:"";position:absolute;width:14px;height:14px;border:1px solid rgba(216,180,95,.5);
+}
+.frame:before{left:-1px;top:-1px;border-right:none;border-bottom:none}
+.frame:after{right:-1px;bottom:-1px;border-left:none;border-top:none}
+
+/* 布局 */
+main{position:absolute;inset:0;display:flex;padding:0 118px}
+.left{flex:0 0 660px;display:flex;flex-direction:column;justify-content:center;padding-top:30px;padding-bottom:104px}
+.right{flex:1;display:flex;align-items:center;justify-content:flex-end;padding-bottom:8px}
+
+.eyebrow{
+  font-size:19px;letter-spacing:.34em;color:#d8b45f;opacity:.92;
+  margin-bottom:34px;font-weight:400;
+}
+h1{
+  font-size:138px;line-height:.98;letter-spacing:.05em;font-weight:600;
+  background:linear-gradient(178deg,#f6e7bb 4%,#e8cf90 34%,#d8b45f 62%,#a8842c 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 34px rgba(216,180,95,.18));
+}
+.rule{display:flex;align-items:center;gap:16px;margin:38px 0 30px;width:560px}
+.rule i{height:1px;flex:1;background:linear-gradient(90deg,rgba(216,180,95,0),rgba(216,180,95,.6))}
+.rule i:first-child{background:linear-gradient(90deg,rgba(216,180,95,.6),rgba(216,180,95,0))}
+.rule em{font-style:normal;color:#d8b45f;font-size:13px;opacity:.85}
+.sub{font-size:34px;letter-spacing:.18em;color:#eaf0f8;font-weight:400}
+.sub small{font-size:26px;letter-spacing:.1em;color:#a9b8ce;margin-left:14px}
+.desc{margin-top:26px;font-size:20px;line-height:2;color:#a9b8ce;letter-spacing:.06em;max-width:600px}
+.chips{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap}
+.chip{
+  padding:10px 24px;border:1px solid rgba(216,180,95,.36);border-radius:999px;
+  color:#e8d3a0;font-size:17px;letter-spacing:.1em;background:rgba(216,180,95,.055);
+}
+
+/* 九宫盘 */
+.board{
+  position:relative;width:540px;height:540px;margin-top:40px;
+  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  background:radial-gradient(circle at 50% 46%, rgba(216,180,95,.05), transparent 68%);
+}
+.board:before{
+  content:"";position:absolute;inset:-18px;border:1px solid rgba(216,180,95,.28);pointer-events:none;
+}
+.board:after{
+  content:"";position:absolute;inset:-30px;border:1px solid rgba(216,180,95,.12);pointer-events:none;
+}
+.cell{
+  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  border:1px solid rgba(190,206,232,.10);
+}
+.cell .dor{font-size:15px;letter-spacing:.12em;color:#a9b8ce;opacity:.85}
+.cell .num{font-size:54px;color:#f2dda6;font-weight:600;line-height:1.05;text-shadow:0 0 22px rgba(216,180,95,.22)}
+.cell .star{font-size:14px;letter-spacing:.1em;color:rgba(242,221,166,.5)}
+.cell.center{background:radial-gradient(circle at 50% 50%, rgba(216,180,95,.07), transparent 72%)}
+.cell.center .num{font-size:30px;color:#d8b45f;letter-spacing:.3em;font-weight:400}
+.cell.center .dia{color:#d8b45f;font-size:12px;opacity:.7;letter-spacing:.2em}
+.cell .corner{position:absolute;width:5px;height:5px;background:rgba(216,180,95,.55);border-radius:50%}
+.cell .tl{left:6px;top:6px}.cell .tr{right:6px;top:6px}
+.cell .bl{left:6px;bottom:6px}.cell .br{right:6px;bottom:6px}
+
+/* 页脚 */
+footer{
+  position:absolute;left:118px;right:118px;bottom:44px;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:15px;letter-spacing:.14em;color:#6f7f97;
+}
+footer .line{position:absolute;left:0;right:0;top:-22px;height:1px;
+  background:linear-gradient(90deg,rgba(216,180,95,.42),rgba(216,180,95,.08) 60%,transparent)}
+footer b{color:#a9b8ce;font-weight:400}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="grid-bg"></div>
+<div class="frame"></div>
+
+<main>
+  <section class="left">
+    <div class="eyebrow">XINGYAO&nbsp;QIMEN&nbsp;&nbsp;·&nbsp;&nbsp;开源奇门排盘引擎</div>
+    <h1>星曜奇门</h1>
+    <div class="rule"><i></i><em>◆</em><i></i></div>
+    <div class="sub">时家奇门<small>· 转盘排盘</small></div>
+    <p class="desc">自研天文历法引擎 · 拆补法定局<br>零依赖 · 离线可跑 · 纯前端实现</p>
+    <div class="chips">
+      <span class="chip">拆补法定局</span>
+      <span class="chip">洛书九宫</span>
+      <span class="chip">八门八神格局</span>
+    </div>
+  </section>
+
+  <section class="right">
+    <div class="board">
+      <!-- 洛书方位：巽4 离9 坤2 / 震3 中5 兑7 / 艮8 坎1 乾6 -->
+      <div class="cell"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="dor">杜门</span><span class="num">4</span><span class="star">天辅</span></div>
+      <div class="cell"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="dor">景门</span><span class="num">9</span><span class="star">天英</span></div>
+      <div class="cell"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="dor">死门</span><span class="num">2</span><span class="star">天芮</span></div>
+      <div class="cell"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="dor">伤门</span><span class="num">3</span><span class="star">天冲</span></div>
+      <div class="cell center"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="dia">◆</span><span class="num">中</span><span class="star">寄坤二</span></div>
+      <div class="cell"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="dor">惊门</span><span class="num">7</span><span class="star">天柱</span></div>
+      <div class="cell"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="dor">生门</span><span class="num">8</span><span class="star">天任</span></div>
+      <div class="cell"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="dor">休门</span><span class="num">1</span><span class="star">天蓬</span></div>
+      <div class="cell"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <span class="dor">开门</span><span class="num">6</span><span class="star">天心</span></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span class="line"></span>
+  <span><b>MIT License</b>&nbsp;&nbsp;·&nbsp;&nbsp;2026 魔门</span>
+  <span>Android 10+&nbsp;&nbsp;·&nbsp;&nbsp;v2.6.0&nbsp;&nbsp;·&nbsp;&nbsp;零依赖</span>
+</footer>
+</body>
+</html>

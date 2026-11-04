@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="white" class="booting">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>星曜奇门</title>
+<!-- ★ 抢跑：在**首帧之前**把主题与背景图定下来。
+     不这么做的话，页面会先按下面写死的 data-theme="white" 画一帧，
+     等 ui.js 跑到 init() 再改成用户的主题与透明背景 —— 那就是启动时"先闪一下素白"。 -->
+<script>
+(function () {
+  try {
+    var raw = null;
+    try { raw = localStorage.getItem('xymq.set.v1'); } catch (e) {}
+    if (!raw && window.Xyqimen && window.Xyqimen.lsGet) {
+      try { raw = window.Xyqimen.lsGet('xymq.set.v1'); } catch (e) {}
+    }
+    if (!raw) return;
+    var s = JSON.parse(raw);
+    if (!s) return;
+    if (s.theme) document.documentElement.setAttribute('data-theme', s.theme);
+    var sc = (s.bgScrim == null ? 70 : s.bgScrim) / 100;
+    document.documentElement.style.setProperty('--app-scrim', (+sc).toFixed(2));
+    if (s.bgImage) {
+      document.documentElement.style.setProperty('--app-bg-img', "url('" + s.bgImage + "')");
+      document.documentElement.classList.add('bg-custom');
+    }
+  } catch (e) {}
+})();
+/* 兜底：万一 ui.js 抛错没走到 bootReveal()，2 秒后也把首屏放出来 —— 绝不把用户关在空白里 */
+setTimeout(function () { document.documentElement.classList.remove('booting'); }, 2000);
+</script>
+<!-- ★ 字体预加载：盘面宋体（101 字子集）在首帧之前就开始取，
+     否则首帧先用回退字体画一遍、字体到了再整页重排 —— 那就是启动时"上下半分开出现"。 -->
+<link rel="preload" href="fonts/qm-serif.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/pan.css">
+<style>
+/* ★ 首帧守卫：脚本跑完、字体就绪之前，正文不画。
+   为什么需要它（实测，Chromium 140 + CPU 节流复现）：
+   浏览器在 body 末尾那 14 个脚本还没执行完时就会抢画第一帧 —— 静态栏目先出来，
+   init() 填的时刻/四柱与下半屏那张「起盘」大按钮、底栏随后才补；字体再狠狠重排一次。
+   两帧叠在一起，肉眼就是"上半先出、下半后出"。
+
+   ★ 为什么用 opacity 而不是 visibility（关键，别改回去）：
+   visibility:hidden 的元素**不产生绘制指令**，等放行时才开始绘制，
+   于是又要在屏幕上分块地长出来 —— 实测放行后仍有 P455 / P474 两帧。
+   opacity:0 的元素照常绘制、照常光栅化，只是合成时不显示：
+   整页的光栅缓存在隐藏态就已经铺好，放行时只改一个合成属性，**不再重绘**。
+   trace 实测：opacity 版全程只有一次 Paint，之后到交互前都是 0 次重绘。
+   移除动作见 ui.js 的 bootReveal()。 */
+html.booting body { opacity: 0; pointer-events: none; }
+/* 守卫期间 body 透明，露出来的是 html 自己的底 —— 深色主题下别闪白。
+   变量挂在 html[data-theme] 上，同一个元素取得到 --bg。 */
+html.booting { background: var(--bg, #fff); }
+
+/* 盘面宋体：设备自带 Noto Serif CJK SC 裁出的 101 字子集，随包分发。
+   ⚠ font-weight 只能写 `400`。写 `400 900` 等于告诉浏览器"400~900 的字面我都有"，
+     浏览器就不会做合成加粗，700/800 直接拿 Regular 渲染 —— 全站加粗集体失效，
+     表现就是"字看着淡"（这个 bug 从首版就在）。写 `400` 浏览器才会对 >400 的请求合成加粗。 */
+@font-face {
+  font-family: "QM Serif";
+  src: url("fonts/qm-serif.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================ 主页（起盘） ============================ */
+#view-home.on { display: flex; flex-direction: column; height: 100%; }
+.home {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 0 22px 14px;
+}
+.home .logo { text-align: center; margin-bottom: 26px; }
+.home .logo h2 {
+  margin: 0; font-family: "QM Serif", "Songti SC", serif;
+  font-size: 34px; font-weight: 700; letter-spacing: .22em; text-indent: .22em;
+  color: var(--ink);
+}
+.home .logo h2 em { font-style: normal; color: var(--accent); }
+.home .logo p {
+  margin: 8px 0 0; font-size: 11.5px; letter-spacing: .3em; text-indent: .3em;
+  color: var(--ink-3);
+}
+.home .timecard { position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  border-radius: 16px; background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--shadow); padding: 17px 16px 15px; text-align: center;
+}
+/* 「点大时刻弹选择器」的输入锚点：**不再用透明层接点击**。
+   原来这里是 opacity:0 + 绝对定位铺满，靠原生点击 input 弹选择器；
+   但 vivo / 新 WebView 对透明日期控件不弹（用户报「点时间栏无响应」），
+   于是改成 1px 隐形锚点、pointer-events:none，点击交给 .timecard 的 JS
+   （openTimePicker：showPicker() → focus()+click() 兜底）。 */
+.timecard input[type=datetime-local] {
+  position: absolute; left: 0; top: 0; width: 1px; height: 1px;
+  opacity: 0; border: 0; padding: 0; background: transparent; pointer-events: none;
+}
+.home .timecard .t::after { content: "▾"; margin-left: 6px; font-size: 11px;
+  color: var(--ink-3); vertical-align: 3px; }
+.home .timecard .t {
+  font-family: "QM Serif", "Songti SC", serif;
+  font-size: 25px; font-weight: 700; letter-spacing: .04em; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.home .timecard .p {
+  margin-top: 9px; font-size: 13.5px; color: var(--accent);
+  font-family: "QM Serif", "Songti SC", serif; font-weight: 600; letter-spacing: .06em;
+}
+.home .timecard .s { margin-top: 5px; font-size: 12px; color: var(--ink-3); white-space: pre-line; }
+.home .seg { margin: 14px 0 0; }
+/* 起盘页 / 串星页的选时刻 input 都改成隐形锚点（见上面 .timecard input 那条），
+   这里不再给 width / margin —— 给了会把它从 1px 撑回覆盖层。 */
+.home .btn.cast {
+  margin-top: 18px; width: 100%; padding: 15px 0; border-radius: 14px;
+  font-size: 17px; font-weight: 700; letter-spacing: .5em; text-indent: .5em;
+  font-family: "QM Serif", "Songti SC", serif;
+  background: var(--accent-bg); border: 1px solid var(--accent-line); color: var(--accent);
+}
+.home .foot { margin-top: 15px; text-align: center; font-size: 11.5px; color: var(--ink-3); }
+.home .foot b { color: var(--ink-2); }
+
+
+/* ---- 起局区（真·定高：10 个选项零位移）----
+   旧做法只给 .modewrap 一个 min-height:196px，但各面板天生一高一矮
+   （此时刻 0、随机 ~40、心盘 ~60、自选局 ~140、四层说明 ~190），
+   一旦某块高过 196（小屏下「随机」的小字换行能涨到 228），整块仍被撑开；
+   而 .home 是垂直居中的 —— 高度一变整页重新居中，上面 logo/时间卡、
+   下面「起盘」就跟着上下蹭一下。现在改成：
+     ① 五个起局面板 + 四层说明全叠在 .mpstage 的同一格（grid 1/1），
+        行高＝最高的那一块；隐藏时只降 opacity/visibility，**不 display:none**，
+        所以换选项时容器的宽高完全不动；
+     ② 面板切换只做 cross-fade（.18s），不再改 display；
+     ③ 各面板底下的小字说明全部收进脚注行右侧的 ⓘ（点开走底部弹层）；
+        说明本体留在 DOM 里（.srconly 不占布局），再长也撑不开页面。
+        脚注行左侧不再放状态字，只留一个信息符号。
+   ⚠ 第一行 54px = 按钮 40 + 上间距 14（.home .modes 的 margin），
+     以后改 .seg 的内边距/字号，记得同步这里。 */
+.modewrap { min-height: 196px; }
+.mpstage {
+  display: grid; grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 54px auto;
+}
+.mpstage > #mp-layer,
+.mpstage > #segMode3 { grid-row: 1; grid-column: 1; }
+.mpstage > .mpanel { grid-row: 2; grid-column: 1; }
+/* 面板叠放：默认透明但仍占位。display:none 会退出 grid，行高就塌了。 */
+.modewrap .mpanel {
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .18s ease, visibility 0s linear .18s;
+}
+.modewrap .mpanel.on {
+  opacity: 1; visibility: visible; pointer-events: auto;
+  transition: opacity .18s ease, visibility 0s linear 0s;
+}
+/* 说明收进 ⓘ：本体留在 DOM 里给弹层取 innerHTML，但不占任何布局 */
+.srconly { display: none !important; }
+/* 面板脚注行：只有一个信息符号 ⓘ，靠右。
+   ⓘ 是系统字体里的圆圈 i；🛈 在 WebView 里会变豆腐块，别换。
+   点击区用 padding 撑到 ~30px（字只有 14px），负 margin 把高度还回去，换模式不抖。 */
+.mfoot {
+  display: flex; align-items: center; justify-content: flex-end;
+  margin-top: 6px; min-height: 17px;
+}
+.mhelp {
+  flex: 0 0 auto; padding: 6px 0 6px 12px; margin: -6px 0; border: 0; background: none;
+  font-size: 14px; line-height: 1.2; color: var(--ink-3);
+  -webkit-tap-highlight-color: transparent;
+}
+.mhelp:active { color: var(--accent); }
+
+/* ---- 起盘方式 ---- */
+.home .modes { margin: 14px 0 0; }
+.mpanel { margin-top: 8px; }
+.mline { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+.mline .mlb { flex: 0 0 22px; font-size: 11px; letter-spacing: .18em; color: var(--ink-3); }
+.mline .seg { flex: 1 1 auto; }
+.mline select { flex: 1 1 auto; }
+.jgrid { flex: 1 1 auto; display: grid; grid-template-columns: repeat(9, 1fr); gap: 3px; }
+.jgrid button {
+  padding: 7px 0; border-radius: 8px; font-size: 12.5px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-3);
+}
+.jgrid button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
+.rnote { margin: 10px 0 0; font-size: 11.5px; color: var(--ink-3); line-height: 1.8; }
+.rnote b { color: var(--ink-2); font-weight: 600; }
+
+/* ============================ 盘面页 ============================ */
+#view-chart.on { display: flex; flex-direction: column; height: 100%; }
+#view-chart .info { position: relative; flex: 0 0 auto; padding: 9px 14px 0; }
+#view-chart .panwrap {
+  flex: 1 1 auto; min-height: 300px;
+  display: flex; align-items: center; justify-content: center;
+  /* 左右只留 4px：剩下的一律给盘子（盘是正方形，宽度就是它的上限） */
+  padding: 4px 4px 8px;
+}
+#view-chart .qm-text-pan {
+  flex: 0 0 auto; margin: 0 auto;
+  grid-template-rows: repeat(3, 1fr);
+}
+#view-chart .qm-cell { min-height: 0; overflow: hidden; }
+
+/* 四柱：标签在矩阵外，容器里只剩那 4×2 色阵，更"整片"也更矮 */
+.plabel {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 2px; padding: 0 3px; margin-bottom: 4px;
+}
+.plabel span { text-align: center; font-size: 9.5px; letter-spacing: .1em; color: var(--ink-3); }
+
+/* 值符/值使/旬首/旬空：挂在四柱右侧；折叠把手落在「旬空」正下方 */
+.qhead { display: flex; gap: 10px; align-items: stretch; }
+.qh-left { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.qh-right {
+  flex: 0 0 104px; display: flex; flex-direction: column; justify-content: center; gap: 3px;
+  border-left: 1px solid var(--line); padding-left: 10px;
+}
+.qh-right > span { display: flex; align-items: baseline; gap: 5px; }
+.qh-right i { font-style: normal; font-size: 10px; letter-spacing: .08em; color: var(--ink-3); }
+.qh-right b {
+  font-family: "QM Serif", "Songti SC", serif; font-weight: 700;
+  font-size: 12.5px; color: var(--ink); white-space: nowrap;
+}
+/* 折叠把手：悬空的横线 + 小箭头，落在旬空正下方。
+   线要浅、要细 —— 它只是个提示，不该跟盘面抢注意力。 */
+.qh-grab {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  margin: 3px 0 0; padding: 3px 0 0; background: none; border: 0;
+}
+.qh-grab .ln {
+  display: block; width: 26px; height: 2px; border-radius: 1px;
+  background: var(--ink-3); opacity: .22;
+}
+.qh-grab .ch { font-size: 9px; line-height: 1; color: var(--ink-3); opacity: .45; }
+.qh-grab:active .ln { opacity: .45; }
+.qh-grab:active .ch { opacity: .8; }
+.qh-grab.open .ch { transform: rotate(180deg); }
+/* 展开层：悬浮在盘面之上，不挤压盘 */
+.qdrop {
+  position: absolute; left: 14px; right: 14px; z-index: 6;
+  margin-top: 6px; padding: 8px 11px 9px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--surface);
+  box-shadow: 0 10px 26px rgba(40,44,60,.13);
+  font-size: 11.5px; line-height: 1.85; color: var(--ink-2);
+  opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .18s, transform .18s;
+}
+.qdrop.on { opacity: 1; transform: none; pointer-events: auto; }
+.qdrop .r { display: flex; gap: 8px; }
+.qdrop .r i { flex: 0 0 30px; font-style: normal; color: var(--ink-3); }
+.qdrop .r b { font-family: "QM Serif", serif; font-weight: 400; color: var(--ink); }
+.qdrop .lk { color: var(--accent); }
+#view-chart .info { position: relative; }
+
+/* 顶栏标题（盘面页会换成「局」） */
+.topbar h1 small {
+  display: block; font-size: 9.5px; font-weight: 500; letter-spacing: .18em;
+  color: var(--ink-3); margin-top: 1px; font-family: inherit;
+}
+.topbar h1.tappable { cursor: pointer; }
+.topbar h1.tappable:active { opacity: .7; }
+
+/* 小屏（矮屏）压缩一档，保证仍然一屏放得下 */
+@media (max-height: 720px) {
+  .pillars .p { padding: 6px 2px 7px; }
+  .pillars .p .ch { font-size: 19px; }
+  .pillars .p .ch.zhi { font-size: 17.5px; }
+  .home .logo h2 { font-size: 29px; }
+  .home .timecard .t { font-size: 22px; }
+  .home .logo { margin-bottom: 20px; }
+}
+
+/* 极矮屏（≤640）再压一档 */
+@media (max-height: 640px) {
+  .pillars .p .ch { font-size: 17px; }
+  .pillars .p .ch.zhi { font-size: 16px; }
+  .pillars .p { padding: 5px 2px 6px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button class="tb-btn" id="btnBack" title="返回" style="display:none">←</button>
+    <h1 id="tbTitle">星曜<b>奇门</b></h1>
+    <button class="tb-btn" id="btnShot" title="截图" style="display:none">⌸</button>
+    <button class="tb-btn wide" id="btnAbout" title="关于" style="display:none">关于</button>
+    <button class="tb-btn" id="btnTheme" title="切换主题">◐</button>
+    <button class="tb-btn" id="btnPrev" title="上一时辰">‹</button>
+    <button class="tb-btn" id="btnNext" title="下一时辰">›</button>
+  </header>
+
+  <div class="scroll" id="scroll">
+    <!-- ==================== 主页：起盘 ==================== -->
+    <section class="view on" id="view-home">
+      <div class="home">
+        <div class="logo">
+          <h2>星曜<em>奇门</em></h2>
+          <p>时家奇门 · 转盘排盘</p>
+        </div>
+
+        <div class="timecard" id="timecard">
+          <div class="t" id="homeTime">—</div>
+          <!-- 点「大时刻」即进选时刻：这层 input 透明地压在它上面，原生选择器由它弹出。
+               不再有「此刻 / 选时刻」那排分段。 -->
+          <input type="datetime-local" id="dtPick" aria-label="选时刻" min="1900-01-01T00:00" max="2100-12-31T23:59">
+          <div class="p" id="homePillars">—</div>
+          <div class="s" id="homeSub">—</div>
+        </div>
+
+        <!-- 四层 + 起局方式 + 各自的参数面板。
+             外层 .modewrap 定高、.mpstage 内**所有面板叠在同一格**（见上面样式注释），
+             点 4 层 / 5 种起局时容器的宽高一点都不变，只做淡入淡出。
+             每块面板底下原来那行小字说明，统一收进脚注行的「ⓘ」（点开是底部弹层）。 -->
+        <div class="modewrap" id="modewrap">
+        <div class="seg modes" id="segLayer">
+          <button data-l="shi" class="on">时家</button>
+          <button data-l="ri">日家</button>
+          <button data-l="yue">月家</button>
+          <button data-l="nian">年家</button>
+        </div>
+
+        <div class="mpstage">
+          <!-- 四层（日/月/年家）换算说明：与 #segMode3 同格、互斥显示；
+               说明收进「ⓘ」，只留一个信息符号。 -->
+          <div class="mpanel" id="mp-layer">
+            <p class="rnote srconly" id="layerNote"></p>
+            <div class="mfoot">
+              <button class="mhelp" data-help="layer" type="button" aria-label="日家 / 月家 / 年家换算说明">ⓘ</button>
+            </div>
+          </div>
+
+          <!-- 2026-11-02 用户：阴盘从「起局方式」升级为「定局法」（设置 → 定局 → 拆补法 / 置闰法 / 阴盘），
+               起盘页不再单列一档 —— 这里只剩「怎么起」的四档，阴盘改由定局法决定（此时刻/随机时刻吃它，
+               自选局/随机一局是手动指定局数，不走定局法）。 -->
+          <div class="seg modes four" id="segMode3">
+            <button data-m="time" class="on">此时刻</button>
+            <button data-m="manual">自选局</button>
+            <button data-m="random">随机</button>
+            <button data-m="xin">心盘</button>
+          </div>
+
+          <div class="mpanel" id="mp-time">
+            <div class="mfoot">
+              <button class="mhelp" data-help="time" type="button" aria-label="此时刻说明">ⓘ</button>
+            </div>
+          </div>
+
+          <div class="mpanel" id="mp-manual">
+            <div class="mline"><span class="mlb">遁</span>
+              <div class="seg" id="segYinYang">
+                <button data-v="1" class="on">阳遁</button>
+                <button data-v="-1">阴遁</button>
+              </div>
+            </div>
+            <div class="mline"><span class="mlb">局</span><div class="jgrid" id="juGrid"></div></div>
+            <div class="mline"><span class="mlb">时</span><select id="selHour"></select></div>
+            <div class="mfoot">
+              <button class="mhelp" data-help="manual" type="button" aria-label="自选局说明">ⓘ</button>
+            </div>
+          </div>
+
+          <div class="mpanel" id="mp-random">
+            <div class="btnrow">
+              <button class="btn" id="btnRandTime">随机时刻</button>
+              <button class="btn" id="btnRandJu">随机一局</button>
+            </div>
+            <p class="rnote srconly">两个按钮只<b>选随机类型</b>，真正随机在点下面「起盘」那一刻发生。<br>
+              <b>随机时刻</b>：在 1950–2100 之间随便取一刻，走正常起局（带节气、农历、星曜）。<br>
+              <b>随机一局</b>：阴阳遁 × 九局 里随机一局，再随机配一个时干支。</p>
+            <div class="mfoot">
+              <button class="mhelp" data-help="random" type="button" aria-label="随机起局说明">ⓘ</button>
+            </div>
+          </div>
+
+          <div class="mpanel" id="mp-xin">
+            <p class="rnote srconly">按<b>心盘</b>起局（选好按下面的「起盘」）：<br>
+              起出来是一张空盘，<b>点任意宫位</b>定它的八神 / 九星 / 八门 / 天盘干 / 地盘干，
+              再按「以此宫推算全盘」，据此反推局数并铺满全盘。</p>
+            <div class="mfoot">
+              <button class="mhelp" data-help="xin" type="button" aria-label="心盘起局说明">ⓘ</button>
+            </div>
+          </div>
+        </div>
+
+        </div>
+
+        <button class="btn cast" id="btnCast">起盘</button>
+      </div>
+    </section>
+
+    <!-- ==================== 盘面 ==================== -->
+    <section class="view" id="view-chart">
+      <div class="info">
+        <div class="qhead">
+          <div class="qh-left">
+            <div class="plabel" id="plabel"><span>年</span><span>月</span><span>日</span><span>时</span></div>
+            <div class="pillars" id="gz"></div>
+          </div>
+          <div class="qh-right">
+            <span><i>值符</i><b id="vZhiFu">—</b></span>
+            <span><i>值使</i><b id="vZhiShi">—</b></span>
+            <span><i>旬首</i><b id="vXunShou">—</b></span>
+            <span><i>旬空</i><b id="vXunKong">—</b></span>
+            <button class="qh-grab" id="btnMore" type="button" aria-label="更多信息">
+              <span class="ln"></span><span class="ch">⌄</span>
+            </button>
+          </div>
+        </div>
+        <div class="qdrop" id="qdrop"></div>
+      </div>
+      <!-- 「盘面同显串星课」（排法里的开关）：开着时它占着上方，九宫盘被挤下去。
+           ⚠ 2026-11-02 排查项 8：原「全屏串星课页」因为 state.chartSub 从无 'lesson'
+             赋值已成死代码，连同它的提示键/侧边截图键一起删除；
+             串星课现在只由起课后的 #cxPop 弹层与这里的 #xkMini 展示。 -->
+      <div class="xk xk-mini k1 rule" id="xkMini" style="display:none">
+        <div class="xkbody xgrid" id="xkMiniGrid"></div>
+      </div>
+      <!-- 盘外套一层 #qmBox：尺寸与"上移"都作用在它身上；
+           阴盘的暗干就排在盘**外面**那一圈（左 4/3/8 · 右 2/7/6 · 上 9 · 下 1），
+           与参考实现一致 —— 所以阴盘时盘面要收小一圈给它们让位。 -->
+      <div class="panwrap"><div class="qm-box" id="qmBox"><div id="panHost"></div>
+        <span class="qm-ring" id="qmRing"></span></div></div>
+    </section>
+
+    <!-- ==================== 串星（起课） ====================
+         骨架照起盘页：logo → 时刻卡 → 此刻/选时刻 → 大按钮。点「起课」进串星课。 -->
+    <section class="view" id="view-chuanxing">
+      <div class="home">
+        <div class="logo">
+          <h2>串<em>星</em></h2>
+          <p>天宫 · 地宫 · 人宫</p>
+        </div>
+        <!-- ★ 2026-10-07（用户定版）：起课页原来太空荡（起完课跳到全屏，那一屏也没几行字），
+             把**起初的课**直接摆在这一页上 —— 与全屏课页同一张卡、同一套 .xcell。
+             ★ 2026-10-21：起课后改成同页弹层（#cxPop）展示，这一页上不再摆课卡；
+               同一套 .xcell 样式仍给「盘面同显」的 #xkMini 用，别删。 -->
+        <div class="timecard">
+          <div class="t" id="cxTime">—</div>
+          <div class="p" id="cxPillars">—</div>
+          <div class="s" id="cxSub">—</div>
+          <!-- 点大时刻即选时刻（同起盘页：透明 input 压在上面） -->
+          <input type="datetime-local" id="cxPick" aria-label="选时刻" min="1900-01-01T00:00" max="2100-12-31T23:59">
+        </div>
+        <div class="seg modes" id="segCxPick" style="margin-top:12px">
+          <button data-mode="now" class="on">此刻</button>
+          <button data-mode="rand">随机</button>
+        </div>
+
+        <button class="btn cast" id="btnCastX">起课</button>
+      </div>
+
+      <!-- 串星课弹层（2026-10-21 用户定版）：底部三按钮 返回 / 截图 / 重排。
+           （方案 C 的「左上 ← + 右上 ⌸」样张试过，用户最后选了三按钮这版） -->
+      <div class="cxpop-mask" id="cxPopMask"></div>
+      <div class="cxpop" id="cxPop" role="dialog" aria-label="串星课">
+        <div class="cxpop-head">
+          <b>串星课</b>
+          <span id="cxPopSub">—</span>
+          <button class="infobtn cxpop-help" id="cxPopHelp" type="button" aria-label="串星课读法">i</button>
+        </div>
+        <div class="cxpop-body">
+          <div class="xk k1 rule cxpop-card">
+            <div class="xgrid" id="cxPopGrid"></div>
+          </div>
+        </div>
+        <div class="cxpop-btns">
+          <button class="btn" id="cxPopBack">返回</button>
+          <button class="btn" id="cxPopShot">截图</button>
+          <button class="btn primary" id="cxPopAgain">重排</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 设置 ==================== -->
+    <!-- 方案 B：顶部分段 —— 一屏只看一类（外观 / 排法 / 星曜）。
+         同屏只挂一组，页面短、不用长滚；切组只切显示，控件与事件都不重建。
+         ⚠ 各控件的 id 一个都不能动 —— ui.js 里所有事件都挂在 id 上。 -->
+    <section class="view" id="view-set">
+      <div class="setchips" id="setChips">
+        <button data-g="look" class="on">外观</button>
+        <button data-g="rule">排法</button>
+        <button data-g="star">星曜</button>
+        <button data-g="plugin">插件</button>
+      </div>
+
+      <!-- ---------------- 外观 ---------------- -->
+      <div class="setgroup on" data-g="look">
+        <div class="sline"><b>主题</b><small>点一下即换</small></div>
+        <div class="sbody">
+          <div class="swatches" id="swatches"></div>
+        </div>
+
+        <div class="sline"><b>背景</b><small id="bgSum"></small></div>
+        <div class="sbody" id="cardBg">
+          <div class="field">
+            <label>背景图<small>App 的底图。设了它，下面的"不透明度"才看得出效果</small></label>
+            <div class="seg" style="flex:0 0 140px">
+              <button id="btnBgPick" type="button">选图</button>
+              <button id="btnBgClear" type="button">清除</button>
+            </div>
+          </div>
+          <div class="bgstrip" id="bgStrip"><span>未设背景</span></div>
+          <div class="field">
+            <label>截图渲染背景<small>导出 PNG 时垫在下面；<b>奇门盘与串星课各一张</b>，按各自出图比例裁</small></label>
+            <div class="seg" style="flex:0 0 140px">
+              <button id="btnRendPick" type="button">选图</button>
+              <button id="btnRendClear" type="button">清除</button>
+            </div>
+          </div>
+          <div class="bgstrip" id="rendStrip"><span>奇门盘：未设</span></div>
+          <div class="bgstrip" id="rendStrip2"><span>串星课：未设</span></div>
+          <div class="shapehint">
+            <span class="sh pan"><em></em>奇门盘底图 · 竖 1000×1370</span>
+            <span class="sh lesson"><em></em>串星课底图 · 横 1000×460</span>
+          </div>
+        </div>
+
+        <div class="sline"><b>盘面观感</b><small>遮罩 · 透明度 · 位置</small></div>
+        <div class="sbody">
+          <div class="field">
+            <label>背景遮罩<small>压住底图，保证字看得清；底图越花越要往上调</small></label>
+            <span id="scrimVal" class="rk">70%</span>
+          </div>
+          <input type="range" id="rngScrim" min="0" max="90" step="5" value="70">
+          <div class="field">
+            <label>盘面不透明度<small>调低让底图透出来，<b>截图同样按这一档渲染</b></small></label>
+            <span id="opVal" class="rk">100%</span>
+          </div>
+          <input type="range" id="rngOp" min="5" max="100" step="5" value="100">
+          <div class="field">
+            <label>盘面上移<small>盘是正方形，竖屏下高度多半还有富余；这里把富余往上挪</small></label>
+            <span id="liftVal" class="rk2">上移 90%</span>
+          </div>
+          <input type="range" id="rngLift" min="0" max="100" step="5" value="0">
+        </div>
+      </div>
+
+      <!-- ---------------- 排法 ---------------- -->
+      <!-- 方案 3（用户挑的）：二列网格 —— 每个"点一下改一个值"的项占一格；
+           定局法与晚子时**单独一节**（用通栏行，不塞进格子）。 -->
+      <div class="setgroup" data-g="rule">
+        <div class="sline"><b>排法</b><small>点一下即改</small></div>
+        <div class="grid2">
+          <div class="g"><i>真太阳时</i>
+            <!-- 2026-10-21：默认关。开了以后四层与串星都按「观测点经度 + 均时差」换算 -->
+            <div class="seg" id="segTrueSolar"><button data-v="0" class="on">关闭</button><button data-v="1">开启</button></div>
+          </div>
+          <div class="g"><i>四柱样式</i>
+            <!-- 2026-11-02 用户：四柱从插件收进设置（顺序在「盘面同显」前）。
+                 默认＝方块四柱；简洁＝五行色字（原「四柱ui」插件那套）。寄干形制设置已撤。 -->
+            <div class="seg" id="segSizhu"><button data-v="0" class="on">默认</button><button data-v="1">简洁</button></div>
+          </div>
+          <div class="g"><i>盘面同显</i>
+            <div class="seg" id="segPanLesson"><button data-v="0" class="on">只盘</button><button data-v="1">加串星课</button></div>
+          </div>
+          <div class="g"><i>盘式</i>
+            <div class="seg" id="segPanMode"><button data-v="zhuan" class="on">转盘</button><button data-v="fei">飞盘</button></div>
+          </div>
+          <div class="g"><i>八神名</i>
+            <!-- ★ 两派各自主流：转盘阳遁用白虎·玄武，飞盘阳遁用勾陈·朱雀 —— 默认「自动」按盘式走 -->
+            <div class="seg" id="segGouChen"><button data-v="auto" class="on">自动</button><button data-v="off">白虎</button><button data-v="on">勾陈</button></div>
+          </div>
+          <div class="g"><i>八神飞法</i>
+            <div class="seg" id="segGodDir"><button data-v="yinyang" class="on">阳顺阴逆</button><button data-v="yang">永远顺</button></div>
+          </div>
+          <div class="g"><i>星门飞法</i>
+            <div class="seg" id="segSgDir"><button data-v="shun" class="on">顺飞</button><button data-v="yinyang">阳顺阴逆</button></div>
+          </div>
+          <div class="g"><i>九星</i>
+            <div class="seg" id="segFlyStar"><button data-v="0" class="on">转盘</button><button data-v="1">飞盘</button></div>
+          </div>
+          <div class="g"><i>八门</i>
+            <div class="seg" id="segFlyGate"><button data-v="0" class="on">转盘</button><button data-v="1">飞盘</button></div>
+          </div>
+          <div class="g"><i>八神</i>
+            <div class="seg" id="segFlyGod"><button data-v="0" class="on">转盘</button><button data-v="1">飞盘</button></div>
+          </div>
+        </div>
+        <!-- 提示行：混盘 / 顺逆实际按哪个方向布（⚠ `.field` 是 flex 行，这些必须放外面） -->
+        <div class="fhint" id="panMixHint"></div>
+        <div class="fhint" id="sgDirHint"></div>
+        <div class="fhint" id="godDirHint"></div>
+        <div class="fhint">真太阳时：<b>关闭</b>＝用标准时；<b>开启</b>＝按观测点经度（经度时差）＋均时差换算，
+          四层与串星共用同一套换算。时间样件里填的仍是<b>标准时</b>，副行显示换算后的真太阳时；
+          节气/立春是天文瞬间，仍按标准时判定。默认关，想对照标准时的盘随时切回来。</div>
+        <div class="fhint">日月年家起盘：已做成插件（<b>设置 → 插件 → 日月年家</b>）。打开后起盘页出现
+          「时家 / 日家 / 月家 / 年家」四层切换；关掉就收回时家、那排切换也不出现。</div>
+        <div class="fhint">八神名：<b>自动</b>＝转盘阳遁用白虎·玄武、飞盘阳遁用勾陈·朱雀（两派各自的主流口径）；
+          要固定一派就选「白虎」或「勾陈」。</div>
+        <div class="fhint">九星 · 八门 · 八神：默认跟着「盘式」走；要配「星转门飞」这类混盘，各自改一格就行。</div>
+
+        <div class="sline"><b>定局</b><small>定局法 · 换日</small></div>
+        <div class="sbody">
+          <div class="field">
+            <label>定局法<button class="infobtn" id="btnJuNote" type="button" aria-label="三种定局法说明">i</button><small>节气定元 · 符头链 · 数字定局</small></label>
+            <!-- 2026-11-02 用户：阴盘从起盘页的「起局方式」升级成这里的第三档（定局法）。
+                 选了它，时家的「此时刻 / 随机时刻」就按阴盘起；自选局、随机一局是手动指定局数，定局法管不着。
+                 2026-11-02 晚：三档统一去掉「法」字（拆补 / 置闰 / 阴盘），小字跟着收成三词。 -->
+            <div class="seg" style="flex:0 0 168px" id="segJu">
+              <button data-v="chaibu" class="on">拆补</button>
+              <button data-v="zhirun">置闰</button>
+              <button data-v="yin">阴盘</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>晚子时换日<small>23:00 后算次日（多数奇门盘口径）</small></label>
+            <div class="seg" style="flex:0 0 128px" id="segLate">
+              <button data-v="1" class="on">换日</button>
+              <button data-v="0">不换</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- 星曜 ---------------- -->
+      <div class="setgroup" data-g="star">
+        <div class="sline"><b>星曜</b><small>显示与观测位置</small></div>
+        <div class="sbody">
+          <div class="field">
+            <label>显示星曜<button class="infobtn" id="btnStarNote" type="button" aria-label="四余（余奴星）是什么">i</button><small>日月五星四余，按地平方位入九宫</small></label>
+            <div class="seg" style="flex:0 0 124px" id="segStars">
+              <button data-v="1" class="on">显示</button>
+              <button data-v="0">隐藏</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>观测位置<small>经纬度决定星曜落哪一宫</small></label>
+          </div>
+          <button class="locbtn" id="btnCity">
+            <i>◎</i><span id="locName">北京市</span><em>›</em>
+          </button>
+          <div class="btnrow" style="margin-top:8px">
+            <input type="text" id="inpLat" inputmode="decimal" placeholder="纬度" style="flex:1;text-align:center">
+            <input type="text" id="inpLon" inputmode="decimal" placeholder="经度" style="flex:1;text-align:center">
+            <button class="btn" id="btnGeo" style="flex:0 0 62px">定位</button>
+          </div>
+          <div class="fhint" id="locHint">内置 <b id="locCount">0</b> 个城市区县可选，不联网也能用；定位只是帮你找到最近的那个</div>
+
+        </div>
+      </div>
+
+      <!-- ---------------- 插件 ---------------- -->
+      <!-- 2026-10-21 用户：插件当设计的一部分，入口放在设置顶栏（第四段）。
+           2026-10-25 起插件改成真插件：卡片由 ui.js 遍历 Plugins.list() 动态生成，
+           一个插件一张卡（标题 + 开关 + 说明）；开关即时生效（重排盘面 + 导出图同步）。
+           插件本体在 web/plugins/*.js，契约见 web/plugins/README.md。 -->
+      <div class="setgroup" data-g="plugin">
+        <div class="sline"><b>插件</b><small>按需开 · 不动基础盘面 · 不入阴盘</small></div>
+        <div id="pluginList"></div>
+
+        <div class="fhint">插件<b>不入阴盘</b>：阴盘只显示它自己那套（星门干＋暗干），
+          插件在阴盘里一律不渲染——这是硬规矩，不是开关。</div>
+      </div>
+
+    </section>
+  </div>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-view="home" class="on"><span class="ic">✦</span>起盘</button>
+    <button data-view="chuanxing"><span class="ic">✧</span>串星</button>
+    <button data-view="set"><span class="ic">⚙</span>设置</button>
+  </nav>
+</div>
+
+<input type="file" id="bgFile" accept="image/*" style="display:none">
+<input type="file" id="rendFile" accept="image/*" style="display:none">
+
+<!-- 裁剪浮层：拖动定位、滑块/双指缩放。没有外部依赖，纯 DOM + canvas 出图。 -->
+<div class="cropper" id="cropper">
+  <div class="crop-top">
+    <button class="crop-btn" id="cropCancel" type="button">取消</button>
+    <span class="crop-title" id="cropTitle">裁剪</span>
+    <button class="crop-btn primary" id="cropOk" type="button">完成</button>
+  </div>
+  <div class="crop-stage" id="cropStage"><img id="cropImg" alt=""></div>
+  <div class="crop-aspects" id="cropAspects">
+    <span class="ca-lab">比例</span>
+    <button data-v="auto">自动</button>
+    <button data-v="16:9">16:9</button>
+    <button data-v="18:9">18:9</button>
+    <button data-v="19.5:9">19.5:9</button>
+    <button data-v="20:9">20:9</button>
+    <button data-v="21:9">21:9</button>
+    <button data-v="custom">自定义</button>
+  </div>
+  <div class="crop-aspect-custom" id="cropAspectCustomRow" style="display:none">
+    <input type="number" id="cropAspectCustom" step="0.001" min="0.3" max="0.9" placeholder="宽 ÷ 高，如 0.45">
+  </div>
+  <div class="crop-bottom">
+    <div class="crop-shape" id="cropShape"></div>
+    <span class="crop-hint">拖动调整位置 · 滑块或双指缩放</span>
+    <input type="range" id="cropZoom" min="100" max="320" step="1" value="100">
+  </div>
+</div>
+
+<div class="sheet-mask" id="mask"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<script src="js/astro.js"></script>
+<script src="js/lunar.js"></script>
+<script src="js/qimen.js"></script>
+<script src="js/ziwei.js"></script>
+<script src="js/bazi.js"></script>
+<script src="js/yinpan.js"></script>
+<script src="js/xinpan.js"></script>
+<script src="js/stars.js"></script>
+<script src="js/keying.js"></script>
+<script src="js/patterns.js"></script>
+<script src="js/xiangyi.js"></script>
+<script src="js/cities.js"></script>
+<script src="js/loc.js"></script>
+<script src="js/store.js"></script>
+<script src="js/truesolar.js"></script>
+<script src="js/snapshot.js"></script>
+<!-- ★ core.js 必须在 Snapshot / Stars 之后：它要把这些模块收进 window.App -->
+<script src="js/core.js"></script>
+<script src="js/plugins.js"></script>
+<script src="plugins/mu.js"></script>
+<script src="plugins/zw.js"></script>
+<script src="plugins/sizhu.js"></script>
+<script src="plugins/changshengchi.js"></script>
+<script src="plugins/huny.js"></script>
+<script src="plugins/layers.js"></script>
+<script src="js/changsheng.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

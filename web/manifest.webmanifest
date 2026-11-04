@@ -1,0 +1,12 @@
+{
+  "name": "星曜奇门",
+  "short_name": "星曜奇门",
+  "description": "时家奇门转盘排盘，自研历法引擎，四套主题",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080c16",
+  "theme_color": "#080c16",
+  "lang": "zh-CN",
+  "icons": []
+}

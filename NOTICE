@@ -1,0 +1,33 @@
+# NOTICE — 第三方内容与致谢
+
+星曜奇门以自研引擎为主体（零运行时依赖），以下列出项目中引用、参考或
+集成的第三方内容及其许可证，按开源规范致谢。
+
+## 字体
+
+| 文件 | 来源 | 许可证 |
+|---|---|---|
+| `web/fonts/qm-serif.woff2` | Noto Serif CJK SC（Android 系统字体）子集，改名「QM Serif」 | SIL OFL 1.1（全文见 `web/fonts/OFL.txt`） |
+
+## 数据与算法参照
+
+| 模块 | 参照 | 许可证 | 说明 |
+|---|---|---|---|
+| `web/js/cities.js` | mQimen（同作者项目）城市经纬度库 | — | 同作者作品，整份整理自 mQimen |
+| `web/js/keying.js` | qimen-dunjia（开源奇门遁甲排盘项目） | MIT | 数据经其整理，文件头已致谢 |
+| `web/js/ziwei.js` | iztro（SylarLong/iztro 紫微斗数引擎） | MIT | 按 iztro 安星法自实现，文件头已声明 |
+| `web/js/qimen.js` | bigfishmarquis-qimen（perfhelf） | MIT | 年/月/日/时四层规则对齐 |
+| `web/js/lunar.js` | mQimen 黄道/历法口径 | — | 同作者项目，算法口径对拍基准 |
+
+## 构建工具链（不随仓库分发，由 CI / 本地环境装配）
+
+| 组件 | 来源 | 许可证 |
+|---|---|---|
+| D8 / R8 (`com.android.tools:r8`) | Google | BSD 类（R8 许可） |
+| ECJ (`org.eclipse.jdt:ecj`) | Eclipse 基金会 | EPL-2.0 |
+| apksigner | Android Open Source Project | Apache-2.0 |
+| aapt / zipalign | Android Open Source Project | Apache-2.0 |
+| android.jar (API 34) | Android Open Source Project SDK 桩 | Apache-2.0 |
+
+以上工具链二进制不属于本仓库源码，由 `.github/workflows/build.yml` 在
+云端构建时从官方源下载，或本地按 README 说明自行安装。

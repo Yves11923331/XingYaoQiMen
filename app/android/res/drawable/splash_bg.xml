@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 启动页第一帧（windowBackground）＝**只有底色，不再摆图标**。
+         2026-10-21 用户反馈：冷启动会先看到一个孤零零的旧图标，等第二帧 buildSplash
+         才补出标题/英文/进度线 —— 那一帧就是「旧的启动页」残留。
+         现在第一帧只铺白→暖白渐变，图标与字标统一由 MainActivity.buildSplash()
+         淡入（图标 40ms、标题 160ms、英文 300ms），全程没有「旧图标闪现」这一下。
+         ★ 底色必须和 buildSplash 里的 GradientDrawable 一致（#FFFFFF → #F8F8F5），
+           否则第一帧到第二帧会闪一下色差。 -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#FFFFFF"
+                android:endColor="#F8F8F5"
+                android:angle="270" />
+        </shape>
+    </item>
+</layer-list>
