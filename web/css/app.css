@@ -94,9 +94,13 @@ html[data-theme="white"] {
   --line-2: rgba(28,38,58,.06);
   --ink: #1b2028;
   --ink-2: #4b5565;
-  --ink-3: #8d97a6;
-  --accent: #a8842c;
-  --accent-2: #7d611c;
+  /* 2026-11-10 可读性：原 #8d97a6 对白底只有 2.95:1，11–12px 的辅助字偏虚。
+     加深到 #6a7383（约 4.8:1），线条与装饰**不跟着变**（--line 保持原样）。 */
+  --ink-3: #6a7383;
+  /* 强调色同时承担小字（底栏标签 10.5px、tab 12.5px），原来的 3.50:1 不达标；
+     压深到 #8a6a20（约 5.0:1），仍是金色，只是不再发灰。 */
+  --accent: #8a6a20;
+  --accent-2: #6d5316;
   --accent-bg: rgba(168,132,44,.08);
   --accent-line: rgba(168,132,44,.35);
   --ji: #0f7a4d; --xiong: #c0392b; --ping: #5d6772;
@@ -135,9 +139,45 @@ html[data-theme="white"] {
 .topbar .tb-btn.wide { width: auto; min-width: 32px; padding: 0 9px; font-size: 12.5px; letter-spacing: .04em; }
 .topbar .tb-btn.on { color: var(--accent); border-color: var(--accent-line); background: var(--accent-bg); }
 
-.scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
 .view { display: none; }
 .view.on { display: block; }
+
+/* 页面切换（2026-11-10 定版：轻量交叉淡化）：
+   只动 opacity 和 6px 的纵向位移 —— 不用 filter、不做整屏横移，
+   合成层最轻；旧页淡出垫在下面，所以不会出现那一帧空白。
+   ⚠ 不缩放、不 blur：进盘面页时同一拍就要 fitPan / paintRing 量尺寸，
+   scale 会把 getBoundingClientRect 带偏，filter 则会让整页重建。
+   托板 .view.leaving 是 fixed 的临时层，不进文档流，新页版面完全不受影响。 */
+@keyframes vFadeF {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes vFadeB {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.view.on.v-in-f,
+.view.on.v-in-b {
+  position: relative; z-index: 6;      /* 新页压在托板之上淡入 */
+  animation: vFadeF .26s cubic-bezier(.22, 1, .36, 1) both;
+}
+@keyframes vOutF { from { opacity: 1; } to { opacity: 0; } }
+/* 托板原样复制旧页的布局身份：主页/盘面页/串星页是 flex + height:100%，设置页是 block。
+   JS 按 #scroll 的真实位置与高度写入 top / height，淡出时内容不会错位。 */
+.view.leaving {
+  display: flex; flex-direction: column;
+  position: fixed; left: 0; right: 0; z-index: 5;
+  pointer-events: none; overflow: hidden;
+  animation: vOutF .2s ease both;
+}
+#view-set.leaving { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .view.on.v-in-f, .view.on.v-in-b, .view.leaving { animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view.on.v-in-f, .view.on.v-in-b, .view.leaving { animation: none; }
+}
 
 /* ---------------------------------------------------------------- 信息卡 */
 /* ---------------------------------------------------------------- 四柱 */
@@ -539,18 +579,46 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .rec .del { color: var(--ink-3); font-size: 16px; padding: 4px 6px; }
 
 /* ---------------------------------------------------------------- 底栏 */
+/* 滑块的位置/尺寸**全部来自按钮的实测盒子**（JS 写 --tab-x/y/w/h），
+   不用「内容宽 ÷ 3 × 序号」估 —— 那种算法在 padding、圆角、非整数像素宽度
+   和字体加载后会累积误差，第三格最明显（2026-11-10 用户截图：偏右）。 */
 .tabbar {
-  flex: 0 0 auto; z-index: 20;
+  --tab-x: 8px; --tab-y: 7px; --tab-w: calc((100% - 16px) / 3); --tab-h: 43px;
+  position: relative; flex: 0 0 auto; z-index: 20;
   display: flex; padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
   background: var(--bg-2);
   border-top: 1px solid var(--line);
 }
+.tabbar::before {
+  content: ""; position: absolute; z-index: 0;
+  left: 0; top: 0; width: var(--tab-w); height: var(--tab-h);
+  border: 1px solid var(--accent-line); border-radius: 10px;
+  background: var(--accent-bg);
+  transform: translate3d(var(--tab-x), var(--tab-y), 0);
+  transition: transform .34s cubic-bezier(.22, 1, .36, 1),
+    background-color .2s, border-color .2s;
+  pointer-events: none;
+}
+/* 首次定位 / 从盘面页回来 / 转屏后重排：别让滑块横着飞一段 */
+.tabbar.tab-noanim::before { transition: none; }
 .tabbar button {
+  position: relative; z-index: 1;
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
   padding: 5px 0; font-size: 10.5px; color: var(--ink-3); border-radius: 10px;
+  transition: color .22s ease;
 }
-.tabbar button .ic { font-size: 17px; line-height: 1; }
+.tabbar button .ic {
+  font-size: 17px; line-height: 1;
+  transform: translateY(0) scale(1);
+  transition: transform .34s cubic-bezier(.22, 1, .36, 1);
+}
 .tabbar button.on { color: var(--accent); }
+.tabbar button.on .ic { transform: translateY(-1px) scale(1.08); }
+.tabbar button:active .ic { transform: translateY(0) scale(.94); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tabbar::before, .tabbar button, .tabbar button .ic { transition: none; }
+}
 
 /* ================================================================ 串星（加干）
  * 「串星」底栏 → 起课页（骨架同起盘页）→「起课」→ 串星课。
@@ -677,21 +745,26 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .rendpick .rp i { display: block; margin-top: 3px; font-style: normal; font-size: 10.5px; color: var(--ink-3); }
 
 /* ---------------------------------------------------------------- 弹层 */
+/* 关闭态用 visibility:hidden —— 只在 DOM 里移出视觉还不够：
+   关闭后的弹层原来仍可被 Tab / 读屏访问（2026-11-10 审查项）。
+   visibility 的延迟等于退场时长，收起的动画照旧看得见。 */
 .sheet-mask {
   position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.5);
-  opacity: 0; pointer-events: none; transition: opacity .2s;
+  opacity: 0; pointer-events: none; visibility: hidden;
+  transition: opacity .2s, visibility 0s .2s;
 }
-.sheet-mask.on { opacity: 1; pointer-events: auto; }
+.sheet-mask.on { opacity: 1; pointer-events: auto; visibility: visible; transition: opacity .2s; }
 .sheet {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 41;
   max-height: 82vh; overflow-y: auto;
   background: var(--bg-2); border-radius: 18px 18px 0 0;
   border-top: 1px solid var(--accent-line);
   padding: 14px 16px calc(20px + env(safe-area-inset-bottom));
-  transform: translateY(102%); transition: transform .26s cubic-bezier(.32,.72,0,1);
+  transform: translateY(102%); visibility: hidden;
+  transition: transform .26s cubic-bezier(.32,.72,0,1), visibility 0s .26s;
   box-shadow: var(--sheet-shadow);
 }
-.sheet.on { transform: translateY(0); }
+.sheet.on { transform: translateY(0); visibility: visible; transition: transform .26s cubic-bezier(.32,.72,0,1); }
 .sheet .bar { width: 38px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 13px; }
 .sheet h2 {
   margin: 0 0 3px; font-size: 16px; font-family: "QM Serif", "Songti SC", serif;
@@ -1135,9 +1208,10 @@ html.bg-custom select { background: color-mix(in srgb, var(--bg-2) 76%, transpar
    间距沿用打磨后的紧凑值：标题 28px 行高、副标题 2px、课卡→按钮 10px。 */
 .cxpop-mask {
   position: fixed; inset: 0; z-index: 38; background: rgba(0, 0, 0, .42);
-  opacity: 0; pointer-events: none; transition: opacity .2s;
+  opacity: 0; pointer-events: none; visibility: hidden;
+  transition: opacity .2s, visibility 0s .2s;
 }
-.cxpop-mask.on { opacity: 1; pointer-events: auto; }
+.cxpop-mask.on { opacity: 1; pointer-events: auto; visibility: visible; transition: opacity .2s; }
 /* ★ 2026-10-26 用户定版「展签」（方案 A）：
    弹层是一张居中展签 —— 顶部一道短金线 + 小字距的「串 星 课」，课卡外套一层发丝框，
    课块放大；底部「返回 / 截图」退成无框小字，只把「重排」留成主按钮。
@@ -1147,10 +1221,10 @@ html.bg-custom select { background: color-mix(in srgb, var(--bg-2) 76%, transpar
   max-height: 78dvh; display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--accent-line); border-radius: 24px;
   box-shadow: 0 20px 55px rgba(20,18,12,.2); padding: 22px 20px 14px;
-  opacity: 0; pointer-events: none; transform: translateY(-48%) scale(.96);
-  transition: opacity .2s, transform .2s;
+  opacity: 0; pointer-events: none; transform: translateY(-48%) scale(.96); visibility: hidden;
+  transition: opacity .2s, transform .2s, visibility 0s .2s;
 }
-.cxpop.on { opacity: 1; pointer-events: auto; transform: translateY(-50%) scale(1); }
+.cxpop.on { opacity: 1; pointer-events: auto; transform: translateY(-50%) scale(1); visibility: visible; transition: opacity .2s, transform .2s; }
 .cxpop-head { position: relative; text-align: center; margin-bottom: 0; }
 /* 2026-11-03：读法入口不再用汉字，改成设置页「显示星曜」旁边那颗同款信息符号：
    视觉完全沿用 .infobtn（16px 圆 + i），这里只负责把它钉在弹窗标题右上角。 */
@@ -1302,3 +1376,66 @@ html[data-theme="white"] .pk-sz { border-color: rgba(28,38,58,.14); }
 .cs-d-yu { margin: 6px 0 0; font-size: 11.5px; color: var(--ink-2); }
 .cs-d-txt { margin: 5px 0 0; font-size: 12.5px; line-height: 1.72; color: var(--ink); }
 .cs-note { margin: 0 0 6px; font-size: 10.5px; line-height: 1.8; color: var(--ink-3); }
+
+/* ================================================================ 2026-11-10 体验修正 */
+/* 时间状态不再单占一行：改由起盘页那排分段的「此时刻 / 返回时」承担（见 ui.js 的 syncTimeSeg） */
+
+/* ---- 经纬度校验错误：就地在输入行下方说明，不弹 Toast、不重排盘面 ---- */
+.locerr {
+  margin-top: 7px; font-size: 11.5px; line-height: 1.6; color: var(--xiong);
+}
+.locerr[hidden] { display: none; }
+#inpLat[aria-invalid="true"], #inpLon[aria-invalid="true"] {
+  border-color: var(--xiong); color: var(--xiong);
+}
+
+/* ---- 换时辰提示（2026-11-10 v5 · 用户定版：分体翻牌）----
+   只翻**时柱**：上半（天干）先掀开，下半（地支）随后落下，总时长约 260ms。
+   翻的是重建前克隆下来的旧牌面（两层 clip-path 各取上半/下半），
+   新牌面已经在下面，所以盘面测量完全不参与；没有 .p 网格或开了
+   「减少动态效果」时，退回 v4 的细线框。 */
+#gz { position: relative; --shift-line: color-mix(in srgb, var(--ink) 45%, transparent); }
+
+/* 兜底：细线框（插件四柱 / 减少动态效果） */
+@keyframes shiftPillar {
+  0%   { box-shadow: inset 0 0 0 1px var(--shift-line); }
+  55%  { box-shadow: inset 0 0 0 1px var(--shift-line); }
+  100% { box-shadow: inset 0 0 0 1px transparent; }
+}
+#gz.shift-flash .p:last-child {
+  animation: shiftPillar .8s ease-out; border-radius: 10px;
+}
+@keyframes shiftBox {
+  0%   { box-shadow: inset 0 0 0 1px var(--shift-line); }
+  100% { box-shadow: inset 0 0 0 1px transparent; }
+}
+#gz.shift-flash:not(.pillars) { animation: shiftBox .8s ease-out; border-radius: 10px; }
+
+/* 翻牌层：盖在时柱上，不动布局 */
+#gz .flap-layer {
+  position: absolute; z-index: 4; pointer-events: none;
+  perspective: 620px; perspective-origin: 50% 50%;
+}
+#gz .flap-half {
+  transform-style: preserve-3d; backface-visibility: hidden;
+  will-change: transform;
+}
+/* 真实翻牌节奏：上半先折 120ms（盖住下半），停一瞬，下半再折 140ms。
+   两段不重叠 —— 重叠会让旧字压在新字上发虚。 */
+#gz .flap-half.flap-top {
+  transform-origin: 50% 100%;
+  animation: flapFold .12s cubic-bezier(.55,.05,.7,.6) both;
+}
+#gz .flap-half.flap-bottom {
+  transform-origin: 50% 0%;
+  animation: flapFold .14s cubic-bezier(.55,.05,.7,.6) .12s both;
+}
+/* 折走时只压一点暗度，保持不透明；到 90° 自然看不见，新牌面在下面 */
+@keyframes flapFold {
+  0%   { transform: rotateX(0deg); filter: brightness(1); }
+  100% { transform: rotateX(-92deg); filter: brightness(.86); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #gz.shift-flash .p:last-child, #gz.shift-flash:not(.pillars) { animation: none; }
+  #gz .flap-layer { display: none; }
+}

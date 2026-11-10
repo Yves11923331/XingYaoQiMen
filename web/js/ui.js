@@ -215,10 +215,24 @@
   }
 
   /* ------------------------------------------------------------ 主页预览 */
+  /* 时间状态（2026-11-10 用户定版）：不再在时间卡里单占一行。
+     选过时刻时，下面那排分段的「此时刻」直接变成「返回时」——
+     状态和回到现在的入口合成一处；点它本来就会把时间重置为当前时刻。 */
+  function syncTimeSeg() {
+    var seg = $('segMode3');
+    if (!seg) return;
+    var b = seg.querySelector('button[data-m="time"]');
+    if (!b) return;
+    var back = S.settings.mode === 'pick' && state.mode === 'time';
+    var label = back ? '返回时' : '此时刻';
+    if (b.textContent !== label) b.textContent = label;
+    b.setAttribute('aria-label', back ? '返回当前时刻' : '按此时间起盘');
+  }
   function renderHome() {
     syncModeGate();
     var c;
     try { c = buildChart(); } catch (e) { return; }
+    syncTimeSeg();
     if (state.layer !== 'shi') {
       /* 四层统一时间（2026-10-21）：时间卡显示同一张「日期 + 时刻」样件，
          副行写清楚这一层从它换算出什么（节气月 / 立春年 / 日柱）。 */
@@ -1100,8 +1114,69 @@
   }
 
   /* ---------------------------------------------------------- 切盘 */
+  /* 换时辰提示（2026-11-10 v5 · 用户定版：分体翻牌）：
+     切盘前把**要变的那一柱**克隆下来，新盘渲染完盖回去翻：
+     上半（干）先掀、下半（支）后落，总时长约 260ms。
+     翻牌层是绝对定位的覆盖物，不参与布局与盘面测量；连续切时先摘掉上一轮，
+     不会排队。没有 .p 网格（插件四柱）或开了「减少动态效果」时，退回细线框。 */
+  function shiftCellIndex() {
+    if (state.layer === 'nian') return 0;
+    if (state.layer === 'yue') return 1;
+    if (state.layer === 'ri') return 2;
+    return 3;                                  /* 时家：时柱 */
+  }
+  function captureShiftCell() {
+    var gz = $('gz');
+    if (!gz || !gz.classList.contains('pillars')) return null;
+    var cells = gz.querySelectorAll('.p');
+    var i = shiftCellIndex();
+    return cells[i] ? { node: cells[i].cloneNode(true), idx: i } : null;
+  }
+  function playFlap(gz, snap) {
+    var cells = gz.querySelectorAll('.p');
+    var cell = cells[snap.idx];
+    if (!cell || !cell.offsetWidth) return false;
+    Array.prototype.forEach.call(gz.querySelectorAll('.flap-layer'), function (n) {
+      if (n.parentNode) n.parentNode.removeChild(n);
+    });
+    var box = document.createElement('div');
+    box.className = 'flap-layer';
+    box.style.left = cell.offsetLeft + 'px';
+    box.style.top = cell.offsetTop + 'px';
+    box.style.width = cell.offsetWidth + 'px';
+    box.style.height = cell.offsetHeight + 'px';
+    ['flap-top', 'flap-bottom'].forEach(function (cls, k) {
+      var half = snap.node.cloneNode(true);
+      half.classList.add('flap-half', cls);
+      half.style.position = 'absolute';
+      half.style.left = '0'; half.style.top = '0';
+      half.style.width = '100%'; half.style.height = '100%';
+      half.style.margin = '0'; half.style.borderRadius = '10px';
+      half.style.overflow = 'hidden';
+      /* 上半取 0–50%，下半取 50–100%；折轴就在分割线上 */
+      half.style.clipPath = k === 0 ? 'inset(0 0 50% 0)' : 'inset(50% 0 0 0)';
+      box.appendChild(half);
+    });
+    gz.appendChild(box);
+    setTimeout(function () { if (box.parentNode) box.parentNode.removeChild(box); }, 340);
+    return true;
+  }
+  function flashShift(snap) {
+    var gz = $('gz');
+    if (!gz) return;
+    var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (snap && !reduce && playFlap(gz, snap)) return;
+    /* 兜底：细线框（插件四柱 / 减少动态效果） */
+    gz.classList.remove('shift-flash');
+    void gz.offsetWidth;
+    gz.classList.add('shift-flash');
+    clearTimeout(gz._shiftTimer);
+    gz._shiftTimer = setTimeout(function () { gz.classList.remove('shift-flash'); }, 900);
+  }
   /* 时辰两小时一格 → ±2 小时必落相邻时辰；手动局直接挪时干支（60 甲子）。 */
   function shiftChart(dir) {
+    /* 先留一张旧牌：renderChart 会把 #gz 整块重建，重建后就拿不到旧干支了 */
+    var shiftSnap = captureShiftCell();
     /* ★ 三层的"上/下一格"要按**层**走：年家 ±1 年、月家 ±1 节气月、日家 ±1 日。
        原来这里不看层级，站在年家盘上按 ‹ › 会悄悄起一张时家盘 —— 标签写着年家、盘却是时家。 */
     if (state.layer !== 'shi') {
@@ -1130,6 +1205,7 @@
       state.chart = buildChart();
       state.analysis = P.analyze(state.chart);
       placeStars(); renderChart();
+      flashShift(shiftSnap);
       var unit = { nian: '年', yue: '月', ri: '日' }[state.layer];
       toast((dir > 0 ? '下一' : '上一') + unit + ' · ' + (state.chart.ju.fuTou || '') + ' ' + state.chart.ju.juText);
       return;
@@ -1147,6 +1223,7 @@
       state.chart = buildChart();                    /* 走阴盘引擎（currentParts → 刚写回的那一刻） */
       state.analysis = safeAnalyze(state.chart);
       placeStars(); renderChart(); renderRing();
+      flashShift(shiftSnap);
       toast((dir > 0 ? '下一时辰 · ' : '上一时辰 · ') + state.chart.calendar.ganzhi.hour + '时 · '
         + state.chart.ju.juText);
       return;
@@ -1169,6 +1246,7 @@
     }
     placeStars();
     renderChart();
+    flashShift(shiftSnap);
     toast((dir > 0 ? '下一时辰 · ' : '上一时辰 · ') + state.chart.calendar.ganzhi.hour + '时');
   }
 
@@ -1184,14 +1262,77 @@
         '<span class="ds">' + via + where + esc(it.desc) + '</span></li>';
     }).join('');
   }
+  /* ---------------------------------------------------------------- 模态管理
+     2026-11-10 审查项：弹层原来只切 class，关闭后内容仍在 DOM 里可被 Tab / 读屏访问，
+     打开时焦点也不进弹层。这里统一做三件事：
+       ① 打开前记住焦点，关闭后还回去；
+       ② 打开后把焦点送进弹层（首个可聚焦控件，没有就落在弹层本身）；
+       ③ Tab 在弹层内循环、Esc 关闭最上层。
+     视觉上的进出仍由 CSS 负责，这里只管语义与焦点，不碰动画。 */
+  var modalStack = [];
+  function activeModal() {
+    return modalStack.length ? modalStack[modalStack.length - 1].el : null;
+  }
+  function focusablesIn(root) {
+    var sel = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), ' +
+      'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    return Array.prototype.filter.call(root.querySelectorAll(sel), function (el) {
+      return el.offsetWidth > 0 || el.offsetHeight > 0;
+    });
+  }
+  function pushModal(el) {
+    if (!el || activeModal() === el) return;
+    var prev = document.activeElement;
+    modalStack.push({ el: el, prev: prev });
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+    el.setAttribute('aria-hidden', 'false');
+    var f = focusablesIn(el);
+    try { (f[0] || el).focus({ preventScroll: true }); } catch (e) { try { (f[0] || el).focus(); } catch (e2) {} }
+  }
+  function popModal(el) {
+    var i = -1;
+    for (var k = modalStack.length - 1; k >= 0; k--) { if (modalStack[k].el === el) { i = k; break; } }
+    if (i < 0) return;
+    var rec = modalStack[i];
+    modalStack.splice(i, 1);
+    el.setAttribute('aria-hidden', 'true');
+    /* 还焦点：原来点它的那个控件如果还在页面上，就还回去 */
+    if (rec.prev && rec.prev.focus && document.contains(rec.prev)) {
+      try { rec.prev.focus({ preventScroll: true }); } catch (e) { try { rec.prev.focus(); } catch (e2) {} }
+    }
+  }
+  /* Esc / Tab：只在有弹层时接管，平时不干扰页面 */
+  document.addEventListener('keydown', function (e) {
+    var top = activeModal();
+    if (!top) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      if (top.id === 'sheet') closeSheet();
+      else if (top.id === 'cxPop') closeCxPop();
+      else if (top.id === 'cropper') closeCrop();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    var f = focusablesIn(top);
+    if (!f.length) { e.preventDefault(); top.focus(); return; }
+    var first = f[0], last = f[f.length - 1], a = document.activeElement;
+    if (e.shiftKey && (a === first || !top.contains(a))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (a === last || !top.contains(a))) { e.preventDefault(); first.focus(); }
+  });
+
   function openSheet(html) {
     $('sheet').innerHTML = html;
+    /* 标题取弹层里的第一个 h2，供读屏念出（内容由各弹层自己拼） */
+    var h = $('sheet').querySelector('h2');
+    $('sheet').setAttribute('aria-label', h ? h.textContent.trim() : '详情');
     $('sheet').classList.add('on');
     $('mask').classList.add('on');
+    pushModal($('sheet'));
   }
   function closeSheet() {
     $('sheet').classList.remove('on');
     $('mask').classList.remove('on');
+    popModal($('sheet'));
     /* 顺手收起「更多信息」展开层：从它点进格局/长生/象义，看完关弹层时一起收掉，
        别让用户再手动点一次折叠把手。 */
     var dp = $('qdrop'), bm = $('btnMore');
@@ -1755,11 +1896,23 @@
         }
         $('cropper').classList.add('on');
         cropLayout();
+        pushModal($('cropper'));      /* 焦点进裁剪层；返回键 / Esc 由 closeCrop 收口 */
       };
       img.onerror = function () { toast('这张图读不出来'); };
       img.src = fr.result;
     };
     fr.readAsDataURL(file);
+  }
+  /* 关裁剪层：清临时状态 + 摘焦点，统一走这里（取消键、完成键、返回键、Esc 都用它）。
+     2026-11-10 审查项：返回键原来没接裁剪层，会出现"底页切走了、裁剪还盖着"。 */
+  function closeCrop() {
+    crop.img = null;
+    var c = $('cropper');
+    if (!c) return false;
+    var was = c.classList.contains('on');
+    c.classList.remove('on');
+    popModal(c);
+    return was;
   }
 
   /* ---------------------------------------------------------------- 主题 */
@@ -2053,11 +2206,13 @@
     renderCxPop();
     $('cxPop').classList.add('on');
     $('cxPopMask').classList.add('on');
+    pushModal($('cxPop'));
   }
   function closeCxPop() {
     var p = $('cxPop'), m = $('cxPopMask');
     if (p) p.classList.remove('on');
     if (m) m.classList.remove('on');
+    if (p) popModal(p);
   }
   /* 串星课弹层里的「截图」：与侧边签同一套数据，用这一页刚算出来的课 */
   function shotCxLesson() {
@@ -2071,14 +2226,109 @@
   }
 
   /* ---------------------------------------------------------------- 视图 */
+  /* 底栏三项的先后顺序，页面切换的滑动方向照它算（盘面页不占底栏，单独算） */
+  var VIEW_ORDER = { home: 0, chuanxing: 1, set: 2 };
+
+  /* 滚动位置记忆（2026-11-10）：页面之间来回切、设置分类之间来回切，
+     都停在原来的位置，不再一律弹回顶部。盘面页仍是每次归零（要重新量盘）。 */
+  var viewScroll = { home: 0, chuanxing: 0, set: 0, chart: 0 };
+  var setTabScroll = { look: 0, rule: 0, star: 0, plugin: 0 };
+  function currentSetTab() {
+    var t = S.settings.setTab;
+    return setTabScroll.hasOwnProperty(t) ? t : 'look';
+  }
+
+  /* 底栏滑块：位置与尺寸**全取当前按钮的实测盒子**，写进 CSS 变量。
+     2026-11-10 用户截图指第三格偏右：旧算法用「(内容宽-16)/3 × 序号」，
+     像素取整、padding、字体加载后的细微宽度变化都会累积，越靠右越明显。
+     offsetLeft / offsetTop 相对 #tabbar（它是 position:relative），正是滑块要的坐标。 */
+  var tabSyncRaf = 0;
+  function syncTabBar(animate) {
+    var bar = $('tabbar');
+    if (!bar) return;
+    /* 盘面页把底栏整条藏了（display:none）：这时量不到盒子，直接退出。
+       等退出盘面页时 setView 会再同步一次，不必在这里逐帧重试。 */
+    if (!bar.offsetWidth) return;
+    var btn = bar.querySelector('button.on');
+    if (!btn) return;
+    /* 按钮尚未排版：等一帧再试，别把 0 写进去 */
+    if (!btn.offsetWidth) {
+      cancelAnimationFrame(tabSyncRaf);
+      tabSyncRaf = requestAnimationFrame(function () { syncTabBar(false); });
+      return;
+    }
+    bar.style.setProperty('--tab-x', btn.offsetLeft + 'px');
+    bar.style.setProperty('--tab-y', btn.offsetTop + 'px');
+    bar.style.setProperty('--tab-w', btn.offsetWidth + 'px');
+    bar.style.setProperty('--tab-h', btn.offsetHeight + 'px');
+    if (animate === false) {
+      /* 首帧落位 / 转屏 / 从盘面页回来：瞬时对齐，别横着飞一段 */
+      bar.classList.add('tab-noanim');
+      cancelAnimationFrame(tabSyncRaf);
+      tabSyncRaf = requestAnimationFrame(function () {
+        tabSyncRaf = requestAnimationFrame(function () { bar.classList.remove('tab-noanim'); });
+      });
+    }
+  }
+
   function setView(v) {
+    var prev = state.view;
     state.view = v;
+    /* 方向：进盘面页算「往前」，从盘面页退回算「往后」，其余按底栏顺序比大小。
+       同一页重复调用（初始化、渲染后重入）不带方向，避免无谓地闪一下。 */
+    var dir = 0;
+    if (v === 'chart') dir = 1;
+    else if (prev === 'chart') dir = -1;
+    else if (prev && prev !== v && VIEW_ORDER[prev] != null && VIEW_ORDER[v] != null) {
+      dir = VIEW_ORDER[v] > VIEW_ORDER[prev] ? 1 : -1;
+    }
+    /* 「减少动态效果」开着时不做托板、不播动画：否则旧页会盖在新页上停 220ms */
+    var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var prevEl = (prev && prev !== v) ? $('view-' + prev) : null;
+    /* 托板要按"用户离开时看到的那个视口"对齐：先量 #scroll 的视口位置、高度和滚动量，
+       再让 setView 末尾把 scrollTop 归零（否则新页会带着旧滚动位置进场）。 */
+    var scrollEl = $('scroll');
+    var scrollTop = scrollEl ? (scrollEl.scrollTop || 0) : 0;
+    var scrollRect = scrollEl ? scrollEl.getBoundingClientRect() : null;
+    /* 离开当前页之前先记下它的位置（设置页按"当前分类"分开记） */
+    if (prev && prev !== v && prev !== 'chart') {
+      if (prev === 'set') setTabScroll[currentSetTab()] = scrollTop;
+      else viewScroll[prev] = scrollTop;
+    }
     ['home', 'chart', 'set', 'chuanxing'].forEach(function (x) {
       var el = $('view-' + x);
-      if (el) el.classList.toggle('on', x === v);
+      if (!el) return;
+      clearTimeout(el._vAnimTimer);
+      clearTimeout(el._vLeaveTimer);
+      el.classList.remove('v-in-f', 'v-in-b', 'leaving');
+      el.style.top = '';
+      el.style.height = '';
+      el.classList.toggle('on', x === v);
+      if (x !== v || !dir || reduceMotion) return;
+      /* 连续快速切换时同一个元素会重复命中：先强制一次样式重算，动画才会重新播 */
+      void el.offsetWidth;
+      el.classList.add(dir > 0 ? 'v-in-f' : 'v-in-b');
+      el._vAnimTimer = setTimeout(function () {
+        el.classList.remove('v-in-f', 'v-in-b');   /* 收干净，别让 filter/transform 留在页面上 */
+      }, 480);
     });
-    Array.prototype.forEach.call($('tabbar').children, function (b) {
-      b.classList.toggle('on', b.dataset.view === v || (v === 'chart' && b.dataset.view === 'home'));
+    /* 旧页托住淡出：fixed 的临时层，不进文档流 —— 新页的版面与 fitPan/paintRing 的量算都不受影响。
+       top / height 照 #scroll 的视口写：主页与盘面页都靠 height:100% 做垂直布局，
+       少了高度就会在淡出的 180ms 里整体上跳。 */
+    if (prevEl && dir && !reduceMotion && scrollRect) {
+      prevEl.classList.add('leaving');
+      prevEl.style.top = Math.round(scrollRect.top - scrollTop) + 'px';
+      prevEl.style.height = Math.round(scrollEl.clientHeight) + 'px';
+      prevEl._vLeaveTimer = setTimeout(function () {
+        prevEl.classList.remove('leaving');
+        prevEl.style.top = '';
+        prevEl.style.height = '';
+      }, 230);   /* 比 180ms 的淡出略长一点，收尾不抢拍 */
+    }
+    var tabbar = $('tabbar');
+    var activeTab = (v === 'chart') ? 'home' : v;
+    Array.prototype.forEach.call(tabbar.children, function (b) {
+      b.classList.toggle('on', b.dataset.view === activeTab);
     });
     var full = (v === 'chart');
     /* 顶栏按页给键：切盘（‹ ›）只在盘面页有 —— 主页/设置页上它们没有意义，
@@ -2093,6 +2343,9 @@
     $('btnTheme').style.display = (v === 'set') ? 'none' : '';
     /* 盘面页把底栏整条收掉：那 56px 全给盘面。回去用左上角 ←。 */
     $('tabbar').style.display = full ? 'none' : '';
+    /* 滑块定位要在底栏重新显示之后做：display:none 时量不到盒子。
+       从盘面页回来（上一页是 chart）不做滑动动画，直接落位。 */
+    syncTabBar(prev !== 'chart');
     if (!full) {
       var tb = $('tbTitle');
       tb.innerHTML = '星曜<b>奇门</b>';
@@ -2111,7 +2364,12 @@
       if (dp) dp.classList.remove('on');
       if (bm) bm.classList.remove('open');
     }
-    $('scroll').scrollTop = 0;
+    /* 回到这一页上次的位置（盘面页例外：每次归零后重排） */
+    if (scrollEl) {
+      if (v === 'chart') scrollEl.scrollTop = 0;
+      else if (v === 'set') scrollEl.scrollTop = setTabScroll[currentSetTab()] || 0;
+      else scrollEl.scrollTop = viewScroll[v] || 0;
+    }
   }
 
   /* -------------------------------------------------- 主页模式与控件同步 */
@@ -2180,6 +2438,8 @@
     Array.prototype.forEach.call($('segMode3').children, function (b) {
       b.classList.toggle('on', b.dataset.m === state.mode);
     });
+    /* 切到别的模式时，第一格要恢复成「此时刻」 */
+    syncTimeSeg();
     var isShi = state.layer === 'shi';
     /* 同上：只切 .on，不切 display，容器高度才不跟着涨落 */
     ['time', 'manual', 'random', 'xin'].forEach(function (k) {
@@ -2263,6 +2523,15 @@
     $('tabbar').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (b) setView(b.dataset.view);
     });
+    /* 滑块是按实测盒子定位的：窗口尺寸一变、字体晚到一档，盒子就会变，必须重算。
+       这两种情况都不该播横移动画，直接瞬时对齐。 */
+    window.addEventListener('resize', function () { syncTabBar(false); });
+    window.addEventListener('orientationchange', function () { setTimeout(function () { syncTabBar(false); }, 120); });
+    try {
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function () { syncTabBar(false); }, function () {});
+      }
+    } catch (e) { /* 老 WebView 没有 FontFaceSet，忽略 */ }
     $('mask').addEventListener('click', closeSheet);
 
   }
@@ -2309,6 +2578,8 @@
 
     /* 点「大时刻」改时间（选择器由 openTimePicker 显式打开，不再靠透明 input 接点击） */
     $('timecard').addEventListener('click', function () { openTimePicker($('dtPick')); });
+    /* 「返回时」复用第一格分段：点它本来就会把时间重置为当前时刻（见 segMode3 的 click），
+       所以这里不再单独挂按钮。 */
     $('dtPick').addEventListener('change', function () {
       S.settings.mode = 'pick'; S.saveSettings();
       renderHome();
@@ -2509,13 +2780,16 @@
       Array.prototype.forEach.call($('view-set').querySelectorAll('.setgroup'), function (g) {
         g.classList.toggle('on', g.dataset.g === t);
       });
-      var sc = $('scroll'); if (sc) sc.scrollTop = 0;    /* 切组回到组顶 */
     }
     $('setChips').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       if (S.settings.setTab === b.dataset.g) return;
+      /* 切换分类：先记住当前分类看到哪，再恢复目标分类上次的位置 */
+      var sc = $('scroll');
+      if (sc) setTabScroll[currentSetTab()] = sc.scrollTop;
       S.settings.setTab = b.dataset.g; S.saveSettings();
       applySetTab();
+      if (sc) sc.scrollTop = setTabScroll[currentSetTab()] || 0;
     });
     applySetTab();
     $('btnBgClear').addEventListener('click', function () {
@@ -2551,13 +2825,16 @@
       window.addEventListener('mousemove', move);
       window.addEventListener('mouseup', up);
       $('cropZoom').addEventListener('input', function () { crop.zoom = +this.value / 100; cropApply(); });
-      $('cropCancel').addEventListener('click', function () { crop.img = null; $('cropper').classList.remove('on'); });
+      $('cropCancel').addEventListener('click', function () { closeCrop(); });
       $('cropOk').addEventListener('click', function () {
-        if (!crop.img) { $('cropper').classList.remove('on'); return; }   /* 没图就别硬出图 */
+        if (!crop.img) { closeCrop(); return; }   /* 没图就别硬出图 */
         var url = cropCollect();
-        crop.img = null;
-        $('cropper').classList.remove('on');
-        if (url && crop.onDone) crop.onDone(url);
+        /* 导出空结果（画布被污染 / 尺寸为 0）原来会静默关层，用户以为"没反应"。
+           现在留在裁剪层、保留当前取景，说明原因并允许重试；只有真拿到图才关。 */
+        if (!url) { toast('这张图没能导出，换一张或重试'); return; }
+        var done = crop.onDone;
+        closeCrop();
+        if (done) done(url);
       });
       window.addEventListener('resize', function () { if ($('cropper').classList.contains('on')) cropLayout(); });
     })();
@@ -2822,6 +3099,7 @@
       S.settings.lat = +Math.max(-89.9, Math.min(89.9, +lat)).toFixed(4);
       S.settings.lon = +Math.max(-180, Math.min(180, +lon)).toFixed(4);
       S.settings.locPath = path || '';
+      if (typeof locError === 'function') locError('');   /* 选城市/定位成功 → 清掉手填错误 */
       afterStarChange();
       renderHome();                       /* 真太阳时按观测点经度换算，换点后首页预览要跟着变 */
       if (state.chart) recastQuiet();
@@ -2923,13 +3201,40 @@
       Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
       afterStarChange();
     });
+    /* 经纬度手填（2026-11-10 审查项）：
+       原来 parseFloat 会把「123abc」当 123、把 90 静默夹成 89.9，用户看到的数
+       与实际采用的坐标对不上。现在整串校验、错误就地说明且不重排盘面。 */
+    function locError(msg) {
+      var el = $('locErr');
+      if (el) {
+        el.textContent = msg || '';
+        if (msg) el.removeAttribute('hidden'); else el.setAttribute('hidden', '');
+      }
+      ['inpLat', 'inpLon'].forEach(function (id) {
+        var inp = $(id);
+        if (inp) inp.setAttribute('aria-invalid', msg ? 'true' : 'false');
+      });
+    }
+    function parseCoord(raw, isLat) {
+      var name = isLat ? '纬度' : '经度';
+      /* 允许首尾空格与中文逗号；除此外必须是完整数字，不能带尾随字符 */
+      var s = String(raw == null ? '' : raw).trim().replace(/[，,]/g, '.');
+      if (!s) return { err: name + '不能为空' };
+      if (!/^[-+]?\d+(\.\d+)?$/.test(s)) return { err: name + '只填数字，例如 ' + (isLat ? '39.9042' : '116.4074') };
+      var v = parseFloat(s);
+      var min = isLat ? -89.9 : -180, max = isLat ? 89.9 : 180;
+      if (!isFinite(v) || v < min || v > max) return { err: name + '需在 ' + min + ' 到 ' + max + ' 之间' };
+      return { v: v };
+    }
     ['inpLat', 'inpLon'].forEach(function (id) {
       $(id).addEventListener('change', function () {
-        var v = parseFloat(this.value), isLat = id === 'inpLat';
-        if (!isFinite(v)) { this.value = isLat ? S.settings.lat : S.settings.lon; return; }
+        var isLat = id === 'inpLat';
+        var r = parseCoord(this.value, isLat);
+        if (r.err) { locError(r.err); return; }   /* 保留用户输入，不清空、不重排 */
+        locError('');
         /* 手填经纬度 = 放弃城市名，只留一对裸坐标 */
         var other = isLat ? S.settings.lon : S.settings.lat;
-        setLoc(isLat ? v : other, isLat ? other : v, '');
+        setLoc(isLat ? r.v : other, isLat ? other : r.v, '');
       });
     });
 
@@ -3129,6 +3434,10 @@
   /* 给 Android 壳用：返回键先问这里。关掉弹层 / 退回主页都算"我处理了"。 */
   var lastBackHome = 0;          /* 主页「再按一次退出」防误触的时间戳 */
   function goBack() {
+    /* 顺序 = 屏幕上的层级：裁剪 / 弹层 / 课页 → 当前页 → 首页退出。
+       2026-11-10 审查项：裁剪层原来不在返回栈里，会让底页先被切走。 */
+    var cropEl = $('cropper');
+    if (cropEl && cropEl.classList.contains('on')) { closeCrop(); return 'crop'; }
     if ($('sheet') && $('sheet').classList.contains('on')) { closeSheet(); return 'sheet'; }
     if (cxPopOpen()) { closeCxPop(); return 'cxpop'; }      /* 串星课弹层先关 */
     if (state.view !== 'home') { setView('home'); return 'home'; }

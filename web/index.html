@@ -456,7 +456,7 @@ html.booting { background: var(--bg, #fff); }
       <!-- 串星课弹层（2026-10-21 用户定版）：底部三按钮 返回 / 截图 / 重排。
            （方案 C 的「左上 ← + 右上 ⌸」样张试过，用户最后选了三按钮这版） -->
       <div class="cxpop-mask" id="cxPopMask"></div>
-      <div class="cxpop" id="cxPop" role="dialog" aria-label="串星课">
+      <div class="cxpop" id="cxPop" role="dialog" aria-modal="true" aria-label="串星课" tabindex="-1">
         <div class="cxpop-head">
           <b>串星课</b>
           <span id="cxPopSub">—</span>
@@ -532,7 +532,7 @@ html.booting { background: var(--bg, #fff); }
           </div>
           <input type="range" id="rngOp" min="5" max="100" step="5" value="100">
           <div class="field">
-            <label>盘面上移<small>盘是正方形，竖屏下高度多半还有富余；这里把富余往上挪</small></label>
+            <label>盘面上移<small>盘是长方形（约 370×509），竖屏下通常还有高度富余；这里把富余往上挪</small></label>
             <span id="liftVal" class="rk2">上移 90%</span>
           </div>
           <input type="range" id="rngLift" min="0" max="100" step="5" value="0">
@@ -634,10 +634,11 @@ html.booting { background: var(--bg, #fff); }
             <i>◎</i><span id="locName">北京市</span><em>›</em>
           </button>
           <div class="btnrow" style="margin-top:8px">
-            <input type="text" id="inpLat" inputmode="decimal" placeholder="纬度" style="flex:1;text-align:center">
-            <input type="text" id="inpLon" inputmode="decimal" placeholder="经度" style="flex:1;text-align:center">
+            <input type="text" id="inpLat" inputmode="decimal" placeholder="纬度" aria-label="纬度（-89.9 至 89.9）" style="flex:1;text-align:center">
+            <input type="text" id="inpLon" inputmode="decimal" placeholder="经度" aria-label="经度（-180 至 180）" style="flex:1;text-align:center">
             <button class="btn" id="btnGeo" style="flex:0 0 62px">定位</button>
           </div>
+          <div class="locerr" id="locErr" role="alert" hidden></div>
           <div class="fhint" id="locHint">内置 <b id="locCount">0</b> 个城市区县可选，不联网也能用；定位只是帮你找到最近的那个</div>
 
         </div>
@@ -698,8 +699,10 @@ html.booting { background: var(--bg, #fff); }
 </div>
 
 <div class="sheet-mask" id="mask"></div>
-<div class="sheet" id="sheet"></div>
-<div class="toast" id="toast"></div>
+<!-- 通用弹层：内容由 openSheet 写入。role/aria-modal 给读屏，标题由 JS 按 h2 写 aria-label；
+     关闭后由 CSS 的 visibility 移出可聚焦/可读范围（见 app.css 的 .sheet）。 -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="详情" tabindex="-1"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/astro.js"></script>
 <script src="js/lunar.js"></script>
