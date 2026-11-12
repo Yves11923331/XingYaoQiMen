@@ -838,19 +838,13 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
 /* ---- 道家阴盘 · 心盘 ---- */
 /* 盘的尺寸交给外层 #qmBox（fitPan 量它、上移也作用在它身上）。
-   ★ 阴盘时盒子**自己带 24px 内边距**：外框 = 盘 + 左右各 24 —— 暗干就住在这圈内边距里。
-     这样"盒模型对称"就等价于"整幅图案对称"（盒子由 .panwrap 居中），
-     不依赖 wrap 剩多少余量，也就不会出现某一侧贴屏边。 */
+   2026-11-12 起盘盒**不带内边距**：阴盘暗干已进宫，不再需要盘外那一圈。 */
 .qm-box { position: relative; margin: 0 auto; }
-.qm-box.has-ring { padding: 24px; }
+/* 盘盒本身不再有内边距：2026-11-12 起阴盘的暗干已进宫（星曜那一行），
+   原来给「盘外一圈隐干」让位的 .qm-box.has-ring / .qm-ring 一并删除。
+   盘盒尺寸仍由 fitPan 直接写 width/height，盘面 100% 铺满。 */
 .qm-box > #panHost { width: 100%; height: 100%; }
-/* 阴盘让位时格子不再吃 min-height（否则底排会被裁）；行由 grid 拉伸填满整格 */
-.qm-box.has-ring .qm-cell { min-height: 0; }
 .qm-box > #panHost .qm-text-pan { width: 100%; max-width: none; height: 100%; margin: 0; }
-/* 盘外那一圈：放阴盘的暗干（参考实现就是把暗干排在盘外的八格边上）。
-   位置按宫位钉死：左 4/3/8 · 右 2/7/6 · 上 9 · 下 1；中五无暗干。 */
-.qm-ring { position: absolute; inset: 0; pointer-events: none; }
-.qm-box.has-ring .qm-ring { inset: 24px; }        /* 外圈与盘同框 */
 /* 心盘的符号选择：一行一类符号，点一下选中 */
 .xpl { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 9px; }
 .xpl .k { flex: 0 0 44px; font-size: 12.5px; color: var(--ink-3); line-height: 30px; }

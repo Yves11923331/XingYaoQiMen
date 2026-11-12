@@ -37,7 +37,7 @@ const MEASURE = () => {
       const shen = c.querySelector('.qm-shen');
       const shenBox = shen ? rect(shen) : null;
       const shenTight = shen ? tight(shen) : null;
-      const agan = c.querySelector('.qm-agan');
+      const agan = c.querySelector('.qm-yin-agan');   /* 2026-11-12 起暗干就在宫内星曜那一行 */
       const aganBox = agan ? rect(agan) : null;
       const out = {
         pal: pal && pal.textContent, seals, shen: shen ? shen.textContent : '', shenBox, shenTight, aganBox,

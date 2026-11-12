@@ -97,6 +97,24 @@
     return html;
   }
 
+  /* ── 宫格外壳类名钩子 · 2026-11-12 新增 ──
+     有的插件改的不是"往宫里塞字"，而是宫卡本身（虚实法改边框色）。
+     palace() 只能吐宫内容、管不到外壳，所以单独留这一条：返回类名字符串，
+     宿主 renderPan 每轮把它挂到 .qm-cell 上（关插件即消失，不会留残类）。
+     仍然过 active() 三关（开关 / 不入阴盘 / 独占让位）。 */
+  function cellClass(pal, ctx) {
+    var out = '';
+    for (var i = 0; i < _list.length; i++) {
+      var m = _list[i];
+      if (!active(m.id, ctx)) continue;
+      if (typeof m.cellClass === 'function') {
+        var c = m.cellClass(pal, ctx);
+        if (c) out += (out ? ' ' : '') + c;
+      }
+    }
+    return out;
+  }
+
   /* ── 抬头（四柱）钩子 · 2026-11-01 新增 ──
      抬头不在九宫里，是「盘面之外的一行字」，所以单独一条通道，口径和 palace/snap 略有不同：
        · 不吃「独占让位」：紫微只管星曜，它开着不该把四柱换皮也带走；
@@ -168,6 +186,7 @@
     headHTML: headHTML,
     headSnap: headSnap,
     palaceHTML: palaceHTML,
+    cellClass: cellClass,
     snapDraw: snapDraw,
     _list: _list,
     _byId: _byId

@@ -123,25 +123,31 @@ function target() {
           if (inter(b, st) > 0) hit.push((c.querySelector('.qm-pal') || {}).textContent + ':' + s.textContent);
         });
       });
-      /* 2026-11-02 晚：暗干改成**宫内右上角方章**，盘外圈与 .qm-agan 都已撤掉。
-         断言改成：8 枚方章、都在盘面内、旧节点一个不剩。 */
+      /* 2026-11-12：暗干不再另造落款，直接坐**星曜（政余）那一行**——
+         断言：8 枚 .qm-yin-agan、都在本宫卡内、贴左下角（与 .qm-stars 槽位一致）、
+         旧节点（.qm-ag-in / .qm-agan / #qmRing .qm-rg）一个不剩。 */
       const pr = pan.getBoundingClientRect();
-      const ags = [...pan.querySelectorAll('.qm-ag-in')];
-      let outCount = 0;
+      const ags = [...pan.querySelectorAll('.qm-yin-agan')];
+      let outCount = 0, slotBad = [];
       ags.forEach(el => {
         const b = el.getBoundingClientRect();
+        const cb = el.parentElement.getBoundingClientRect();
         if (b.left < pr.left || b.right > pr.right || b.top < pr.top || b.bottom > pr.bottom) outCount++;
+        /* 左下角：B1 定为「卡框内 10px 起排、离底 4px」——这里卡 8~13px 的窗口 */
+        const dl = b.left - cb.left, db = cb.bottom - b.bottom;
+        if (dl < 8 || dl > 13 || Math.abs(db) > 8) slotBad.push((el.parentElement.querySelector('.qm-pal') || {}).textContent + ':' + dl.toFixed(1) + '/' + db.toFixed(1));
       });
-      const legacy = pan.querySelectorAll('.qm-agan, #qmRing .qm-rg').length;
-      return { twin, hit, ags: ags.length, outCount, legacy };
+      const legacy = pan.querySelectorAll('.qm-ag-in, .qm-agan, #qmRing .qm-rg').length;
+      return { twin, hit, ags: ags.length, outCount, slotBad, legacy };
     });
     if (m.err) bad.push(m.err);
     else {
       if (!m.twin) bad.push('阴盘样本里没有「空亡+驿马同宫」的宫，断言没生效');
       if (m.hit.length) bad.push('空亡/驿马压到八神：' + m.hit.join(','));
-      if (m.ags !== 8) bad.push('宫内暗干方章应为 8 枚，实得 ' + m.ags);
-      if (m.outCount) bad.push('有暗干方章跑出盘面：' + m.outCount + '/8');
-      if (m.legacy) bad.push('旧暗干节点没清干净（.qm-agan / #qmRing）：' + m.legacy);
+      if (m.ags !== 8) bad.push('宫内暗干应为 8 枚，实得 ' + m.ags);
+      if (m.outCount) bad.push('有暗干跑出盘面：' + m.outCount + '/8');
+      if (m.slotBad.length) bad.push('暗干不在星曜槽（左下角）：' + m.slotBad.join(' '));
+      if (m.legacy) bad.push('旧暗干节点没清干净（.qm-ag-in / .qm-agan / #qmRing）：' + m.legacy);
     }
   }, '阴盘印章几何');
 

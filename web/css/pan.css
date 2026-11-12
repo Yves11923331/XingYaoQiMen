@@ -532,27 +532,13 @@ html[data-theme="white"] .qm-text-pan {
 .qm-star-9 { color: var(--qm-star-9); }
 .qm-star-10 { color: var(--qm-star-10); }
 
-/* ---------------- 阴盘：盘面收一圈 · 暗干排在盘外（传统排法） ----------------
-   ★ 2026-10-28 用户定版（推翻 2026-10-07 的「暗干进宫内」）：
-     ① 阴盘**盘面收小一圈**：.qm-box.has-ring 带 24px 内边距，盘宽 = 盒宽 − 48
-        （390 屏上 350 → 318），给外圈那八颗暗干让位；
-     ② 暗干排在盘外，按宫位钉死：左 4/3/8 · 右 2/7/6 · 上 9 · 下 1，中五无；
-        字号固定 11.5px、无框、主题墨色 —— 不跟格子缩，是"批注"不是"符号"；
-     ③ 宫**内**因此回到普通排法：空亡/驿马在右上角（top:5），八神不再下移。
-        ⇒ 2026-10-28 早先那条「空亡+驿马压八神」的补丁（+26px / top:31）随之一并撤掉。
-     ④ 阴盘仍**不排星曜**、插件不入阴盘。 */
-.qm-ring .qm-rg {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
-  font-style: normal;
-  font-size: 11.5px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--ink-2);
-  opacity: .85;
-  pointer-events: none;
-}
+/* ---------------- 阴盘：已并入标准盘（2026-11-12） ----------------
+   ★ 历史：2026-10-28 曾把暗干排到**盘外一圈**（.qm-box.has-ring 收 24px 让位、
+     `.qm-ring .qm-rg` 钉左右上下），2026-11-11 起改为宫内，2026-11-12 定为
+     「暗干坐星曜（政余）那一行」。外圈那套（#qmRing / .qm-ring / .qm-rg / has-ring）
+     连同 renderRing / paintRing / RING_W 已全部删除 —— 别再复活。
+   阴盘现在只差两件事：暗干那一行（见下方 .qm-yin-agan）、不排星曜（JS 里判）。
+   空亡 / 驿马与插件同标准盘：印章照旧，插件由 Plugins.active() 拦在阴盘外。 */
 
 /* ---------------- 插件 · 紫微：宫中之宫（2026-10-25 第六版 · 支做列头） ----------------
    前三版都栽在「三个角」上：星名居中、四化飘右上、地支沉左下 —— 三样东西互不相干，
@@ -608,66 +594,47 @@ html[data-theme="white"] .qm-text-pan {
 .qm-zw2 .h.ke { color: var(--qm-el-water); }
 .qm-zw2 .h.ji { color: var(--qm-ink); }
 
-/* ---------------- 阴盘 · 宫内布局（2026-11-02 晚修订） ----------------
-   盘面已恢复全宽（has-ring 撤销，单卡回到 112px），早期为「盘收小一圈」做的
-   内缩 10 / 行距 3 仍保留（用户看惯了这版疏密）。
-   纵向次序（用户 2026-11-02 定）：**暗干 → 空亡/驿马 → 神星门干**。
-     · 暗干方章在右上角（top 4，高 17 → 底 21）；
-     · 空亡/驿马在它下面 top 41（距暗干底 20px）；
-     · **所有宫都预留这一段印章带**：八神统一从 8(padding)+57=65 起
-       —— 有印章的宫，印章落在 41..56，正好在八神上方 9px；
-         没印章的宫，这条带留白，但神星门干与有印章的宫**横排对齐**。
-   ⚠ 用户 2026-11-02 晚点名：有/没有空亡驿马的宫必须对齐，所以这里不再用
-     `.qm-void + .qm-shen` 做「有印章才让位」——一律 57px。
-   ⚠ `!important` 必须留：fitPan() 每帧会往 .qm-text-pan 写 `--qm-shen-mt`，
-     .qm-shen 的 margin-top 读的是那个变量；不压过它，57px 会被 JS 悄悄改回 30。 */
-.qm-text-pan[data-sub="yin"] .qm-shen { margin-top: 57px !important; }
-.qm-text-pan[data-sub="yin"] .qm-line { padding: 0 10px; margin-top: 3px; }
-/* ---------------- 阴盘 · 暗干（用户选定的方章） ----------------
-   2026-11-02 晚：从三选一预览里挑了「方形」这一款 ——
-   17×17 圆角方章、1px 细边、淡底、10.5px 灰墨字，形制与空亡/驿马同族但更小一号。
-   导出图（snapshot.js 的 drawCell）按同一套比例画，别再各画各的。
-   注意：暗干≠寄干 —— 寄干在干列右侧、暗干在右上角方章里，位置分得开。 */
-.qm-cell .qm-ag-in {
-    position: absolute;
-    top: 4px;
-    right: 6px;
-    width: 17px;
-    height: 17px;
-    border: 1px solid var(--qm-chip-line);
-    border-radius: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
-    font-style: normal;          /* ⚠ 元素是 <i>，不写这条会变斜体 */
-    font-size: 10.5px;
-    line-height: 1;
-    color: var(--qm-ink-soft);
-    background: var(--qm-chip-bg);
-    pointer-events: none;
+/* ---------------- 阴盘 · 标准盘主体 + 暗干占星曜（政余）位 ----------------
+   神/星/门/天地盘干直接使用标准盘，不重写字号与横向位置。
+   ★ 2026-11-12 用户定：暗干不再自己造一条宫底居中落款，而是**直接坐到星曜（政余）
+     那一行**——与 .qm-stars 同一槽位（左下角、bottom:4）、靠左一行字。
+     字号 .9em（≈12.2px @390）。
+   ★ 2026-11-12 第二轮（用户从八案里挑 **B · 墨点**，再定 **B1 · 内缩 4px**）：
+     ① 字前一枚 2.6px 墨点（currentColor、.5 透明），像句读起笔；
+     ② 整块从 left:5 收到 **left:9px** —— 390 屏实测：墨点落在 10px（与宫名左缘同线）、
+        字起于 17.6px（正压九星/八门名的 18px）。两个对齐锚点都是盘面已有的竖线，
+        既离开卡缘又不显得"另起一列"。
+     ⚠ 别改回居中/12px/left:5：那几版都被否了。导出图（snapshot.js drawYinAgan）同一几何。 */
+.qm-text-pan[data-sub="yin"] .qm-yin-agan {
+    position: absolute; left: 9px; right: 7px; bottom: 4px;
+    overflow: hidden;
+    font-family: "QM Serif", "Songti SC", serif;
+    font-size: .9em; font-weight: 400; line-height: 1.45; letter-spacing: .02em;
+    color: var(--qm-ink-soft); white-space: nowrap; text-align: left;
 }
-/* 坤二有两颗暗干（本宫的 + 中宫寄来的，引擎 anGan 是「辛戊」两字）：
-   同一枚方章横向变宽一点，两字并排、高度不变；右缘仍与单字章对齐。
-   ⚠ 全局是 border-box：两字 9px + 左右 padding 4 + 描边 2 ≈ 24px。 */
-.qm-cell .qm-ag-in.two {
-    width: auto;
-    min-width: 23px;
-    padding: 0 2px;
-    font-size: 9px;
-    letter-spacing: 0;
+/* 墨点：2.6px 圆点，颜色跟着字走，压到 50% 以免比字还重；-1px 让它在字身中线稍上。 */
+.qm-text-pan[data-sub="yin"] .qm-yin-agan::before {
+    content: "";
+    display: inline-block;
+    width: 2.6px; height: 2.6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: .5;
+    margin-right: 5px;
+    vertical-align: middle;
+    transform: translateY(-1px);
 }
-/* 阴盘：空亡 / 驿马在**暗干下方**（top 41），不再是宫底。
-   ⚠ 单卡高 165、印章底约 56、八神 65 起、两行内容到 ~140，仍装得下；阴盘不排星曜，
-     底部的星曜带是空的，所以这条带不会撞到别的东西。 */
-.qm-text-pan[data-sub="yin"] .qm-void {
-    top: 41px;
-    bottom: auto;
-    right: 7px;
-}
-/* 阴盘不许插件进来（规矩） */
-.qm-text-pan[data-sub="yin"] .qm-zw2,
-.qm-text-pan[data-sub="yin"] .qm-mu { display: none; }
+/* 空亡 / 驿马：2026-11-12 用户「阴盘也用标准盘的」——撤掉紧凑版覆盖后，
+   阴盘两枚印章与标准盘完全同一形制与位置（见 .qm-seal-void / .qm-seal-horse）。 */
+
+/* ---------------- 插件 · 虚实法（2026-11-12） ----------------
+   四柱地支 ∩ 本宫纳支 ≠ ∅ → .qm-xs-shi（边框 66% 墨）；否则 .qm-xs-xu（15%）。
+   中五不纳支，恒为虚（用户点名"中五默认也是浅色"）。
+   类名由 plugins/xushi.js 的 cellClass 钩子给，宿主 ui.js 每轮挂上；
+   插件关着时根本没有这两个类，所以这里不必再判开关。
+   ⚠ 别改回 border-width 加粗：虚实是"色阶"不是"粗细"，粗线会把九宫卡的大小带偏。 */
+.qm-text-pan .qm-cell.qm-xs-shi { border-color: color-mix(in srgb, var(--qm-ink) 66%, transparent); }
+.qm-text-pan .qm-cell.qm-xs-xu  { border-color: color-mix(in srgb, var(--qm-ink) 15%, transparent); }
 
 /* ---------------- 中宫：不放字，只用两圈同心环 ----------------
    原来圈里写个「中」，实测不好看；现在留白，靠几何本身表示"这里是中心"。

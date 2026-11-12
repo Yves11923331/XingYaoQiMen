@@ -375,6 +375,7 @@
   }
 
   function cellHTML(p, c) {
+    /* 阴盘：整套独立排法（三行），不走时家那套角标 */
     /* 飞盘的中宫是有内容的（星/神/中门都在），不能再走"只画两圈环"那条路 */
     var midHasContent = p.pal === 5 && (p.star || p.deity || p.gate || p.gateMid);
     if (p.pal === 5 && !midHasContent) {
@@ -384,13 +385,12 @@
     }
     var h = '';
     h += '<div class="qm-pal">' + Q.PAL_NAME[p.pal] + p.pal + '</div>';
-    /* ★ 2026-10-28：暗干搬回盘外那一圈（见 renderRing），宫内不再画它 ——
-       于是格子回到普通排法：空亡/驿马在右上角、八神不再下移。 */
-
+    /* 空亡 / 驿马：**一律用标准盘那两枚印章**（2026-11-12 用户：阴盘也用标准盘的）。
+       阴盘原来那套紧凑「○ / 马」已经撤掉，别再加 c.yinpan 分支。 */
     if (p.kong || p.ma) {
       h += '<div class="qm-void">' +
-        (p.kong ? '<i class="qm-seal qm-seal-void">空亡</i>' : '') +
-        (p.ma ? '<i class="qm-seal qm-seal-horse">驿马</i>' : '') + '</div>';
+        (p.kong ? '<i class="qm-seal qm-seal-void" title="空亡">空亡</i>' : '') +
+        (p.ma ? '<i class="qm-seal qm-seal-horse" title="驿马">驿马</i>' : '') + '</div>';
     }
     /* ★ 每一项都是"有才画"。中宫在转盘下没有八神、也没有门；三层的中宫没有神；
        飞盘的中门也可能飞到这里。原来不管有没有都照样吐一个 span/div 出来 ——
@@ -426,7 +426,14 @@
        这里只聚合"启用 + 不入阴盘 + 非独占让位"的插件 DOM，塞进这个宫。 */
     h += Plugins.palaceHTML(p.pal, plugCtx(p, c));
 
-    var sl = state.starMap && state.starMap.byPal[p.pal];
+    if (c.yinpan && p.agan && p.pal !== 5) {
+      /* ★ 2026-11-12 用户定：暗干直接坐**星曜（政余）那一行**——宫卡左下角、.74em，
+         与 .qm-stars 同槽位同字号；阴盘本来就不排政余，这一行空着。
+         不再另造宫底居中落款（那版被否）。 */
+      h += '<div class="qm-yin-agan" title="暗干">' + Q.STEM[p.agan] +
+        (p.agan2 ? '（' + Q.STEM[p.agan2] + '）' : '') + '</div>';
+    }
+    var sl = !c.yinpan && state.starMap && state.starMap.byPal[p.pal];
     if (sl && sl.length) {
       /* 星多就折行：放满一行后，第二行接在**上面**（贴着一行一行往上长），
          不是搬到宫位正中。上限 9 颗：罗睺/计都、紫炁/月孛 两对反极点，一宫各只能来一颗。
@@ -465,55 +472,8 @@
     toast(state.face === 'pan' ? '九宫盘' : '卦象 · 地支面（再点中宫回来）');
   }
 
-  /* 阴盘：暗干排在盘**外面**那一圈（左 4/3/8 · 右 2/7/6 · 上 9 · 下 1），与参考实现一致。
-     ★ 2026-10-28 用户定版：回到这个传统排法 —— 盘收小一圈（.has-ring）给外圈让位，
-       宫内不再画暗干（cellHTML 已经不吐 .qm-agan）。
-     没有暗干的盘（时家/心盘）就把这一圈清空，并撤掉让位的 .has-ring。
-     ⚠ 位置不能在这里算：fitPan 还没跑，量到的还是大一圈的旧尺寸 —— 排到 rAF 里。 */
-  var RING_SIDE = { 4: 'l', 3: 'l', 8: 'l', 2: 'r', 7: 'r', 6: 'r', 9: 't', 1: 'b' };
-  function renderRing() {
-    var ring = $('qmRing'), box = $('qmBox'), pan = $('qm_text_pan');
-    if (!ring || !box || !pan) return;
-    ring.innerHTML = '';
-    var c = state.chart;
-    var on = !!(c && c.yinpan && state.face === 'pan');
-    /* ★ 2026-11-02 用户：暗干从**盘外一圈**改成**宫内右上角圆章** ——
-       盘面因此不再收小（has-ring 永远撤掉），宫内的空亡/驿马也让位到底部（见 CSS）。
-       注意：renderPan 每次都重建 cellHTML，所以这里每轮重新插即可。 */
-    box.classList.remove('has-ring');
-    if (!on) return;
-    c.plate.forEach(function (p) {
-      if (!p.agan) return;
-      var cell = pan.querySelector('.qm-cell[data-pal="' + p.pal + '"]');
-      if (!cell || cell.querySelector('.qm-ag-in')) return;
-      var it = document.createElement('i');
-      /* 坤二可能两颗（本宫 + 中宫寄来的暗干）：加 .two 变宽一点，两字并排 */
-      it.className = 'qm-ag-in' + (p.agan2 ? ' two' : '');
-      it.textContent = Q.STEM[p.agan] + (p.agan2 ? Q.STEM[p.agan2] : '');
-      cell.appendChild(it);
-    });
-  }
-  /* 把八颗暗干钉在各自宫的外侧边上（#qmRing 与盘同框，坐标就是盘内坐标） */
-  function paintRing() {
-    var ring = $('qmRing'), box = $('qmBox'), pan = $('qm_text_pan'), c = state.chart;
-    if (!ring || !box || !pan || !c || !box.classList.contains('has-ring')) return;
-    var pr = pan.getBoundingClientRect();
-    var cells = {};
-    pan.querySelectorAll('.qm-cell').forEach(function (el) {
-      var b = el.getBoundingClientRect();
-      cells[+el.dataset.pal] = { x: b.left - pr.left, y: b.top - pr.top, w: b.width, h: b.height };
-    });
-    var half = RING_W / 2;
-    ring.querySelectorAll('.qm-rg').forEach(function (it) {
-      var pal = +it.dataset.pal, side = RING_SIDE[pal], g = cells[pal];
-      if (!side || !g) return;
-      if (side === 'l') { it.style.left = (-half) + 'px'; it.style.top = (g.y + g.h / 2) + 'px'; }
-      else if (side === 'r') { it.style.left = (pr.width + half) + 'px'; it.style.top = (g.y + g.h / 2) + 'px'; }
-      else if (side === 't') { it.style.left = (g.x + g.w / 2) + 'px'; it.style.top = (-half) + 'px'; }
-      else { it.style.left = (g.x + g.w / 2) + 'px'; it.style.top = (pr.height + half) + 'px'; }
-    });
-  }
-
+  /* 阴盘外圈那套（#qmRing / .qm-rg / has-ring / renderRing / paintRing / RING_W）
+     2026-11-12 全部删除：暗干现在就在宫内「星曜（政余）」那一行，盘面不再为外圈收小。 */
   function buildPan() {
     if (state.panBuilt) return;
     $('panHost').innerHTML = '<div class="qm-text-pan" id="qm_text_pan">' +
@@ -592,13 +552,16 @@
       var cell = $(CELL[p.pal]);
       if (!cell) return;
       cell.innerHTML = face ? faceHTML(p) : cellHTML(p, c);
+      /* 宫卡外壳类名交给插件（2026-11-12：虚实法改边框色）。
+         每轮整串重写，插件一关残类自己就没了；qm-cell / qm-mid 是宿主的底类。 */
+      var pcls = face ? '' : Plugins.cellClass(p.pal, plugCtx(p, c));
+      cell.className = 'qm-cell' + (p.pal === 5 ? ' qm-mid' : '') + (pcls ? ' ' + pcls : '');
       /* 面模式下不点亮格局标（那一层信息跟卦象/地支无关） */
       cell.classList.toggle('has-pat', !face && !!(byPal[p.pal] && byPal[p.pal].length));
 
     });
     applyOpacity();
     fitStars();
-    renderRing();                                     /* 阴盘：盘外那一圈暗干 */
   }
 
   /* 星曜那一行是 nowrap + overflow:hidden：单宫星多时会被切在半截上，很难看。
@@ -681,7 +644,6 @@
     { min: 0,   fs: .70, pt: 6, pb: 22, sm: 27, lm: 2 }
   ];
   var PAN_MIN = 288;   /* 单卡宽 ≥ 95px，正好装下最密一档 */
-  var RING_W = 24;     /* 阴盘：盘外放暗干那一圈每侧留多宽 */
   /* ★ 长方形盘的三个死数（2026-10-07 用户定版）：
      整盘 **350×509**（高 > 宽）、九张卡片之间缝 7px。
      宽度走过三档：370（正方形盘时代）→ 365（跟上方信息区那行对齐，x=14→379，
@@ -719,12 +681,8 @@
     var view = $('view-chart'), wrap = document.querySelector('#view-chart .panwrap');
     var pan = $('qm_text_pan'), box = $('qmBox');
     if (!view || !wrap || !pan || !box || !view.classList.contains('on')) return;
-    /* 阴盘要在盘外留一圈放暗干 —— 两侧各让 RING 出去，盘本身就小一圈 */
-    var ring = box.classList.contains('has-ring') ? RING_W : 0;
-    /* 盒子的外框 = 盘 + 外圈（各 ring 宽）；两侧再留一点余量，暗干绝不贴屏边。
-       盘是**长方形**：按 370:509 的比例在可用宽/高里塞进最大的那一张 ——
-       宽度通常先顶到上限（竖屏），高度富余再多也不会把盘拉胖。 */
-    var minW = ring ? PAN_MIN - 48 : PAN_MIN;
+    /* 盘盒不再带内边距（阴盘暗干已进宫，外圈那套删了）：可用宽高直接吃 wrap 的。 */
+    var minW = PAN_MIN;
     /* ★ 2026-10-07 用户第 4 条：**盘面同显时把盘缩一档** ——
        课块加上来之后，盘底正好顶到屏幕轮廓/底栏，看着很挤。
        这里按 0.9 缩"目标尺寸"（宽高一起缩，单卡仍严格等大），下面的夹取逻辑
@@ -734,19 +692,21 @@
        （不要改成等比缩小：那样宽度也跟着窄，卡的观感会变。） */
     var kLessonH = lessonOn() ? 0.85 : 1;
     var TW = PAN_W, TH = Math.round(PAN_H * kLessonH);
-    var availW = wrap.clientWidth - 8 - ring * 2 - 6;
-    var availH = wrap.clientHeight - 12 - ring * 2 - 6;
+    var availW = wrap.clientWidth - 8 - 6;
+    var availH = wrap.clientHeight - 12 - 6;
     /* 窄屏（360 一类）上 350 塞不下时，别让盘贴着屏边 —— 左右至少留 12px。
        用户这一条是冲"离屏幕边缘太近"说的，别的机型也别再犯。 */
     var w = Math.floor(Math.max(minW, Math.min(availW, availH * TW / TH, TW,
-      wrap.clientWidth - 24 - ring * 2)));
+      wrap.clientWidth - 24)));
     var h = Math.round(w * TH / TW);
-    box.style.width = (w + ring * 2) + 'px';
-    box.style.height = (h + ring * 2) + 'px';
+    /* ★ 2026-11-12 删掉「阴盘最小 480」那条特殊照顾：它当年是给自绘三行/宫底落款撑高度的，
+       现在阴盘与标准盘同一套行与字号，320 屏上不该再被拉高一截（时家 430 / 阴盘也 430）。 */
+    box.style.width = w + 'px';
+    box.style.height = h + 'px';
     /* 盘比"正方形时代"高一截，富余变少；那截富余默认上下平分，
        「上移」就是把这平分挪走：最多能挪富余的一半。
        用 transform 而不是 padding：不给布局添一寸，也不会把盘子顶出可视区。 */
-    var maxLift = Math.max(0, (wrap.clientHeight - 12 - h - ring * 2 * 2) / 2);
+    var maxLift = Math.max(0, (wrap.clientHeight - 12 - h) / 2);
     var lift = maxLift * liftPctNow() / 100;
     box.style.transform = lift > 0.5 ? 'translateY(' + (-Math.round(lift)) + 'px)' : '';
     lastLift = { size: h, max: Math.round(maxLift), lift: Math.round(lift) };
@@ -1222,7 +1182,7 @@
       syncNowPick(); setPickInput(np0);
       state.chart = buildChart();                    /* 走阴盘引擎（currentParts → 刚写回的那一刻） */
       state.analysis = safeAnalyze(state.chart);
-      placeStars(); renderChart(); renderRing();
+      placeStars(); renderChart();
       flashShift(shiftSnap);
       toast((dir > 0 ? '下一时辰 · ' : '上一时辰 · ') + state.chart.calendar.ganzhi.hour + '时 · '
         + state.chart.ju.juText);
@@ -2312,7 +2272,7 @@
         el.classList.remove('v-in-f', 'v-in-b');   /* 收干净，别让 filter/transform 留在页面上 */
       }, 480);
     });
-    /* 旧页托住淡出：fixed 的临时层，不进文档流 —— 新页的版面与 fitPan/paintRing 的量算都不受影响。
+    /* 旧页托住淡出：fixed 的临时层，不进文档流 —— 新页的版面与 fitPan 的量算都不受影响。
        top / height 照 #scroll 的视口写：主页与盘面页都靠 height:100% 做垂直布局，
        少了高度就会在淡出的 180ms 里整体上跳。 */
     if (prevEl && dir && !reduceMotion && scrollRect) {

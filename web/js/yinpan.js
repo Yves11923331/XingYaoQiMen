@@ -40,7 +40,7 @@
     opt = opt || {};
     /* 23 点这一档**按我们自己的口径**（用户明确）：不走源项目那种"日期推进一天、时归 0"，
        而是本项目历法的晚子时/晚日 —— lateZi 只影响日柱，农历仍按实际时刻算。 */
-    var cal = Lunar.cast(y, m, d, h, mi, { lateZi: opt.lateZi !== false });
+    var cal = Lunar.cast(y, m, d, h, mi, { lateZi: opt.lateZi !== false, lunarNextDay: (opt.lateZi !== false) && h >= 23 });
     var ci = cal.index, lun = cal.lunar;
 
     /* 节气序号换成源项目口径：0=冬至（我们 22=冬至） */

@@ -83,6 +83,23 @@ Plugins.register({
 
 ⚠ DOM 与 Canvas 两套必须**同位置同形制**。改了一边，另一边也要改。
 
+### 3.2b cellClass(pal, ctx) → 返回**宫卡外壳**的类名（2026-11-12 新增）
+
+有的插件要改的不是"宫里写什么"，而是**宫卡本身**（典型：虚实法改边框颜色）。
+`palace()` 只能往宫内容里塞 HTML，碰不到 `.qm-cell` 外壳，所以单开一条：
+
+```js
+cellClass: function (pal, ctx) { return 'qm-xs-shi'; }   // 宿主挂到 .qm-cell 上
+```
+
+- 宿主 `renderPan()` 每轮**整串重写** `className`（`qm-cell` / `qm-cell qm-mid` + 这里返回的类），
+  所以插件一关残类自动消失，不会粘在格子上；
+- 仍然过 `active()` 三关（开关 / `blockInYin` / 独占让位）；
+- 「卦象 · 地支面」那一面不挂（`face` 模式下宿主跳过这个钩子）；
+- 样式写在 `web/css/pan.css`（与墓星、紫微一致），如 `.qm-text-pan .qm-cell.qm-xs-shi { … }`；
+- 导出图那边没有类名，得在 `snap(pal, ctx)` 里自己重描边框——`ctx.M` 是这一档的度量
+  （`M.k` 比例、圆角 6k），2026-11-12 随本条一起补进 ctx。
+
 ### 3.3 head(ctx) → 返回整块抬头的 HTML（2026-11-01 新增）
 
 > 用户口径：「四柱ui」——把盘面页抬头那排四柱换一种排法。

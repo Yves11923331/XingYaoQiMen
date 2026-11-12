@@ -78,25 +78,30 @@
   /* 儒略日(UT) → 农历 {year, month, day, leap, monthName, dayName}
      规则：① 冬至必在十一月 ② 一个岁里若有 13 个朔望月，则第一个不含中气的月为闰月。
      ★ 月界取「含朔那天的北京零点」，不是朔的瞬间 —— 按瞬间切月会让月界整天错位。 */
-  function lunarFromJD(jdUT) {
-    var bj = jdUT + BEIJING;
+  function lunarFromJD(jdUT, nextDay) {
+    /* nextDay：晚子时（23:00 后）按次日算农历 —— 阴盘定局用得到；
+       默认 false，界面上的农历仍按实际时刻。 */
+    var bj = jdUT + BEIJING + (nextDay ? 1 : 0);
     var g = Astro.fromJulian(bj);
     var y = g.y;
-    // 该时刻之前最近的冬至
-    var ws = Astro.solarTermJD(y, 22);
-    var wsYear = y;
-    if (bj < ws) { wsYear = y - 1; ws = Astro.solarTermJD(wsYear, 22); }
-    // 十一月初一 = 冬至所在朔月的朔日
-    /* ⚠ 冬至必在十一月 —— 但要用**日界**判定，不能用冬至的那一瞬间：
-       2014-12-22 冬至 07:03、同日 09:36 才朔，按瞬间找会退到 11-22 那个朔，
-       于是冬至被算进十二月（整段农历月名错一位）。月界是"含朔那天的北京零点"，
-       所以搜索上限取冬至所在北京日的**日末**。 */
-    var wsDayEnd = dayJDN(ws) + 0.5 - BEIJING - 1e-6;
-    var m11 = Astro.newMoonBefore(wsDayEnd);
+    /* 十一月初一 = 冬至所在朔月的朔日。
+       ⚠ 定「岁」不能用冬至**瞬间**比较：冬至前一二十天就已经进了十一月
+         （例：1964-12-08 在朔后、冬至前，却属于十一月初五）。
+       正确做法是：看当前日是否已到某年冬至所在月的**朔日**。 */
+    function m11Of(year) {
+      var ws = Astro.solarTermJD(year, 22);
+      var end = dayJDN(ws) + 0.5 - BEIJING - 1e-6;
+      return Astro.newMoonBefore(end);
+    }
+    var curDay = Math.floor(bj + 0.5);
+    var wsYear = y, m11 = m11Of(wsYear);
+    if (curDay < dayJDN(m11)) { wsYear = y - 1; m11 = m11Of(wsYear); }
+    var ws = Astro.solarTermJD(wsYear, 22);
+    var m11Day = dayJDN(m11);
     var ws2 = Astro.solarTermJD(wsYear + 1, 22);
     var ws2Day = dayJDN(ws2);
     // 收齐 [十一月, 下一个十一月] 的朔日
-    var days = [dayJDN(m11)], t = m11, guard = 0;
+    var days = [m11Day], t = m11, guard = 0;
     while (guard++ < 16) {
       t = Astro.solveNewMoon(t + 29.530588853);
       var dj = dayJDN(t);
@@ -171,7 +176,7 @@
     var hZhi = hourZhiIndex(h);
     var hGan = hourGanIndex(dayGan, hZhi);
     // 农历（用实际时刻，不做晚子时换日）
-    var lun = lunarFromJD(jdUT);
+    var lun = lunarFromJD(jdUT, !!opt.lunarNextDay);
     return {
       jdUT: jdUT,
       input: { y: y, m: m, d: d, h: h, mi: mi || 0 },

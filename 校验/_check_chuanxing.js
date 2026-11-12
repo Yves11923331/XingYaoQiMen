@@ -174,20 +174,31 @@ console.log('    截图参数：' + (shotOpts && shotOpts.lesson
   ok(!/\.sh\.both/.test(css), '盘面同显已并入九宫盘，不该再有 .sh.both 示意框');
 }
 
-/* ⑦1b 阴盘：暗干排在盘外一圈（传统排法）—— 盘收一圈让位，宫内不再画暗干 */
+/* ⑦1b 阴盘：用户选定标准主体 + 暗干坐星曜（政余）那一行。 */
 {
-  ok(!!doc.getElementById('qmRing') && !!doc.getElementById('qmBox'), '盘盒两层 #qmBox / #qmRing 仍在');
+  ok(!!doc.getElementById('qmBox'), '保留盘盒 #qmBox');
+  ok(!doc.getElementById('qmRing'), '盘外那圈 #qmRing 已删除（孤儿节点）');
   const uiSrc = fs.readFileSync(path.join(ROOT, 'web', 'js', 'ui.js'), 'utf8');
-  ok(/function renderRing\(\)/.test(uiSrc) && /renderRing\(\);/.test(uiSrc), 'ui.js 要有 renderRing 并在渲染后调用');
-  /* ★ 2026-10-28 用户定版：暗干回到**盘外**（左 4/3/8 · 右 2/7/6 · 上 9 · 下 1），宫内不再画。 */
-  ok(/RING_SIDE/.test(uiSrc) && /function paintRing\(\)/.test(uiSrc), '外圈八颗暗干要有定位表 RING_SIDE + paintRing');
-  ok(!/class="qm-agan"/.test(uiSrc), '阴盘的暗干不应再画在宫内（.qm-agan 已撤）');
   const panCss2 = fs.readFileSync(path.join(ROOT, 'web', 'css', 'pan.css'), 'utf8');
-  /* 2026-11-02 用户改版：暗干从盘外一圈 → **宫内右上角圆章**（.qm-ag-in）；
-     空亡/驿马让到宫底（.qm-void 的阴盘覆盖改成 bottom 定位）。断言跟着改。 */
-  ok(/\.qm-cell \.qm-ag-in\s*\{/.test(panCss2), '阴盘暗干圆章要有 .qm-cell .qm-ag-in 样式');
-  ok(/\[data-sub="yin"\]\s+\.qm-void\s*\{[^}]*bottom/.test(panCss2),
-     '阴盘的空亡/驿马要让到宫底（.qm-void 的阴盘覆盖应含 bottom）');
+  ok(!/function (renderRing|paintRing)\s*\(|var RING_W\s*=|classList\.(contains|add|remove)\('has-ring'\)/.test(uiSrc),
+     '外圈那套死代码已清干净（renderRing/paintRing/RING_W/has-ring）');
+  ok(!/\.qm-box\.has-ring\s*\{|\.qm-ring\s*\{|\.qm-rg\s*\{/.test(panCss2), 'CSS 里外圈残留已清（has-ring/.qm-ring/.qm-rg）');
+  ok(!/c\.yinpan \? '○'/.test(uiSrc), '阴盘空亡/驿马改用标准盘印章，不再走紧凑分支');
+  ok(!/function yinCellHTML/.test(uiSrc), '阴盘复用标准 cellHTML，不另画三行');
+  ok(/qm-yin-agan/.test(uiSrc), '暗干完整串排在宫内');
+  ok(/\.qm-yin-agan\s*\{/.test(panCss2), '暗干有专用样式');
+  /* 2026-11-12 用户定：暗干占星曜（政余）那行的槽位——左下角 left:5 / bottom:4，不再居中。 */
+  const aganCss = (panCss2.match(/\.qm-text-pan\[data-sub="yin"\] \.qm-yin-agan\s*\{[^}]*\}/) || [''])[0];
+  ok(/left:\s*9px/.test(aganCss) && /bottom:\s*4px/.test(aganCss), '暗干贴宫卡左下角（B1：内缩 4px，与 .qm-stars 同槽位）');
+  ok(!/justify-content:\s*center|text-align:\s*center/.test(aganCss), '暗干不居中（旧落款版式已废）');
+  ok(/font-size:\s*\.9em/.test(aganCss), '暗干字号 .9em（比政余 .74em 大一档）');
+  /* 2026-11-12 用户定 B：字前一枚墨点（句读起笔），点压 .5 透明、2.6px。 */
+  const dotCss = (panCss2.match(/\.qm-text-pan\[data-sub="yin"\] \.qm-yin-agan::before\s*\{[^}]*\}/) || [''])[0];
+  ok(/width:\s*2\.6px/.test(dotCss) && /border-radius:\s*50%/.test(dotCss), '暗干前缀墨点（2.6px 圆点）');
+  ok(/opacity:\s*\.5/.test(dotCss) && /margin-right:\s*5px/.test(dotCss), '墨点压 50% + 与字距 5px');
+  ok(!/\.qm-yin3/.test(panCss2), '撤去独立三行样式');
+  ok(/white-space: nowrap/.test(panCss2), '暗干完整串不折行');
+  ok(!/\.qm-cell \.qm-ag-in\s*\{/.test(panCss2), '不用旧暗干方章');
 }
 
 /* ⑦2 裁剪页：必须有明确的示意框与形状说明（原来是条几乎看不见的细线） */
@@ -273,12 +284,19 @@ $('segJu').querySelector('button[data-v="yin"]').click();
 $('btnCast').click();
 ok($('tbTitle').textContent.replace(/\s+/g, '') === '阴盘',
    '阴盘模式抬头应为「阴盘」，实得 ' + $('tbTitle').textContent);
-/* ★ 2026-10-28 定版：阴盘**盘面收一圈**（.has-ring），暗干排在盘外八格边上；
-   宫内回到普通排法，不再有 .qm-agan；星曜仍不排（用户单独要求）。 */
-eq(doc.querySelectorAll('#qm_text_pan .qm-ag-in').length, 8, '阴盘应在宫内右上角画 8 颗暗干圆章（.qm-ag-in）');
-ok($('qmBox').className.indexOf('has-ring') < 0, '暗干进宫后盘面不再收小（#qmBox 不应带 has-ring）');
-eq(doc.querySelectorAll('#qm_text_pan .qm-agan').length, 0, '宫内不该有旧的 .qm-agan 章');
+/* 真实DOM验证：标准主体、八颗完整暗干、紧凑空马。 */
+eq(doc.querySelectorAll('.qm-rg, .qm-ring').length, 0, '阴盘不画盘外暗干');
+ok(!$('qmBox').classList.contains('has-ring'), '盘盒不再挂 has-ring（外圈让位已撤）');
+eq(doc.querySelectorAll('#qm_text_pan .qm-yin-agan').length, 8, '八宫均保留暗干');
 eq(doc.querySelectorAll('#qm_text_pan .qm-stars').length, 0, '阴盘不排星曜');
+ok(doc.querySelectorAll('#qm_text_pan .qm-line').length >= 16, '阴盘使用标准星门行');
+ok([...doc.querySelectorAll('#qm_text_pan .qm-seal-void')].every(x => x.textContent === '空亡'), '空亡用标准盘印章（空亡二字）');
+eq(doc.querySelectorAll('#qm_text_pan .qm-seal-horse').length, 1, '马星完整保留（标准盘驿马印章）');
+const yinRaw = win.App.state.chart.plate;
+for (const p of yinRaw.filter(x => x.agan)) {
+  const el = doc.querySelector('#qm_text_pan [data-pal="' + p.pal + '"] .qm-yin-agan');
+  eq(el.textContent, win.Qimen.STEM[p.agan] + (p.agan2 ? '（' + win.Qimen.STEM[p.agan2] + '）' : ''), '暗干及随行字完整：' + p.pal);
+}
 
 /* 这一组行在**顶部「更多信息」折叠面板**里（#qdrop），不是宫位详情 */
 const xpTxt = [...doc.querySelectorAll('#qdrop .r')].map(r => r.textContent).join(' | ');
@@ -287,6 +305,35 @@ ok(/节气/.test(xpTxt), '阴盘详情应有「节气」行');
 ok(/数字定局/.test(xpTxt), '阴盘定局行应写「数字定局」');
 ok(!/手动指定/.test(xpTxt), '阴盘不该被写成「手动指定」');
 console.log('    阴盘详情：' + xpTxt.replace(/\s+/g, ' ').slice(0, 84));
+
+/* ⑦1c 插件 · 虚实法（2026-11-12）：四柱地支 ∩ 宫位纳支 */
+{
+  const PZ = { 1: ['子'], 8: ['丑', '寅'], 3: ['卯'], 4: ['辰', '巳'], 9: ['午'], 2: ['未', '申'], 7: ['酉'], 6: ['戌', '亥'] };
+  ok(!!(win.Plugins && win.Plugins.byId('xushi')), '虚实法插件已注册');
+  const panCss3 = fs.readFileSync(path.join(ROOT, 'web', 'css', 'pan.css'), 'utf8');
+  ok(/\.qm-cell\.qm-xs-shi\s*\{[^}]*66%/.test(panCss3) && /\.qm-cell\.qm-xs-xu\s*\{[^}]*15%/.test(panCss3),
+     '虚实法两档边框色（实 66% / 虚 15%）');
+  win.Store.settings.plugins = win.Store.settings.plugins || {};
+  win.Store.settings.plugins.xushi = 0; win.Store.saveSettings();
+  $('segJu').querySelector('button[data-v="chaibu"]').click();
+  $('btnCast').click();
+  eq(doc.querySelectorAll('#qm_text_pan .qm-xs-shi, #qm_text_pan .qm-xs-xu').length, 0, '插件关着时宫卡不挂虚实类');
+  win.Store.settings.plugins.xushi = 1; win.Store.saveSettings();
+  $('btnCast').click();
+  const cc = win.App.state.chart, gz = cc.calendar.ganzhi;
+  const bs = [gz.year[1], gz.month[1], gz.day[1], gz.hour[1]];
+  const want = Object.keys(PZ).filter(k => PZ[k].some(z => bs.indexOf(z) >= 0)).map(Number).sort();
+  const got = [...doc.querySelectorAll('#qm_text_pan .qm-xs-shi')].map(e => +e.dataset.pal).sort();
+  eq(JSON.stringify(got), JSON.stringify(want), '实宫 = 四柱地支命中的宫：' + bs.join(''));
+  ok(doc.querySelector('.qm-cell[data-pal="5"]').classList.contains('qm-xs-xu'), '中五不纳支，恒为虚');
+  eq(doc.querySelectorAll('#qm_text_pan .qm-xs-xu').length, 8 - want.length + 1, '虚宫 = 其余八宫 + 中五');
+  $('segJu').querySelector('button[data-v="yin"]').click();
+  $('btnCast').click();
+  eq(doc.querySelectorAll('#qm_text_pan .qm-xs-shi, #qm_text_pan .qm-xs-xu').length, 0, '阴盘不挂虚实类（blockInYin）');
+  win.Store.settings.plugins.xushi = 0; win.Store.saveSettings();
+  $('segJu').querySelector('button[data-v="chaibu"]').click();
+  $('btnCast').click();
+}
 
 console.log(`\n串星集成自测：${pass} 过 / ${fail} 败`);
 process.exit(fail ? 1 : 0);

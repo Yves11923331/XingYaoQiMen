@@ -419,11 +419,9 @@ html.booting { background: var(--bg, #fff); }
       <div class="xk xk-mini k1 rule" id="xkMini" style="display:none">
         <div class="xkbody xgrid" id="xkMiniGrid"></div>
       </div>
-      <!-- 盘外套一层 #qmBox：尺寸与"上移"都作用在它身上；
-           阴盘的暗干就排在盘**外面**那一圈（左 4/3/8 · 右 2/7/6 · 上 9 · 下 1），
-           与参考实现一致 —— 所以阴盘时盘面要收小一圈给它们让位。 -->
-      <div class="panwrap"><div class="qm-box" id="qmBox"><div id="panHost"></div>
-        <span class="qm-ring" id="qmRing"></span></div></div>
+      <!-- 盘外套一层 #qmBox：尺寸与"上移"都作用在它身上。
+           2026-11-12：阴盘暗干已进宫（坐星曜那一行），原来盘外那圈 #qmRing 已删除。 -->
+      <div class="panwrap"><div class="qm-box" id="qmBox"><div id="panHost"></div></div></div>
     </section>
 
     <!-- ==================== 串星（起课） ====================
@@ -729,6 +727,7 @@ html.booting { background: var(--bg, #fff); }
 <script src="plugins/changshengchi.js"></script>
 <script src="plugins/huny.js"></script>
 <script src="plugins/layers.js"></script>
+<script src="plugins/xushi.js"></script>
 <script src="js/changsheng.js"></script>
 <script src="js/ui.js"></script>
 </body>

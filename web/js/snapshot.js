@@ -16,7 +16,6 @@
   var Q = root.Qimen;
 
   var W = 1000, PAD = 44, SCALE = 2;
-  var RING_W = 24;   /* 阴盘盘外那圈暗干宽 —— 与 ui.js 的 RING_W / app.css 的 24px 内边距同值 */
   var SERIF = '"QM Serif","Songti SC","Noto Serif CJK SC",serif';
   var SANS = '-apple-system,"HarmonyOS Sans SC","PingFang SC","Microsoft YaHei",sans-serif';
 
@@ -124,8 +123,7 @@
   /* 老 UI 判定：与 ui.js 的 oldUIOn() 同一口径 —— 墓星 / 紫微 / 长生尺 任一开启，
      导出图也回**基准包**画法（方章 / 加粗 / 字号原大 / 八神小字+发丝线 / 寄干角注 / 贴边）。
      三个都关 = 标准盘新样式（裸干 / ×1.16 / 寄干右挂灰墨 / 八神等大 / 时干加粗 / 内缩 14px）。
-     ⚠ 阴盘不参与：插件本来就不入阴盘，旧逻辑仍会把整盘切老 UI，把阴盘的新布局（裸干/方章暗干/
-        预留印章带）一起打回基准包 —— 2026-11-02 排查项 6。 */
+     阴盘不参与插件旧 UI 切换，始终沿用标准盘新样式（裸干与右侧寄干）。 */
   function oldUIOn(chart) {
     try {
       if (chart && chart.yinpan) return false;
@@ -164,7 +162,7 @@
       palFS: (OLD ? .70 : .81) * E,
       shenFS: shenFont,
       shenTop: shenTop,
-      sm: M.sm,                                 /* 逐宫算阴盘让位时要还原 sm（导出不要丢） */
+      sm: M.sm,                                 /* 与标准盘共享的八神行距 */
       shenBase: shenTop + (shenLine - shenFont) / 2 + shenFont * 0.88,
       shenH: shenH,
       rowH: rowH,
@@ -200,23 +198,45 @@
     return out;
   }
 
-  /* S = 单卡宽 · SH = 单卡高（长方形卡片；不传就退化成正方形，兼容老调用） */
+  /* S = 单卡宽 · SH = 单卡高。阴盘主体复用标准盘，只追加轻量标记。
+     ★ 2026-11-12：暗干与屏幕一致，坐**星曜（政余）那一行**——宫卡左下角、靠左一行；
+       字号 .9em（用户定：比政余那行的 .74em 大一档），行盒按 .9em × 1.45 算；
+       不再是宫底居中 12px 落款。 */
+  function drawYinAgan(ctx, p, P, x, y, S, SH, M) {
+    if (!p.agan || p.pal === 5) return;
+    var k = M ? M.k : S / 112;
+    var E = M ? M.E : S * 0.11;
+    var fs = Math.round(.9 * E);
+    /* 行盒 = 字号 × 1.45（与 CSS line-height 同值）、贴底 4px，
+       基线 = 盒顶 + 半行距 + .88 字高（与 .qm-stars 的算法同构） */
+    var boxH = 1.45 * .9 * E;
+    var base = y + SH - 4 * k - boxH + (boxH - fs * 1.16) / 2 + fs * 0.88;
+    ctx.save();
+    /* 与屏幕 .qm-cell{overflow:hidden} 同口径：夹在卡片内 */
+    rrect(ctx, x + 0.5, y + 0.5, S - 1, SH - 1, 6 * (M ? M.k : S / 112));
+    ctx.clip();
+    /* 2026-11-12 用户定版 B1：字前一枚 2.6px 墨点 + 整块内缩到 left:9（含卡框 1px）。
+       屏幕实测：点 10..12.6、字起 17.6；出图按同一组比例摆，别各画各的。 */
+    ctx.beginPath();
+    ctx.arc(x + 11.3 * k, base - fs * 0.30 - 1 * k, 1.3 * k, 0, Math.PI * 2);
+    ctx.globalAlpha = .5;
+    ctx.fillStyle = P.inkSoft;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.font = '400 ' + fs + 'px ' + SERIF;
+    ctx.fillStyle = P.inkSoft;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(Q.STEM[p.agan] + (p.agan2 ? '（' + Q.STEM[p.agan2] + '）' : ''),
+      x + 17.6 * k, base);
+    ctx.restore();
+  }
+
   function drawCell(ctx, p, chart, P, x, y, S, starMap, face, SH) {
     SH = SH || S;
     var M = metrics(S, chart);
-    /* ★ 2026-10-28：暗干已搬回盘外（见 render 的 ringW），宫内不再有它 ——
-       原来那套「整宫下移 26 + 印章再让位」的补偿一并撤掉，格子回到普通排法。 */
     var ci = chart.calendar.index;
     var hourStem = ci.hourGan === 0 ? chart.meta.hourLead : ci.hourGan + 1;
-    /* 阴盘宫内的纵向次序（2026-11-02 用户定）：暗干 → 空亡/驿马 → 神星门干。
-       屏幕侧是 CSS 做的（用 !important 压过 fitPan 写的 --qm-shen-mt）：
-       **所有宫**的八神 margin-top 一律 57px（=65 起），有印章的宫把印章放在
-       41..56 的预留带里，没印章的宫留白 —— 这样九宫横排的神星门干互相对齐，
-       不会再出现「有空亡/驿马的宫比邻宫低一截」。
-       导出图逐宫同步这一个值（不是 metrics() 的全局 sm）。 */
     var YIN = !!(chart && chart.yinpan);
-    var shenShift = 0;
-    if (M && YIN) shenShift = (57 - (M.old ? 16 : M.sm)) * M.k;
 
     /* 一张卡：圆角矩形 + 一圈描边（与 .qm-cell 的 border-radius:6px / 1px 实线同比例）。
        ★ 卡片之间不再有共用格线 —— 缝（gap）就是分家，与外框那条描金线一样都退场了。 */
@@ -226,7 +246,10 @@
     rrect(ctx, x, y, S, SH, CR);
     ctx.fill();
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = P.frame; ctx.lineWidth = 1;
+    /* 卡片描边按格宽比例：屏幕 1px / 112 格宽，导出格宽约 2.4 倍，
+       写死 lineWidth:1 在 2000px 的图上会细到看不见（用户报“没有九个格”）。 */
+    ctx.strokeStyle = P.frame;
+    ctx.lineWidth = Math.max(1, M ? M.k : S / 112);
     rrect(ctx, x + 0.5, y + 0.5, S - 1, SH - 1, CR);
     ctx.stroke();
 
@@ -268,8 +291,8 @@
        只挪星名/门名/飞盘「中五」，干列仍贴 `x + S - pad`；老 UI 的 padding 只有 4px，不跟。
        ⚠ 屏幕改左移量时这里必须一起改，否则导出图和屏幕会错位。 */
     var nameX = x + pad - (M && !M.old ? 4 * M.k : 0);
-    /* 逐宫纵向基准（阴盘的 shenShift 已算进 shenTopC；非阴盘 shenShift=0） */
-    var shenTopC = M ? M.shenTop + shenShift : 0;
+    /* 阴盘与标准盘使用同一纵向基准，不再给旧印章带让位。 */
+    var shenTopC = M ? M.shenTop : 0;
     var shenBaseC = M ? shenTopC + (M.shenFS * 1.45 - M.shenFS) / 2 + M.shenFS * 0.88 : S * 0.26;
     var tianTopC = M ? shenTopC + M.shenH + M.lm : (S * 0.46 - S * 0.105);
 
@@ -280,9 +303,8 @@
       x + (M ? M.palLeft : S * 0.045),
       y + (M ? M.palTop + M.palFS * 0.88 : S * 0.10));
 
-    /* 空亡 / 驿马：右上角朱印、青印。屏幕 .qm-void{top:5;right:7}；
-       阴盘改成在**暗干方章下面**（[data-sub="yin"] .qm-void{top:31;right:7}）。
-       ⚠ 右边距是 7px，不是行内缩 pad(14px) —— 原来用 pad，印章比屏幕往左偏 7px。 */
+    /* 空亡 / 驿马：2026-11-12 用户「阴盘也用标准盘的」——阴盘不再画紧凑「○ / 马」，
+       与标准盘同一形制。 */
     var seals = [];
     if (p.kong) seals.push(['空亡', P.sealVoidInk, P.sealVoidBg, P.sealVoidLine]);
     if (p.ma) seals.push(['驿马', P.sealHorseInk, P.sealHorseBg, P.sealHorseLine]);
@@ -297,8 +319,7 @@
         tw += sw[i] + (i ? 3 * kk : 0);                          /* 屏幕 gap:3px */
       }
       var sx = x + S - 7 * kk - tw;
-      /* 阴盘：暗干 4..21，印章 41 起（距暗干底 20px；八神 65 起） */
-      var sy = (chart && chart.yinpan) ? (y + 41 * kk) : (y + 5 * kk);
+      var sy = y + 5 * kk;
       for (i = 0; i < seals.length; i++) {
         rrect(ctx, sx, sy, sw[i], sealH, 5 * kk);
         ctx.fillStyle = seals[i][2]; ctx.fill();
@@ -307,28 +328,6 @@
         ctx.fillText(seals[i][0], sx + sw[i] / 2, sy + sealH / 2 + 0.5 * kk);
         sx += sw[i] + 3 * kk;
       }
-      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    }
-
-    /* 阴盘暗干：右上角**方章**（用户 2026-11-02 晚从三选一预览里挑的「方形」款）：
-       17×17 圆角方章 / 1px 细边 / 淡底 / 10.5px 灰墨字 / top 4 right 6。
-       与屏幕 .qm-ag-in 同一套比例，别再各画各的。 */
-    if (chart && chart.yinpan && p.agan && p.pal !== 5) {
-      var ak = M ? M.k : S / 112;
-      var two = !!p.agan2;
-      var agB = 17 * ak;
-      /* 坤二两颗暗干（本宫 + 中宫寄来）：方章横向变宽，两字 9px 并排；
-         与屏幕 .qm-ag-in.two 同口径（border-box：18 + padding 4 + 描边 2 ≈ 24）。 */
-      var agW = two ? 24 * ak : agB;
-      var agX = x + S - 6 * ak - agW;
-      var agY = y + 4 * ak;
-      rrect(ctx, agX, agY, agW, agB, 5 * ak);
-      ctx.fillStyle = P.chipBg; ctx.fill();
-      ctx.strokeStyle = P.chipLine; ctx.lineWidth = Math.max(1, ak); ctx.stroke();
-      ctx.font = '400 ' + Math.round((two ? 9 : 10.5) * ak) + 'px ' + SERIF;
-      ctx.fillStyle = P.inkSoft; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(Q.STEM[p.agan] + (two ? Q.STEM[p.agan2] : ''),
-        agX + agW / 2, agY + agB / 2 + 0.5 * ak);
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     }
 
@@ -448,6 +447,9 @@
        开关 / 阴盘拦截 / 独占让位 都在 plugins.js 的 active() 里判。 */
     Plugins.snapDraw(p.pal, {
       ctx: ctx, x: x, y: y, S: S, SH: SH, P: P,
+      /* M = 这一档的度量（含 k 比例与圆角），插件要重描宫卡边框时得用同一套几何
+         （2026-11-12 虚实法；原来只给 x/y/S/SH，圆角与线宽算不准）。 */
+      M: M,
       chart: chart, chartSub: chart.yinpan ? 'yin' : 'pan',
       p: p, pal: p.pal, Q: Q, zw: chart.__zw,
       SERIF: SERIF, SANS: SANS, rgba: rgba
@@ -485,6 +487,7 @@
       ctx.restore();
     }
 
+    if (YIN) drawYinAgan(ctx, p, P, x, y, S, SH, M);
   }
 
   /* 卦象·地支面：点中宫切过来那一面。每宫中央一枚大卦符 + 该宫所纳地支。 */
@@ -900,17 +903,10 @@
     if (sizhuOn) {
       try { headH = root.SizhuUI.height(panW) || pillarsH; } catch (e) { headH = pillarsH; }
     }
-    var hasAg = false;
-    chart.plate.forEach(function (q) { if (q.agan > 0) hasAg = true; });
-    /* ★ 2026-10-28：阴盘回到传统排法 —— 盘收一圈、暗干排到盘外（与屏幕同一比例）。
-       屏幕：环宽 24、盘宽 = QmCell.panW；这块画布对应屏幕的「盒」，
-       所以 R = panW·24/(scrPan+48)，内盘 = panW − 2R。卦象·地支面不排外圈。 */
-    /* 2026-11-02 用户：暗干改成**宫内右上角圆章**，盘面不再收小、也不排盘外圈 */
-    var ringW = 0, panWIn = panW;
-    var g = panGeom(panWIn);
-    var H = Math.round(PAD + 62 + headH + 58 + (ringW ? ringW * 2 : 0) + g.panH + 74 + PAD);
+    /* 阴盘与标准盘同宽，不预留盘外暗干环。 */
+    var g = panGeom(panW);
+    var H = Math.round(PAD + 62 + headH + 58 + g.panH + 74 + PAD);
     var cell = g.w, cellH = g.h, gap = g.gap, panH = g.panH;
-    var shrink = 0;
     var y = PAD;
 
     var cv = document.createElement('canvas');
@@ -985,11 +981,11 @@
     ctx.fillText('值使', lx, y + 22); lx += ctx.measureText('值使').width + 10;
     ctx.font = '700 27px ' + SERIF; ctx.fillStyle = P.ink;
     ctx.fillText(chart.meta.zhiShiGate, lx, y + 23);
-    y += 58 + shrink;
+    y += 58;
 
-    /* 九宫盘：九张等大的长方形卡片（阴盘收小后左右居中，两侧留出暗干那一圈）。
+    /* 九宫盘：九张等大的长方形卡片，阴盘同样满宽。
        ⚠ 这里不再有"整盘一块圆角底 + 一圈外框"—— 描边在每张卡片自己身上（见 drawCell）。 */
-    var panX = PAD + ringW, panY = y + ringW;
+    var panX = PAD, panY = y;
     for (var r = 0; r < 3; r++) {
       for (var c = 0; c < 3; c++) {
         var pal = CELL_ORDER[r * 3 + c], p = null;
@@ -998,7 +994,7 @@
       }
     }
 
-    y += panH + ringW * 2 + shrink + 30;
+    y += panH + 30;
 
     /* 页脚 */
     ctx.font = '400 18px ' + SANS;

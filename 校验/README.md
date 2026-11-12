@@ -40,7 +40,7 @@ python3 校验/_probe_runtime.py apk    # 测 app/out 里最新那个包 —— 
 > ★ 2026-10-28：本机 python 侧没有 playwright（`import playwright` 失败），另写了
 > **`校验/_probe_runtime.js`**（node + playwright-core），同一套四步手势，另加一条
 > 「阴盘 · 空亡/驿马印章不得压到八神字」的几何断言。`BASE` 也随之改成按脚本位置推
-> （工程从 `魔门有仙气/星曜奇门` 搬到了 `A1项目-归档/B2项目-星曜奇门`，写死的路径已失效）。
+> （工程目录曾整体搬过一次，脚本里写死的绝对路径已改成按脚本位置推导 `BASE`）。
 > ```bash
 > NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules node 校验/_probe_runtime.js [apk]
 > ```
@@ -83,28 +83,29 @@ NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_ziwei.js   # 73 过 / 0 
 `getMajorStar()`（2023-03-06 辰时十四主星逐宫 + 亮度）、癸年四化。另跑 6060 盘全域：
 每盘十四颗不缺不重、单宫最多 4 颗。已接进 `build_xingyao.py` 门禁第 0 步。
 
-## 阴盘 · 印章压八神（2026-10-28 新增）
+## 阴盘 · 版面与印章（2026-11-12 定版）
 
 ```bash
 # 预览/量测类脚本要真页面：先在 web/ 下起静服务（受管后台 job，别用 nohup）
 cd web && python3 -m http.server 8767 --bind 127.0.0.1
 
-# ① 扫 60 张阴盘：空亡+驿马同宫的宫数、印章与八神紧字框的重叠面积（应为 0）
+# ① 扫一批阴盘：空亡+驿马同宫的宫数、印章与八神紧字框 / 暗干的重叠面积（应为 0）
 NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules node 校验/_probe_yin_seal.js
 
 # ② 导出图单盘（canvas 真出图，存 PNG）
 NODE_PATH=... node 校验/_probe_yin_export.js 2026-01-01T04:00 校验/_yin_export_after.png
-
-# ③ 调距方案样张（暗干→印 / 印→神 的不同取值，390/360/320 三档一起量）
-NODE_PATH=... node 校验/_preview_yin_shift.js
-
-# ④ 外置暗干版式预览（环宽 20/24/30 × 圆章/无框字；同样要 8767 静服务）
-NODE_PATH=... node 校验/_preview_yin_ring.js
 ```
 
-口径（2026-10-28 晚已改版）：暗干搬回**盘外**一圈（左 4/3/8 · 右 2/7/6 · 上 9 · 下 1），
-盘面收 48px；宫内回到普通排法，原先那套「印章 31 / 导出 26k」的补偿已撤。
-`_check_chuanxing` 的阴盘段随即改成「盘外 8 颗 / 宫内 0 枚 .qm-agan」。
+**当前口径（2026-11-12 定版）**：阴盘整体并入**标准盘**——神/星/门/天地盘干、空亡/驿马印章
+全部与拆补/置闰同一套，只有两处不同：① 暗干（隐干）排在本宫**星曜（政余）那一行**的槽位
+（左下角 `left:5 / bottom:4`、`.9em`、靠左一行）；② 阴盘不排政余、插件一律不入。
+
+历史：2026-10-28 的「暗干排盘外一圈（左 4/3/8 · 右 2/7/6 · 上 9 · 下 1）+ 盘面收 48px」
+与 2026-11-11 的「宫底居中无声落字」都已废弃；**外圈那套死代码**（`#qmRing` / `.qm-ring` /
+`.qm-rg` / `has-ring` / `renderRing` / `paintRing` / `RING_W` / 阴盘 480px 最小高度）
+已于 2026-11-12 清理干净，`_preview_yin_ring.js`、`_preview_yin_shift.js` 也一并删除。
+`_check_chuanxing` 的阴盘段随之改成「8 枚 `.qm-yin-agan` 在本宫左下角 / 无 `.qm-rg` /
+空亡是「空亡」二字印章」。
 
 ## 天地盘干对齐（2026-11-03 新增 · 改盘面行排布后必跑）
 

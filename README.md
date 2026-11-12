@@ -6,8 +6,19 @@
 
 [![Build APK](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml/badge.svg)](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-2.7.1-orange)
+![Version](https://img.shields.io/badge/version-3.0.0-orange)
 ![Android](https://img.shields.io/badge/Android-10%2B%20(minSdk%2029)-blue)
+
+## 下载
+
+最新版 **3.0.0（207）**，已签名、可直接覆盖安装：
+
+| 文件 | 大小 | SHA-256 |
+|---|---|---|
+| [`dist/星曜奇门-3.0.0.apk`](dist/星曜奇门-3.0.0.apk) | 588 KB | `b933b9a4…`（见 `dist/README.md`） |
+
+> 包名 `com.momen.xingyaoqimen`，minSdk 29（Android 10+）。
+> 自行构建见文末「构建」；签名密钥不入库，按说明自备即可。
 
 ## 项目简介
 
@@ -52,7 +63,7 @@
 插件可以挂在宫位，也可以接管抬头四柱；`exclusive` 的插件会自动让其他插件让位，
 `blockInYin` 的不会污染阴盘。契约见 [`web/plugins/README.md`](web/plugins/README.md)。
 
-仓库自带六个：
+仓库自带七个：
 
 | 插件 | 做什么 |
 |---|---|
@@ -62,6 +73,7 @@
 | 墓星 | 星门临墓之地生一枚墓星，只标其象，不改事物本义 |
 | 四柱 | 抬头四柱换一种排法：五行色、发丝框、柱间竖线 |
 | 紫微 | 紫微斗数十四主星折进九宫，带年干四化；独占显示，开着时星曜自动让位 |
+| 虚实法 | 四柱地支与宫位纳支对照：有支的宫（实）宫卡边框加深，没有的（虚）变浅；中五恒虚 |
 
 <p align="center"><img src="docs/screenshots/plugins.png" width="46%" alt="插件设置"></p>
 
@@ -105,7 +117,7 @@
 - **输入校验**：经纬度整串校验（`123abc`、超范围都会就地提示），
   保留用户输入、不静默截值、不误重排盘面。
 
-另外还有：**阴盘**（数字定局 + 暗干，暗干钉在宫外侧）、**心盘**（先点宫定符号再反推全盘）、
+另外还有：**阴盘**（数字定局 + 暗干；暗干坐在星曜那一行的槽位，与标准盘同一套行）、**心盘**（先点宫定符号再反推全盘）、
 **真太阳时**（经度时差 + 均时差，标准时与换算结果同屏）。
 
 ## 快速开始（网页版）
@@ -130,7 +142,7 @@ python3 build_xingyao.py
 # 产物：app/out/星曜奇门-<版本>.apk
 ```
 
-构建脚本内置质量门禁（串星集成 88 条、真太阳时 14 条、墓星 38 条、紫微 145 条），
+构建脚本内置质量门禁（串星集成 116 条、真太阳时 14 条、墓星 38 条、紫微 145 条），
 任一失败即中止，不会产出坏包。
 
 **签名密钥需要自备**：本仓库按安全原则不包含签名密钥。构建前请自建：
