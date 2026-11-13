@@ -88,9 +88,14 @@ html.booting { background: var(--bg, #fff); }
   margin: 8px 0 0; font-size: 11.5px; letter-spacing: .3em; text-indent: .3em;
   color: var(--ink-3);
 }
+/* ★ 2026-11-13 用户：起盘页与串星页**去掉阴影**。
+   原先这里是 `box-shadow: var(--shadow)` —— 实测它是全页唯一一条"卡片投影"
+   （其余 box-shadow 只出现在弹层/浮层/toast 上：.cxpop / .sheet / .toast / .qdrop / .cropper）。
+   去掉后卡片靠原来的 1px 描边 + 16px 圆角定形，四套主题都不发飘（对照图见
+   设计-起盘页/去阴影对比-20261113/）。**不要再加回任何投影** —— 需要强调就加深描边。 */
 .home .timecard { position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent;
   border-radius: 16px; background: var(--surface); border: 1px solid var(--line);
-  box-shadow: var(--shadow); padding: 17px 16px 15px; text-align: center;
+  padding: 17px 16px 15px; text-align: center;
 }
 /* 「点大时刻弹选择器」的输入锚点：**不再用透明层接点击**。
    原来这里是 opacity:0 + 绝对定位铺满，靠原生点击 input 弹选择器；
@@ -397,8 +402,25 @@ html.booting { background: var(--bg, #fff); }
       <div class="info">
         <div class="qhead">
           <div class="qh-left">
+            <!-- 2026-11-13 用户定稿「课放进中宫」：四柱不再缩放（同显不再占抬头带），
+                 原本为「占回原尺寸」而包的 .plscale 壳已无用，删掉，四柱仍是标准 4×2 色阵。 -->
             <div class="plabel" id="plabel"><span>年</span><span>月</span><span>日</span><span>时</span></div>
             <div class="pillars" id="gz"></div>
+          </div>
+          <!-- 「盘面同显串星课」（排法里的开关）。★ 2026-11-13 用户定稿：**课放进中宫**。
+               这块 DOM 只是课的容器，平时 display:none；同显开着时由 ui.js 的
+               renderMiniLesson 搬进 .qm-text-pan（绝对定位盖在中宫格上），
+               抬头带（四柱 / 元信息）与盘的尺寸位置一个像素都不动。
+               为什么不删这块 HTML：门禁 _check_chuanxing ㉑ 钉的就是这个 id
+               与它里面恰好 7 个 .xcell；搬走的是节点本身，id 与格数都不变。
+               ⚠ 2026-11-02 排查项 8：原「全屏串星课页」因为 state.chartSub 从无 'lesson'
+                 赋值已成死代码，连同它的提示键/侧边截图键一起删除；
+                 串星课现在只由起课后的 #cxPop 弹层与中宫里的 #xkMini 展示。 -->
+          <div class="xk xk-mini k1" id="xkMini" style="display:none">
+            <!-- 角标：中宫左上角标「串星课」（用户 2026-11-13）。只在中宫里显示，
+                 字轻、字距开，当"这是什么"的注脚；右上角那枚时干与之左右对称。 -->
+            <span class="xkmark">串星课</span>
+            <div class="xkbody xgrid" id="xkMiniGrid"></div>
           </div>
           <div class="qh-right">
             <span><i>值符</i><b id="vZhiFu">—</b></span>
@@ -412,47 +434,103 @@ html.booting { background: var(--bg, #fff); }
         </div>
         <div class="qdrop" id="qdrop"></div>
       </div>
-      <!-- 「盘面同显串星课」（排法里的开关）：开着时它占着上方，九宫盘被挤下去。
-           ⚠ 2026-11-02 排查项 8：原「全屏串星课页」因为 state.chartSub 从无 'lesson'
-             赋值已成死代码，连同它的提示键/侧边截图键一起删除；
-             串星课现在只由起课后的 #cxPop 弹层与这里的 #xkMini 展示。 -->
-      <div class="xk xk-mini k1 rule" id="xkMini" style="display:none">
-        <div class="xkbody xgrid" id="xkMiniGrid"></div>
-      </div>
       <!-- 盘外套一层 #qmBox：尺寸与"上移"都作用在它身上。
            2026-11-12：阴盘暗干已进宫（坐星曜那一行），原来盘外那圈 #qmRing 已删除。 -->
       <div class="panwrap"><div class="qm-box" id="qmBox"><div id="panHost"></div></div></div>
     </section>
 
     <!-- ==================== 串星（起课） ====================
-         骨架照起盘页：logo → 时刻卡 → 此刻/选时刻 → 大按钮。点「起课」进串星课。 -->
+         ★ 2026-11-13 重做（小六壬·加干 / 加星 双译法）：
+         骨架照起盘页：logo → 时刻卡（点卡弹选择器）→ 分段「时间 / 报数」→ 面板 → 起课。
+         · 时间在前且默认：四数由这一刻直译（农历月 / 农历日 / 时辰序 / 时干序），**只读**；
+           想改数必须切到「报数」档，切档不静默带数过去（见 ui.js 的 setCxSrc）。
+         · 六神 / 九星 不占分段位：那是分段行右首的一枚**小勾选** ——
+           `#cxMode`（label）+ `#cxStar`（真 checkbox，视觉 18px、触控 81×40）：
+           `六神 ☐ 九星`，不勾＝六神、勾上＝九星；设置页里一个控件都不加。
+         · 起课后仍留在这一页，课页由 #cxPop 弹层展示（2026-10-21 用户定版）。
+         同一套 .xcell 样式除弹层之外还给「盘面同显」的 #xkMini 用，别删。 -->
     <section class="view" id="view-chuanxing">
       <div class="home">
         <div class="logo">
           <h2>串<em>星</em></h2>
           <p>天宫 · 地宫 · 人宫</p>
         </div>
-        <!-- ★ 2026-10-07（用户定版）：起课页原来太空荡（起完课跳到全屏，那一屏也没几行字），
-             把**起初的课**直接摆在这一页上 —— 与全屏课页同一张卡、同一套 .xcell。
-             ★ 2026-10-21：起课后改成同页弹层（#cxPop）展示，这一页上不再摆课卡；
-               同一套 .xcell 样式仍给「盘面同显」的 #xkMini 用，别删。 -->
-        <div class="timecard">
+        <div class="timecard" id="cxTimecard">
           <div class="t" id="cxTime">—</div>
           <div class="p" id="cxPillars">—</div>
           <div class="s" id="cxSub">—</div>
-          <!-- 点大时刻即选时刻（同起盘页：透明 input 压在上面） -->
+          <!-- 点大时刻即选时刻（同起盘页：1px 隐形锚点，点击交给 JS 的 openTimePicker） -->
           <input type="datetime-local" id="cxPick" aria-label="选时刻" min="1900-01-01T00:00" max="2100-12-31T23:59">
         </div>
-        <div class="seg modes" id="segCxPick" style="margin-top:12px">
-          <button data-mode="now" class="on">此刻</button>
-          <button data-mode="rand">随机</button>
+
+        <!-- 三档：时间 / 数字 / 随机（顺序与默认都是用户 2026-11-13 定的）。 -->
+        <!-- 2026-11-13 末轮（用户）：九星勾选**做成横栏的一部分**（塞进分段容器右端，仍可勾选）；
+             ⓘ 挂到横栏**右下角**。原先时间档 / 随机档各有一枚 ⓘ，属重复，已删。 -->
+        <div class="cxbar">
+          <div class="seg modes three" id="segCxSrc">
+            <button data-src="time" class="on">时间</button>
+            <button data-src="nums">数字</button>
+            <button data-src="rand">随机</button>
+            <label class="cxmode" id="cxMode" for="cxStar">
+              <input type="checkbox" id="cxStar" aria-label="九星口径（勾选＝九星，不勾＝六神）">
+              <span class="t t9">九星</span>
+            </label>
+          </div>
+        </div>
+        <div class="cxfoot">
+          <button class="mhelp" id="cxTimeHelp" type="button" aria-label="四数从哪来 · 随机怎么抽">ⓘ</button>
+        </div>
+
+        <div class="cxstage" id="cxstage">
+          <!-- 时间档：四数只读 —— **只给数，不给结果**（结果在「起课」后的课页里看） -->
+          <div class="cxpanel on" id="cxPanelTime">
+            <div class="cxnums" id="cxTimeNums">
+              <div class="cxn"><span class="lb">天宫</span><b>—</b></div>
+              <div class="cxn"><span class="lb">地宫</span><b>—</b></div>
+              <div class="cxn"><span class="lb">人宫</span><b>—</b></div>
+              <div class="cxn"><span class="lb">天干</span><b>—</b></div>
+            </div>
+          </div>
+
+          <!-- 数字档：四格分开填。**格下不写结果**，非法输入只标红 + 底部一行提示 -->
+          <div class="cxpanel" id="cxPanelNums">
+            <div class="cxgrid4">
+              <label class="cxi"><span class="lb">天宫</span>
+                <input id="cxN0" type="text" inputmode="numeric" autocomplete="off"
+                       enterkeyhint="done" aria-label="天宫数"></label>
+              <label class="cxi"><span class="lb">地宫</span>
+                <input id="cxN1" type="text" inputmode="numeric" autocomplete="off"
+                       enterkeyhint="done" aria-label="地宫数"></label>
+              <label class="cxi"><span class="lb">人宫</span>
+                <input id="cxN2" type="text" inputmode="numeric" autocomplete="off"
+                       enterkeyhint="done" aria-label="人宫数"></label>
+              <label class="cxi"><span class="lb">天干</span>
+                <input id="cxN3" type="text" inputmode="numeric" autocomplete="off"
+                       enterkeyhint="done" aria-label="天干数"></label>
+            </div>
+            <div class="cxerr" id="cxNumErr"></div>
+          </div>
+
+          <!-- 随机档：起课那一刻抽四个数（域随口径），重排再抽；页上只回显抽到的四数 -->
+          <div class="cxpanel" id="cxPanelRand">
+            <div class="cxnums is-rand" id="cxRandNums">
+              <div class="cxn"><span class="lb">天宫</span><b>—</b></div>
+              <div class="cxn"><span class="lb">地宫</span><b>—</b></div>
+              <div class="cxn"><span class="lb">人宫</span><b>—</b></div>
+              <div class="cxn"><span class="lb">天干</span><b>—</b></div>
+            </div>
+          </div>
         </div>
 
         <button class="btn cast" id="btnCastX">起课</button>
       </div>
 
       <!-- 串星课弹层（2026-10-21 用户定版）：底部三按钮 返回 / 截图 / 重排。
-           （方案 C 的「左上 ← + 右上 ⌸」样张试过，用户最后选了三按钮这版） -->
+           （方案 C 的「左上 ← + 右上 ⌸」样张试过，用户最后选了三按钮这版）
+           ★ 2026-11-13 用户定：**六神 / 九星 的切换只放在起课页**（#cxMode / #cxStar 那一处）。
+             课页抬头左角**留空**（这儿曾经挂过第二枚入口，已整套删除，别再加回来）；
+             右角的「读法」i 不挪位，左右不再对称也没关系 —— 不新增任何控件。
+             想换译法：返回起课页 → 勾选「九星」 → 再起课（recast 会按新译法重算）。 -->
       <div class="cxpop-mask" id="cxPopMask"></div>
       <div class="cxpop" id="cxPop" role="dialog" aria-modal="true" aria-label="串星课" tabindex="-1">
         <div class="cxpop-head">
@@ -705,6 +783,14 @@ html.booting { background: var(--bg, #fff); }
 <script src="js/astro.js"></script>
 <script src="js/lunar.js"></script>
 <script src="js/qimen.js"></script>
+<!-- 共享随机源：**必须排在 cx.js 之前**（cx.js 的随机全部委托给它；
+     顺序反了会走惰性壳，一调 randomNums 就抛「rng.js 没加载」）。
+     2026-11-13 由规则组抽出：起盘页的随机时刻/随机一局与串星课的随机四数共用同一份熵。 -->
+<script src="js/rng.js"></script>
+<!-- 串星课引擎（六神 / 九星 双译法）与读法：必须排在 ui.js 之前，
+     且 cx.js 要吃 qimen.js 的 Q.STAR 与 lunar.js 的 Lunar.cast。 -->
+<script src="js/cx.js"></script>
+<script src="js/cxhelp.js"></script>
 <script src="js/ziwei.js"></script>
 <script src="js/bazi.js"></script>
 <script src="js/yinpan.js"></script>
@@ -721,6 +807,11 @@ html.booting { background: var(--bg, #fff); }
 <!-- ★ core.js 必须在 Snapshot / Stars 之后：它要把这些模块收进 window.App -->
 <script src="js/core.js"></script>
 <script src="js/plugins.js"></script>
+<!-- 第三方许可全文（内联版，随包分发）。「关于 → 开源声明」点「许可全文」要用它。
+     为什么内联而不是 fetch web/licenses/*.txt：file:// 下部分 WebView 会拒读本地文件。
+     源文件与生成脚本见 web/licenses/ 与 校验/_gen-license-js.js。 -->
+<script src="licenses/licenses.js"></script>
+<script src="js/marks.js"></script>
 <script src="plugins/mu.js"></script>
 <script src="plugins/zw.js"></script>
 <script src="plugins/sizhu.js"></script>

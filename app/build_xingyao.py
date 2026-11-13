@@ -27,7 +27,7 @@ ZIPALIGN = '/usr/bin/zipalign'
 APKSIGNER_JAR = '/usr/share/java/apksigner.jar'
 AT = '/root/at'
 
-NAME, VER, CODE = '星曜奇门', '3.0.1', 208
+NAME, VER, CODE = '星曜奇门', '3.2.6', 224
 PKG, ALIAS = 'com.momen.xingyaoqimen', 'xingyao'
 MIN_SDK, TARGET_SDK = 29, 34
 
@@ -46,6 +46,29 @@ def run(cmd, cwd=None, quiet=False):
         for line in (p.stdout + p.stderr).strip().splitlines()[-4:]:
             print('   ', line)
     return p
+
+
+def check_licenses():
+    """开源许可必须随包分发 —— 复制 web/ 之前先验一遍。
+
+    为什么钉死这一条：字体 QM Serif 是 Noto Serif CJK SC 的**子集衍生**，我们分发的是
+    字体文件本身，SIL OFL 1.1 要求「随附许可证 + 保留版权行」。少带一份 txt 就违约，
+    而且这种缺失在 App 里**看不出来**（图照出、字照显示），只能靠门禁和这里拦住。
+    详见 web/licenses/THIRD-PARTY.md。"""
+    lic = os.path.join(WWW_SRC, 'licenses')
+    if not os.path.isdir(lic):
+        print('!! 找不到 web/licenses/ —— 许可全文没随包，打包中止（见 web/licenses/THIRD-PARTY.md）')
+        sys.exit(1)
+    need = ['OFL-1.1.txt', 'licenses.js', 'THIRD-PARTY.md', 'LICENSE']
+    missing = [f for f in need if not os.path.isfile(os.path.join(lic, f))]
+    if missing:
+        print('!! web/licenses/ 缺文件：' + ', '.join(missing) + ' —— 打包中止')
+        sys.exit(1)
+    big = [f for f in need if os.path.getsize(os.path.join(lic, f)) < 200]
+    if big:
+        print('!! web/licenses/ 里这些文件过小（像被清空了）：' + ', '.join(big) + ' —— 打包中止')
+        sys.exit(1)
+    print('    许可随包：web/licenses/ 四项齐全（OFL / licenses.js / THIRD-PARTY.md / LICENSE）')
 
 
 def stage_www(dst):
@@ -90,12 +113,23 @@ def main():
     for d in [BUILD, OUT, AT]:
         os.makedirs(d, exist_ok=True)
 
-    # ---- 0) 前端门禁：CSS + 串星 + 真太阳时 + 墓星 + 紫微（失败直接中止） ----
+    # ---- 0) 前端门禁：CSS + 串星 + 串星引擎 + 读法 + 开源声明 + 真太阳时 + 墓星 + 紫微（失败直接中止） ----
     print('[0/6] 前端自检')
     proj = os.path.dirname(WWW_SRC)
     # jsdom 安装位置：可用 XYQ_NODE_PATH 覆盖，默认沿用开发容器布局
     genv = dict(ENV, NODE_PATH=os.environ.get('XYQ_NODE_PATH', '/root/dsh-dom/node_modules'))
-    for script, what in [('_check_css.js', 'CSS'), ('_check_chuanxing.js', '串星集成'), ('_check_truesolar.js', '真太阳时'), ('_check_mu.js', '墓星判定'), ('_check_ziwei.js', '紫微安星')]:
+    # ★ 2026-11-13：串星课换「小六壬·加干」后，口径拆成两层门禁 ——
+    #   _check_cx_engine.js 管引擎（四数→课 / 六亲 / 两套译法 / 不随盘面变），纯 node + jsdom；
+    #   _check_cxhelp.js 管读法稿与底本逐字对照（读法换了就得拦住）；
+    #   _check_chuanxing.js 只管页面层（真 index.html 里点出来的东西）。
+    #   _check_license.js 管「开源声明」与许可随包分发（三份 MIT 只列名字、字体给 OFL 全文、
+    #   web/licenses/ 与 licenses.js 逐字一致）—— 文案/声明类，紧跟读法那道。
+    # 八道都必须进第 0 步：漏一道，前端带着坏引擎/坏稿/坏声明也能出包。
+    for script, what in [('_check_css.js', 'CSS'), ('_check_chuanxing.js', '串星集成'),
+                         ('_check_cx_engine.js', '串星引擎'), ('_check_cxhelp.js', '串星读法'),
+                         ('_check_license.js', '开源声明'),
+                         ('_check_truesolar.js', '真太阳时'), ('_check_mu.js', '墓星判定'),
+                         ('_check_ziwei.js', '紫微安星')]:
         q = subprocess.run(['node', os.path.join(proj, '校验', script)], cwd=proj, env=genv,
                            capture_output=True, text=True)
         tail = (q.stdout + q.stderr).strip().splitlines()
@@ -115,6 +149,8 @@ def main():
     shutil.copyfile(KS_SRC, ks)
 
     # ---- 1) 前端资源 ----
+    # ★ 先验许可随包（web/licenses/ 四项齐全），再复制 web/ —— 缺了就地中止，别打出违约的包
+    check_licenses()
     print('[1/6] 清洗前端资源')
     www = os.path.join(BUILD, 'www')
     n = stage_www(www)

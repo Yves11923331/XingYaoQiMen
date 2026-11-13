@@ -1,6 +1,9 @@
 /* 兜底自检：① CSS 花括号配平 ② 代码里用到的类名在 CSS 里必须有定义
  * 起因：2026-09-26 用"区间替换"改 .tg 时，把 .fold 整块吃掉了 —— 弹层十一条全部一直展开，
  *       肉眼才发现。这个脚本就是为了让这类事故立刻报错。
+ * CSS 语料＝css/app.css + css/pan.css + index.html / js/ui.js / js/snapshot.js 的行内 <style>
+ *          + js/cxhelp.js 自带的 <style>（它的样式在 JS 拼的字符串里，只能 vm 跑出来取；
+ *            取不到即报红，见下面那一段的注释）。
  * 跑法：node 校验/_check_css.js
  */
 const fs = require('fs'), path = require('path');
@@ -26,6 +29,43 @@ const ALLOW = new Set(['on', 'q', 'js', 'hidden']);
 const src = ['index.html', 'js/ui.js', 'js/snapshot.js'].map(read).join('\n');
 /* 行内 <style> 也算 CSS 语料 */
 for (const m of src.matchAll(/<style>([\s\S]*?)<\/style>/g)) css += m[1] + '\n';
+
+/* ★ 2026-11-13：cxhelp.js（串星课 · 读法）的样式也要进语料。
+   为什么不能像上面那样正则抓：cxhelp.js 里的样式是**JS 数组 join 出来的 HTML 字符串**，
+   文件里只有 `'<style>' + CSS + '</style>'` 这两个片段，正则抓 <style>…</style> 一段都抓不到。
+   不补这一步的后果（实测过）：ui.js 里那句锚点字符串 '<div class="cxd-root">' 会被当成
+   "ui.js 用到的类名"，而 .cxd-root 的定义在 cxhelp.js 里 → 一直误报"CSS 里没定义"。
+   做法：vm 里跑一次 cxhelp.js（它就是个挂 window 的 IIFE），取 CxHelp.html 里的 <style> 内容。
+   ⚠ 取不到 / 跑不通必须**报红**（bad++）：否则 cxhelp.js 哪天写坏了，这段会静默变成空串，
+     "类名全都有定义"就变成永真 —— 等于把这道门禁废掉，比误报危险得多。
+   ⚠ 也**不要**图省事把 cxd-root 之类塞进 ALLOW / KNOWN_UNSTYLED：那才是真放水。 */
+{
+  const vm = require('vm');
+  const box = { window: {} };
+  vm.createContext(box);
+  let own = null, why = '';
+  try {
+    vm.runInContext(read('js/cxhelp.js'), box, { filename: 'web/js/cxhelp.js' });
+    const H = box.window.CxHelp && box.window.CxHelp.html;
+    if (typeof H !== 'string' || !H) why = 'window.CxHelp.html 没导出（不是字符串）';
+    else {
+      const m = H.match(/<style>([\s\S]*?)<\/style>/);
+      if (!m || !m[1].trim()) why = 'CxHelp.html 里找不到非空的 <style>…</style>';
+      else own = m[1];
+    }
+  } catch (e) {
+    why = '执行报错：' + e.message.split('\n')[0];
+  }
+  if (own) {
+    css += own + '\n';
+    const cls = new Set(Array.from(own.matchAll(/\.([A-Za-z][\w-]*)/g), m => m[1]));
+    console.log(`✓ js/cxhelp.js 自带 <style> 已并入语料（${own.length} 字符 / ${cls.size} 个类）`);
+  } else {
+    console.log('✗ js/cxhelp.js 的样式取不到 —— ' + why);
+    console.log('    （这一条不能跳过：取不到就等于把"类名全都有定义"变成永真）');
+    bad++;
+  }
+}
 const used = new Set();
 for (const m of src.matchAll(/class="([^"{}]+)"/g)) {
   /* JS 里常拼字符串（class="qm-fx ' + x + '"），会抓到碎片 —— 只收合法类名 */

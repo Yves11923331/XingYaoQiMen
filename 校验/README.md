@@ -27,6 +27,36 @@ node 校验/_walk_keying_mid.js
 —— **已随容器重置丢失**（2026-09-18 查过，`/root` 里只剩 `at/`、`dl/`）。项目记录里那些"全绿"数字是当时的实测值。
 要重建的话从对应轮次的描述 + 本节的两个新脚本当模板写。
 
+## 开源声明与许可随包（2026-11-13 新增 · 动「关于」或 web/licenses/ 后必跑）
+
+```bash
+NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_license.js
+```
+
+**56 条**断言（2026-11-13 末轮：用户要求「仅保留必要的」后从 49 增至 56），查的是「用户裁定之后」的那套口径：
+
+- **「关于」里必须有**：`开源声明` / `SIL OFL 1.1` / `Noto Serif CJK SC`（+ `QM Serif`、许可全文入口、版权行）。
+  → 用户 2026-11-13 末轮裁定：**只声明字体一条**，"数据与规则参照"整段（iztro / qimen-dunjia /
+  bigfishmarquis-qimen / mQimen / 全部自研」已从「关于」删除。
+- **反向守护（重要）**：「关于」里**不许再出现** `iztro` / `qimen-dunjia` / `bigfishmarquis-qimen` /
+  `数据与规则参照` / `mQimen` / `全部自研` / `非第三方` —— 防以后有人"保险起见"又搬回来。
+- **只有字体给「许可全文」入口**：`#sheet [data-lic]` 恰好 1 枚且指向 `ofl`。点开能读到 `SIL OPEN FONT LICENSE`。
+- `window.LICENSES` **只有 `ofl`** 全文（非空且与 `web/licenses/OFL-1.1.txt` **逐字相同**），
+  不再内联那三份 MIT。
+- `web/licenses/` 里 `OFL-1.1.txt`（>200B）、`LICENSE`、`THIRD-PARTY.md`、`licenses.js` 都在；
+  **三份 MIT 全文文件必须不存在**（用户裁定不需要）。
+- `THIRD-PARTY.md` 仍是**书面凭据**（不进 UI）：四条判定都在，且写明法律依据关键词（思想 / 事实 / 公有领域）——
+  它正是"为什么只声明字体"的依据，**不要删**。
+- `app/build_xingyao.py` 的 `check_licenses()` **调用早于 `stage_www()`**（复制 `web/` 之前先验）。
+- `L6c`：断言本脚本确实挂在构建第 0 步的**八道门禁**清单里（防哪天被悄悄摘掉）。
+- 「关于」里 `<div class="sub">版本 x.y.z</div>` 这一行没被破坏（打包脚本的替换锚点）。
+
+改 `web/licenses/*.txt` 之后要重跑生成脚本，否则那条「逐字相同」会红：
+
+```bash
+NODE_PATH=/root/dsh-dom/node_modules node 校验/_gen-license-js.js
+```
+
 ## 运行时探针（2026-10-07 新增 · 改界面后必跑）
 
 ```bash

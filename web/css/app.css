@@ -106,7 +106,8 @@ html[data-theme="white"] {
   --ji: #0f7a4d; --xiong: #c0392b; --ping: #5d6772;
   --shadow: 0 10px 28px rgba(40,44,60,.13);
   --sheet-shadow: 0 -6px 24px rgba(40,44,60,.12);
-  --el-wood:#0f7a4d; --el-fire:#c0392b; --el-earth:#9c7a24; --el-metal:#5d6772; --el-water:#16558f;
+  /* 2026-11-13 末轮（用户）：五行色改用「阴盘 P2」那组作为**标准配色**（深色三套见 pan.css 的提亮覆盖） */
+  --el-wood:#0a9a63; --el-fire:#dc2a18; --el-earth:#b9821a; --el-metal:#4f6a86; --el-water:#0f5cbf;
 }
 
 /* ---------------------------------------------------------------- 外壳 */
@@ -620,11 +621,13 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   .tabbar::before, .tabbar button, .tabbar button .ic { transition: none; }
 }
 
-/* ================================================================ 串星（加干）
+/* ================================================================ 串星（小六壬·加干 / 加星）
  * 「串星」底栏 → 起课页（骨架同起盘页）→「起课」→ 串星课。
- * 课页排布是用户定的：**上面四格 天宫 / 地宫 / 人宫 / 主体**，
+ * 课页排布是用户定的：**上面四格 天宫 / 地宫 / 人宫 / 主体＋天干**，
  * 下面三格是三宫对主体的六亲 —— 正好落在前三个宫下面，主体那列下面留空。
- * 天宫＝值符星 · 地宫＝时干星 · 人宫＝值使宫星 · 主体＝时干。
+ * 2026-11-13 口径换成「小六壬·加干」：天宫/地宫/人宫 ＝ 报数四数里前三数连根数到的**六神**
+ * （大安 / 留连 / 速喜 / 赤口 / 小吉 / 空亡），第四数定**天干**，六亲按六神五行对天干五行。
+ * 另有**九星**译法（同一组四数，1 天蓬 … 9 天英），起课页那枚小勾选随时切。
  * 四款格只差皮肤：默认 k1（五行着色），k2 素白 / k3 印章 / k4 线格 留着备选。
  * ============================================================== */
 #view-chuanxing.on { display: flex; flex-direction: column; height: 100%; }
@@ -632,11 +635,155 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
 /* 起课页纵向位置（2026-10-07 用户点的：LOGO 小上移 / 时间栏较大上移）：
    .home 是 justify-content:center，加一点下内边距就是把整块整体上抬（抬一半）；
-   想再整体上调/下调，只改下面这条 padding-bottom（每 +2px ≈ 整体上移 1px）。 */
-#view-chuanxing .home { padding-bottom: 62px; }          /* 整体上移（这一个是总旋钮） */
-#view-chuanxing .home .logo { margin-bottom: 10px; }
+   想再整体上调/下调，只改下面这条 padding-bottom（每 +2px ≈ 整体上移 1px）。
+   2026-11-13：多了「时间 / 报数」那行与两档面板，62 → 34，仍旧整体上抬一点。
+   2026-11-13 末轮：口径勾选下移独占一行（多约 38px），整块再整体上抬 → 34 → 96，
+   把上方空间让给 logo 与时刻卡，下方留出呼吸。 */
+#view-chuanxing .home { padding-bottom: 96px; }          /* 整体上移（这一个是总旋钮） */
+#view-chuanxing .home .logo { margin-bottom: 16px; }
 
 .cxempty { padding: 10px 0; text-align: center; font-size: 12px; color: var(--ink-3); }
+
+/* ---------------- 起课页 · 三档（时间 / 数字 / 随机）＋ 口径勾选 ----------------
+   ★ 2026-11-13 用户定稿（结构级）：
+     ① 分段三档：时间 / 数字 / 随机（顺序与默认都在 HTML 里写死）；
+        「随机」是独立一档 —— 点「起课」时抽四个数，「重排」再抽；数字档里不再放「此刻 / 随机四数」。
+     ② 六神 / 九星 换成**小勾选**：视觉 18px 方框 + 两个字，整枚 label 高 40px 当触控区。
+        先前那枚 46×48 的描金方章（.cxseal*）整套删除，别再加回来。
+     ③ 三档里**都不写结果**：只给数（或输入框），六神名与六亲一律到课页看。 */
+/* 2026-11-13 末轮：横栏拉满整行（勾选已挪到下一行），不再需要 gap。 */
+.cxbar { display: flex; align-items: center; margin-top: 16px; }
+/* ⚠ 必须带 #view-chuanxing：index.html 的行内 <style> 里有一条 `.home .seg { margin: 14px 0 0 }`
+   （起盘页两排分段的上间距），同权重时**后出现的行内样式**赢，会把这一行撑高 14px。 */
+#view-chuanxing .cxbar .seg { flex: 1 1 auto; margin: 0; }
+/* 三档比分段四档还窄，字号与内边距同步收一档 */
+.seg.modes.three button { font-size: 12.5px; padding: 7px 2px; }
+
+/* 九星勾选**是横栏的一部分**：塞在 .seg 容器右端，与三档之间一条发丝线。
+   ★ 用户：第四格不必与前三格等大、**可以小一点** —— 前三格 flex:1 均分，
+     这一格 flex:0 0 auto 只占自身宽度，字号再收一档；高度 align-self:stretch
+     跟随横栏，横栏总高不变（与起盘页分段对齐仍 ≤2px）。 */
+#view-chuanxing .seg .cxmode {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 5px;
+  align-self: stretch; height: auto; padding: 0 4px 0 9px;
+  margin-left: 2px; border-left: 1px solid var(--line);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+#view-chuanxing .seg .cxmode .t { font-size: 11.5px; letter-spacing: .02em; }
+/* 2026-11-13 末轮（用户：小正方形与周边有点突兀）：
+   ① 略收小到 16px、圆角 4px；② 底色**透明**（不再铺一块 --surface，免得分段栏里多一块白）；
+   ③ 边框用 ink-3 的 45% 混色，比 --line 更柔、又比纯 line 清楚；
+   ④ 勾上时只换边框色与极淡的 accent 底，对勾细一档、光学居中。 */
+#view-chuanxing .seg .cxmode input[type=checkbox] {
+  width: 16px; height: 16px; border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--ink-3) 45%, transparent);
+  background: transparent;
+}
+#view-chuanxing .seg .cxmode input[type=checkbox]:checked {
+  border-color: color-mix(in srgb, var(--accent) 62%, transparent);
+  background: color-mix(in srgb, var(--accent-bg) 70%, transparent);
+}
+#view-chuanxing .seg .cxmode input[type=checkbox]:checked::after {
+  left: 4.5px; top: 0.5px; width: 4px; height: 8px;
+  border-width: 0 1.6px 1.6px 0;
+}
+#view-chuanxing .seg .cxmode:active input[type=checkbox] {
+  border-color: var(--accent-line);
+}
+/* ⓘ 挂在横栏**右下角**：紧贴横栏下沿、靠右，比正文小一号。 */
+.cxfoot {
+  display: flex; align-items: center; justify-content: flex-end;
+  height: 18px; margin-top: 1px;
+}
+.cxfoot .mhelp { font-size: 12px; padding: 0 0 0 10px; margin: 0; }
+.cxmode {
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.cxmode .t {
+  font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--ink-3);
+  transition: color .18s ease;
+}
+/* 只剩「九星」两个字：勾上时点亮，不勾时是次级灰。 */
+.cxmode.star .t9 { color: var(--accent); }
+.cxmode input[type=checkbox] {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px; margin: 0; flex: 0 0 auto;
+  border: 1px solid var(--line); border-radius: 5px; background: var(--surface);
+  position: relative; transition: border-color .18s ease, background .18s ease;
+}
+.cxmode input[type=checkbox]:checked {
+  border-color: var(--accent-line); background: var(--accent-bg);
+}
+/* 勾：用两条边框拼一个 45° 的对勾，不引人字形（四套主题都稳） */
+.cxmode input[type=checkbox]:checked::after {
+  content: ""; position: absolute; left: 5px; top: 1px;
+  width: 5px; height: 9px; border: solid var(--accent);
+  border-width: 0 2px 2px 0; transform: rotate(42deg);
+}
+.cxmode input[type=checkbox]:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+
+/* 三档面板叠在同一格：换档只做 cross-fade，**版面高度取三档里最高的那个，页面不跟着跳**
+   （与起盘页 .mpstage 同一套做法）。隐藏的那档只降 opacity/visibility，不 display:none。 */
+.cxstage { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 10px; }
+.cxstage > .cxpanel {
+  grid-row: 1; grid-column: 1;
+  display: flex; flex-direction: column; justify-content: center;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .18s ease, visibility 0s linear .18s;
+}
+.cxstage > .cxpanel.on {
+  opacity: 1; visibility: visible; pointer-events: auto;
+  transition: opacity .18s ease, visibility 0s linear 0s;
+}
+
+/* 时间档 / 随机档：四数只读（**只有数**，没有神名也没有六亲 —— 结果到课页看） */
+.cxnums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 6px; text-align: center; }
+.cxnums .cxn { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cxnums .lb { font-size: 10px; letter-spacing: .16em; text-indent: .16em; color: var(--ink-3); }
+.cxnums b {
+  font-family: "QM Serif", "Songti SC", serif; font-weight: 700; font-size: 23px;
+  line-height: 1.15; color: var(--ink); font-variant-numeric: tabular-nums;
+}
+/* 随机档还没抽时是「—」：压淡一档，看得出是"空位"不是"零" */
+.cxnums.is-rand b:not(:empty) { color: var(--ink); }
+.cxnums.is-rand b { color: var(--ink-3); }
+
+/* 数字档：四格分开填（格下不写任何东西） */
+.cxgrid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 8px; }
+.cxgrid4 .cxi { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.cxgrid4 .lb { font-size: 10px; letter-spacing: .16em; text-indent: .16em; color: var(--ink-3); }
+.cxgrid4 input {
+  width: 100%; height: 40px; padding: 0 2px; text-align: center;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2);
+  color: var(--ink); font-family: "QM Serif", "Songti SC", serif;
+  font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums;
+  -webkit-appearance: none; appearance: none;
+}
+.cxgrid4 input::placeholder { font-size: 12px; font-weight: 400; color: var(--ink-3); opacity: .7; }
+.cxgrid4 input:focus { outline: 0; border-color: var(--accent-line); background: var(--accent-bg); }
+/* 非法输入：**不改用户填的字**，只把框染红；具体哪一格错了由底部那行说 */
+.cxgrid4 .cxi.bad input { border-color: var(--xiong); }
+
+/* 数字档底部那一行提示（非法输入时才出现，占位不撑高） */
+.cxerr {
+  margin-top: 7px; min-height: 17px; text-align: center;
+  font-size: 11px; line-height: 1.5; color: var(--xiong);
+}
+
+/* 脚注行：**只留右侧的 ⓘ**（时间档不再摆「农历…·只读」那行字 —— 用户 2026-11-13 删） */
+
+/* ---- 切换译法时课页那三宫名的原位换名（页面三档已经不显示结果，只有课页需要）---- */
+.cxpop-card.xfade { opacity: 0; }
+.cxpop-card { transition: opacity .18s ease; }
+
+/* 读法弹层顶部那行「九星口径」提示（只在九星态插，正文仍是 cxhelp.js 的原文） */
+.cxhnote {
+  margin: 0 0 12px; padding: 10px 12px; border-radius: 11px;
+  border: 1px dashed var(--accent-line); background: var(--accent-bg);
+  font-size: 11.5px; line-height: 1.75; color: var(--ink-2);
+}
+.cxhnote b { color: var(--accent); font-weight: 700; }
 
 /* ⚠ 整体尺寸系数 --xk-s：课块做 transform 缩放时用它。
    .xk 是课容器的通用底座（现在只剩「盘面同显」的 #xkMini 用）；
@@ -678,11 +825,93 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
    ① box-sizing: content-box —— renderMiniLesson 把 grid.offsetHeight × --xk-s 写回 style.height，
       全局 border-box 会把 padding/描边吃掉，字就漏到卡外；
    ② 左右 margin 取 21.5px，与九宫盘（350 宽）左右边对齐。 */
+/* ============================================================================
+/* ============================================================================
+ * 盘面同显 · 串星课「放进中宫」（2026-11-13 用户定稿）
+ * ----------------------------------------------------------------------------
+ * 口径：**课放进中宫，其余一切照旧** —— 四柱、元信息、抬头带高度、
+ *       盘的尺寸与位置全部与「没开同显」逐像素相同（本段不碰 .info、也不碰 fitPan）。
+ *   · 中宫那块清空：地盘干（.qm-mid-line）、金环（.qm-cell.qm-mid::after）、
+ *     中心晕染（.qm-text-pan::after 里那层金色 radial）都不画。
+ *   · 点中宫不再切「卦象·地支面」（ui.js buildPan：同显开着时直接无操作）。
+ *   · 仅限转盘：星/门/神 任一走飞盘即与同显互斥（ui.js syncPanOpts）。
+ *   · 课在中宫里**竖排**：三宫各占一行（宫名 17px，六亲 10.5px 灰字在其下），
+ *     天干作底款「干 壬」。
+ * ⚠ 这块是**中宫格子**（≈112×155），不是抬头带；改字号先量 112 宽装不装得下。
+ * ⚠ #xkMini 由 ui.js 的 renderMiniLesson 搬进 .qm-text-pan（绝对定位 → 不占宫位），
+ *   所以下面的百分比是相对「盘」算的，left/top 各偏移一格 + 一道缝。
+ * ========================================================================== */
+#view-chart.lesson-on #xkMini {
+  position: absolute; z-index: 2;
+  left: calc((100% - 2 * var(--qm-gap, 7px)) / 3 + var(--qm-gap, 7px));
+  top:  calc((100% - 2 * var(--qm-gap, 7px)) / 3 + var(--qm-gap, 7px));
+  width:  calc((100% - 2 * var(--qm-gap, 7px)) / 3);
+  height: calc((100% - 2 * var(--qm-gap, 7px)) / 3);
+  margin: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 0; border-radius: 0;
+  --xk-s: 1;
+}
+#view-chart.lesson-on #xkMini .xkbody { transform: none; }
+/* 中宫里的课：**两列** —— 左列三宫名，右列各自的六亲；干是一枚小款，落在右上角。
+   用户 2026-11-13 画的样子（■■ ■■ … ■）就是这个：三行、两列、干单枚；
+   "别严格照抄，要有呼吸感" → 行距 8px、列距 9px，整块居中，四周留 10px。 */
+#view-chart.lesson-on #xkMiniGrid {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: repeat(3, auto);
+  column-gap: 8px; row-gap: 10px;
+  align-content: center; align-items: baseline; justify-content: center;
+  width: 100%; height: 100%;
+  padding: 0 10px; box-sizing: border-box;
+}
+#view-chart.lesson-on #xkMiniGrid .xcell { padding: 0; text-align: left; line-height: 1.2; margin: 0; }
+#view-chart.lesson-on #xkMiniGrid .xcell .nm { font-weight: 400; font-size: 13px; white-space: nowrap; letter-spacing: .02em; }
+#view-chart.lesson-on #xkMiniGrid .xcell.qin { align-self: baseline; }
+#view-chart.lesson-on #xkMiniGrid .xcell.qin .nm { font-weight: 400; font-size: 9.5px; color: var(--ink-3); letter-spacing: .04em; }
+/* 角标「串星课」：中宫左上角，9.5px / 400 / 字距 .14em / --ink-3，不画框不加线
+   （中宫本身有边线，再框就花）；与右上角的时干款一左一右对称。 */
+#view-chart.lesson-on #xkMini .xkmark {
+  position: absolute; top: 10px; left: 12px;
+  font-size: 9.5px; font-weight: 400; letter-spacing: .14em;
+  line-height: 1; color: var(--ink-3);
+}
+/* 三行成对：赤口·父母 / 留连·官鬼 / 空亡·官鬼 */
+#view-chart.lesson-on #xkMiniGrid .xcell:nth-child(1) { grid-area: 1 / 1; }
+#view-chart.lesson-on #xkMiniGrid .xcell.qin:nth-child(5) { grid-area: 1 / 2; }
+#view-chart.lesson-on #xkMiniGrid .xcell:nth-child(2) { grid-area: 2 / 1; }
+#view-chart.lesson-on #xkMiniGrid .xcell.qin:nth-child(6) { grid-area: 2 / 2; }
+#view-chart.lesson-on #xkMiniGrid .xcell:nth-child(3) { grid-area: 3 / 1; }
+#view-chart.lesson-on #xkMiniGrid .xcell.qin:nth-child(7) { grid-area: 3 / 2; }
+/* 干：**不写「干」字** —— 一枚单字款钉在中宫右上角。
+   2026-11-13 22:5x 用户第二次压淡：课与干都别抢眼 —— 干 10.5px / 400（原来 11.5/800），
+   靠位置固定认它是时干，不靠字重。 */
+#view-chart.lesson-on #xkMiniGrid .xcell:nth-child(4) {
+  position: absolute; top: 11px; right: 12px;
+  display: block; margin: 0; padding: 0;
+}
+#view-chart.lesson-on #xkMiniGrid .xcell:nth-child(4) .nm {
+  font-weight: 400; font-size: 10.5px; color: var(--ink-2); letter-spacing: .04em;
+}
+
+/* 同显开着 → 中宫清空（其余八宫一个字不动）：宫位标签、地盘干、金环、中心晕染都不画 */
+#view-chart.lesson-on .qm-cell.qm-mid .qm-pal { display: none; }
+#view-chart.lesson-on .qm-mid-line { display: none; }
+#view-chart.lesson-on .qm-cell.qm-mid::after { display: none; }
+#view-chart.lesson-on .qm-text-pan::after {
+  background-image: var(--qm-dots), var(--qm-vig);
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+}
+
 .xk.xk-mini {
   --xk-top: 0; flex: 0 0 auto;
+  /* 2026-11-13 末轮（用户：串星课块「调小一点」，把盘放大/拉高）：
+     缩放系数 .82 → .66，并收紧上下留白 —— 省出来的高度交给 fitPan，盘身因此能变高。 */
+  --xk-s: .66;
   box-sizing: content-box;
   margin-left: 21.5px; margin-right: 21.5px;
-  padding: 10px 8px 10px;
+  padding: 8px 8px 7px;
   background: color-mix(in srgb, var(--surface) 75%, transparent);
   border: 1px solid var(--line);
   border-radius: 16px;                     /* 不做投影 */
@@ -696,6 +925,16 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 /* 六亲＝对卦象（星）的修饰语：小字 + 淡色 + 常规字重，别抢上面那格的戏 */
 .k1 .xcell.qin .nm { font-size: 13px; font-weight: 600; letter-spacing: .08em; color: var(--ink-3); }
 .k1 .xcell.plain .nm { color: var(--ink); }
+
+/* ★ 空亡：**单独一档**（用户 2026-11-13 拍板）—— 它虽然授土（与留连同色），
+   但"空"的意思不能靠金色说出来：这里压成次级灰，一眼与其余五神分开。
+   ⚠ 2026-11-13 用户追加：**只要灰，不要底下那道线** —— 虚线已删，别再画回去。
+   天干与六亲仍旧不着色（用户定的规矩，见上面 .k1 的注释）。 */
+.xcell.void .nm { color: var(--ink-3); }
+.k1 .xcell.void .nm { color: var(--ink-3); }
+/* ⚠ 2026-11-13 起课页三档**都不写结果**（用户：「数字下面 不要写结果」），
+   .cxnums / .cxgrid4 里已经没有 .nm 元素了 —— 原来那条 `.cxnums .nm.void` 是死代码，已删。
+   空亡的灰只在课页弹层与导出图里出现：`.xcell.void .nm { color: var(--ink-3) }`（见上）。 */
 
 /* 款 2 · 素白格 */
 .k2 .xcell { padding: 10px 2px 9px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
@@ -1006,26 +1245,6 @@ html.bg-custom select { background: color-mix(in srgb, var(--bg-2) 76%, transpar
 
 
 /* ---------------------------------------------------------------- 可折叠卡片 */
-/* 标题栏整条可点；收起时只剩一行标题 + 一句状态摘要。
-   用在"盘面外观"这类——项多但多数时候不用动的分组上。 */
-.card.foldable > h3 {
-  display: flex; align-items: baseline; gap: 8px;
-  cursor: pointer; user-select: none; -webkit-user-select: none;
-}
-.card.foldable > h3 .csum {
-  font-style: normal; font-size: 10.5px; font-weight: 500; letter-spacing: 0;
-  color: var(--ink-3); margin-left: auto;
-  max-width: 66%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.card.foldable > h3 .chev {
-  flex: 0 0 auto; font-size: 11px; line-height: 1; color: var(--ink-3);
-  transition: transform .18s;
-}
-.card.foldable.closed > h3 { margin-bottom: 0; }
-.card.foldable.closed > h3 .chev { transform: rotate(-90deg); }
-.card.foldable.closed .foldbody { display: none; }
-.card.foldable > h3:active { opacity: .7; }
-@media (prefers-reduced-motion: reduce) { .card.foldable > h3 .chev { transition: none; } }
 
 
 

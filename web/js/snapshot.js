@@ -92,7 +92,14 @@
       chipLine: pv('--qm-chip-line', 'rgba(18,24,36,.13)'),
       sealVoidInk: pv('--qm-seal-void-ink', '#b23a2c'), sealVoidBg: pv('--qm-seal-void-bg', 'rgba(190,60,48,.08)'), sealVoidLine: pv('--qm-seal-void-line', 'rgba(190,60,48,.32)'),
       sealHorseInk: pv('--qm-seal-horse-ink', '#2b6f94'), sealHorseBg: pv('--qm-seal-horse-bg', 'rgba(46,120,160,.08)'), sealHorseLine: pv('--qm-seal-horse-line', 'rgba(46,120,160,.3)'),
-      el: {}, tian: {}, men: {}, shen: {}, star: {}
+      /* 五行色：**与 app.css 的 --el-* 同源**（四套主题各一份；盘面的 --qm-el-* 逐个等于它）。
+         导出图按 three[i].el 在这里取，取不到才回落引擎给的 three[i].color。 */
+      el: {
+        '木': rv('--el-wood', '#0f7a4d'), '火': rv('--el-fire', '#c0392b'),
+        '土': rv('--el-earth', '#9c7a24'), '金': rv('--el-metal', '#5d6772'),
+        '水': rv('--el-water', '#16558f')
+      },
+      tian: {}, men: {}, shen: {}, star: {}
     };
     ['wood', 'fire', 'earth', 'metal', 'water'].forEach(function (k) { P.el[k] = pv('--qm-el-' + k, '#5d6772'); });
     for (var i = 1; i <= 9; i++) {
@@ -120,15 +127,16 @@
      再按「画布格子 ÷ 屏幕格子」的比例整体缩放。
      这样截图不再是"照着 CSS 估个 0.26 / 0.46 / 0.76"，而是同一套数字 ——
      以后改 pan.css 的间距，截图会跟着走，不会再各画各的。 */
-  /* 老 UI 判定：与 ui.js 的 oldUIOn() 同一口径 —— 墓星 / 紫微 / 长生尺 任一开启，
+  /* 老 UI 判定：与 ui.js 的 oldUIOn() 同一口径 —— 紫微 / 长生尺 任一开启，
      导出图也回**基准包**画法（方章 / 加粗 / 字号原大 / 八神小字+发丝线 / 寄干角注 / 贴边）。
      三个都关 = 标准盘新样式（裸干 / ×1.16 / 寄干右挂灰墨 / 八神等大 / 时干加粗 / 内缩 14px）。
      阴盘不参与插件旧 UI 切换，始终沿用标准盘新样式（裸干与右侧寄干）。 */
   function oldUIOn(chart) {
     try {
       if (chart && chart.yinpan) return false;
+      /* 2026-11-13：墓星改成角标后不再切老 UI（与 ui.js 同步），只剩紫微 / 长生尺 */
       var P = root.Plugins;
-      return !!(P && (P.enabled('mu') || P.enabled('zw') || P.enabled('sxm')));
+      return !!(P && (P.enabled('zw') || P.enabled('sxm')));
     } catch (e) { return false; }
   }
   function metrics(S, chart) {
@@ -156,30 +164,21 @@
       k: k, E: E, old: OLD,
       pad: (OLD ? 4 : 14) * k,                  /* 行内缩：老 4px / 新 14px（与 .qm-line padding 同口径） */
       palTop: 7 * k, palLeft: 9 * k,            /* .qm-pal  top:7 left:9 */
-      voidTop: 5 * k,                           /* .qm-void top:5 */
-      sealFS: (OLD ? .58 : .67) * E,
-      sealH: (OLD ? .58 : .67) * E * 1.2 + 4 * k,  /* 字号×行高1.2 + 上下 padding2 + 描边2 */
       palFS: (OLD ? .70 : .81) * E,
       shenFS: shenFont,
       shenTop: shenTop,
       sm: M.sm,                                 /* 与标准盘共享的八神行距 */
-      shenBase: shenTop + (shenLine - shenFont) / 2 + shenFont * 0.88,
       shenH: shenH,
       rowH: rowH,
       lm: M.lm * k,                              /* ★ 必须带出来：menTop 要用它（漏了会算出 NaN，整行八门消失） */
       tianTop: shenTop + shenH + M.lm * k,
       tianFS: (OLD ? 1.02 : 1.18) * E,
-      menTop: 0,                                /* 下面按 pb 算 */
       menFS: (OLD ? .98 : 1.14) * E,
-      starFS: .74 * E,                          /* 星曜行不放大（用户口径） */
-      starTop: 0,
+      starFS: .78 * E,                          /* 2026-11-13 用户定 B：.74 → .78 */
       pb: M.pb * k,
       chipH: OLD ? rowH : 1.10 * E,             /* 新 UI：裸字行盒 = 1.10em */
       chipFS: (OLD ? .95 : 1.10) * E
     };
-  }
-  function baseOf(top, boxH, font) {            /* 行盒高度 boxH、字号 font、行高 1.45 → 内容底部基线 */
-    return top + (boxH - font * 1.16) / 2 + font * 0.88;
   }
   function rowBase(top, rowH, font) {           /* 行内居中（flex align-items:center） */
     var inner = font * 1.45;
@@ -196,6 +195,37 @@
     }
     if (cur.length) out.push({ idx: cur, w: w });
     return out;
+  }
+
+  /* 马星剪影（2026-11-13）：导出图要把位图画进 canvas 再出 PNG。
+     ⚠ 不能用普通的 png 文件当源 —— file:// 的图片会把画布标成 tainted，
+       toDataURL 直接抛 SecurityError；marks.js 里那份 data URI 不会。
+     染色用离屏画布 + source-in，颜色取 P.sealHorseInk，四套主题自动跟。 */
+  var _horseImg = null, _horseReady = false;
+  /* ⚠ 脚本顺序：snapshot.js 在 marks.js **之前**加载，所以这里不能直接取 QM_MARKS。
+     做成懒加载 + 由 ui.js 启动时调 preloadMarks() 提前解码，两头都不误。 */
+  function preloadMarks() {
+    if (_horseImg) return;
+    try {
+      if (typeof window === 'undefined' || !window.QM_MARKS || !QM_MARKS.horse) return;
+      _horseImg = new Image();
+      _horseImg.onload = function () { _horseReady = true; };
+      _horseImg.src = QM_MARKS.horse;
+    } catch (e) { _horseImg = null; _horseReady = false; }
+  }
+
+  function drawHorseMark(ctx, x, y, w, h, color) {
+    preloadMarks();
+    if (!_horseReady || w <= 0 || h <= 0) return;
+    var oc = document.createElement('canvas');
+    oc.width = Math.max(1, Math.round(w));
+    oc.height = Math.max(1, Math.round(h));
+    var g = oc.getContext('2d');
+    g.drawImage(_horseImg, 0, 0, oc.width, oc.height);
+    g.globalCompositeOperation = 'source-in';
+    g.fillStyle = color;
+    g.fillRect(0, 0, oc.width, oc.height);
+    ctx.drawImage(oc, x, y, w, h);
   }
 
   /* S = 单卡宽 · SH = 单卡高。阴盘主体复用标准盘，只追加轻量标记。
@@ -231,6 +261,10 @@
     ctx.restore();
   }
 
+  /* 盘面同显：中宫交给 drawLessonInMid（同心环 / 中5 / 地盘干都不画），由 render() 按
+     opts.lessonMid 置位；一处开关，别把"清空中宫"抄三份。 */
+  var drawMidBlank = false;
+
   function drawCell(ctx, p, chart, P, x, y, S, starMap, face, SH) {
     SH = SH || S;
     var M = metrics(S, chart);
@@ -257,6 +291,7 @@
     if (face === 'both') { drawFaceCell(ctx, p, P, x, y, S, M, SH); return; }
 
     if (p.pal === 5 && !p.star && !p.deity) {
+      if (drawMidBlank) return;            /* 同显开着：整块交给课 */
       /* 中宫不放字：两圈同心环（与 pan.css 的 ::before/::after 同比例） */
       var cx = x + S / 2, cy = y + SH * 0.46, R = S * 0.18;
       ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
@@ -305,41 +340,37 @@
 
     /* 空亡 / 驿马：2026-11-12 用户「阴盘也用标准盘的」——阴盘不再画紧凑「○ / 马」，
        与标准盘同一形制。 */
-    var seals = [];
-    if (p.kong) seals.push(['空亡', P.sealVoidInk, P.sealVoidBg, P.sealVoidLine]);
-    if (p.ma) seals.push(['驿马', P.sealHorseInk, P.sealHorseBg, P.sealHorseLine]);
-    if (seals.length) {
+    /* 空亡 = 圆、马星 = 奔马剪影（2026-11-13 用户定版，与屏幕同尺寸同位置）。
+       ⚠ 图标不再有文字印章的底框，位置仍是「离右缘 7、离顶 5」，两枚间距 3（单位 k）。 */
+    if (p.kong || p.ma) {
       var kk = M ? M.k : S / 112;
-      var sf = Math.round(M ? M.sealFS : S * 0.055);
-      var sealH = M ? M.sealH : sf * 1.5 + 4 * kk;
-      ctx.font = '700 ' + sf + 'px ' + SANS;
-      var sw = [], tw = 0, i;
-      for (i = 0; i < seals.length; i++) {
-        sw.push(ctx.measureText(seals[i][0]).width + 8 * kk);   /* 屏幕：左右 padding 3×2 + 描边 1×2 */
-        tw += sw[i] + (i ? 3 * kk : 0);                          /* 屏幕 gap:3px */
-      }
-      var sx = x + S - 7 * kk - tw;
+      var vd = 13 * kk;                       /* 空亡圆直径（屏幕 13px） */
+      var hw = 17.5 * kk, hh = 10.53 * kk;    /* 马星（屏幕 17.5×10.53；掩膜 256×154 等比） */
+      var gp = 3 * kk;
+      var total = (p.kong ? vd : 0) + (p.ma ? hw : 0) + ((p.kong && p.ma) ? gp : 0);
+      var sx = x + S - 7 * kk - total;
       var sy = y + 5 * kk;
-      for (i = 0; i < seals.length; i++) {
-        rrect(ctx, sx, sy, sw[i], sealH, 5 * kk);
-        ctx.fillStyle = seals[i][2]; ctx.fill();
-        ctx.strokeStyle = seals[i][3]; ctx.lineWidth = Math.max(1, kk); ctx.stroke();
-        ctx.fillStyle = seals[i][1]; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(seals[i][0], sx + sw[i] / 2, sy + sealH / 2 + 0.5 * kk);
-        sx += sw[i] + 3 * kk;
+      if (p.kong) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(sx + vd / 2, sy + vd / 2, (vd - 1.6 * kk) / 2, 0, Math.PI * 2);
+        ctx.strokeStyle = P.sealVoidInk;
+        ctx.lineWidth = Math.max(1, 1.6 * kk);
+        ctx.stroke();
+        ctx.restore();
+        sx += vd + (p.ma ? gp : 0);
       }
-      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      if (p.ma) drawHorseMark(ctx, sx, sy + (vd - hh) / 2, hw, hh, P.sealHorseInk);
     }
 
     /* 八神（顶带下方的第一行，居中）+ 发丝线 */
     var yShen = y + shenBaseC;
-    /* 屏幕 .qm-shen 的字体是继承 body 的**无衬线**、字距 .24em，老/新 UI 都一样。
-       原来新 UI 用 SERIF + .04em，导出图这行又挤又换字体 —— 2026-11-02 晚对齐。
-       发丝线也不是老 UI 专属：屏幕 .qm-shen 的 background 在 padding-bottom 下缘，
-       标准盘同样有一条，导出图要一起画。 */
+    /* ★ 2026-11-13：屏幕的 .qm-shen 已改成 QM Serif（与星/门/干同一套字），
+       导出图这里必须跟着换 —— 否则又是"屏幕一种字、出图另一种字"。
+       字距仍是 .24em；老 UI 保持 700 加粗。 */
     var shenFS2 = Math.round(M ? M.shenFS : S * 0.072);
     spaced(ctx, Q.DEITY[p.deity] || '', x + S / 2, yShen,
-      (M && M.old ? '700 ' : '400 ') + shenFS2 + 'px ' + SANS,
+      (M && M.old ? '700 ' : '600 ') + shenFS2 + 'px ' + SERIF,
       P.shen[p.deity] || P.ink2,
       shenFS2 * 0.24);
     ctx.beginPath();
@@ -373,7 +404,7 @@
        星多时仍走 wrapLabels 折行 + 等比缩，放不下就折行。 */
     var starLabels = [], starLines = [], starKS = 1, starSF2 = 0, starGap = 0, starLineH = 0, starFull = true;
     if (sl && sl.length) {
-      starSF2 = Math.round(M ? M.starFS : S * 0.082);
+      starSF2 = Math.round(M ? M.starFS : S * 0.086);
       starFull = sl.length <= 3;
       starGap = (M ? 5 * M.k : S * 0.035);
       ctx.font = '700 ' + starSF2 + 'px ' + SANS;
@@ -457,7 +488,7 @@
 
     /* 星曜：底部留白带左侧（只用文字，不用行星符号）。排几行已在上面定好。 */
     if (sl && sl.length) {
-      ctx.font = (M && !M.old ? '400 ' : '700 ') + starSF2 + 'px ' + SANS;
+      ctx.font = (M && !M.old ? '500 ' : '700 ') + starSF2 + 'px ' + SERIF;
       ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
       /* 星曜是绝对定位：底距 4px（贴左下角），行盒 .851em（.74em × 1.15）。
          基线按「行盒 + 半行距 + .88 字高」算 —— 原来把 0.851*M.E（屏幕 px）
@@ -475,6 +506,8 @@
       ctx.translate(x + (M ? 5 * M.k : S * 0.055), boxBottom);
       ctx.scale(starKS, starKS);
       var rty = ty - boxBottom;
+      /* 2026-11-13 用户定 B：与屏幕一致的 90% 不透明度（屏幕 .qm-stars{opacity:.9}） */
+      ctx.globalAlpha = .9;
       for (var li = 0; li < starLines.length; li++) {   /* li = 0 是最下面那一行，往上叠 */
         var tx = 0;                                     /* 两排都靠左，不居中 */
         for (var m2 = 0; m2 < starLines[li].idx.length; m2++) {
@@ -663,12 +696,39 @@
   /* --------------------------------------------------------------- 主入口 */
   /* ---------------------------------------------------------------- 串星课
    * 课页上没有九宫盘，所以不能套 render() 那套盘面几何 —— 这里只画：
-   * 标题 → 时刻 / 四柱 / 局·旬首·值使 → 上四格（三宫星 + 主体）→ 下三格（六亲）。
-   * L 由 ui.js 的 lessonPick() 算好传进来（同一份数据，省得两处口径打架）。 */
+   * 标题 → 时刻 / 四柱 / 局·节气与农历 → **四数副行** → 上四格（三宫 + 天干）→ 下三格（六亲）。
+   * L 由 ui.js 的 cxMakeLesson() 算好传进来（同一份数据，省得两处口径打架），形状：
+   *   { mode:'six'|'star', modeName:'六神'|'九星', nums:[4], stem, ganEl,
+   *     from:'time'|'nums', zero, three:[{name, el, qin, color, void}] }
+   * ★ 2026-11-13：出图尺寸回到**横 1000×460**（与设置里 .sh.lesson 那枚 36×17 的示意框
+   *   同一比例；口径表与任务书都是 460）。课块外面仍是一张卡，卡下仍有一行注解，
+   *   四数副行插在卡上 —— 行位是写死的槽，结构上不可能重叠。
+   * ★ 空亡在屏幕上是「次级灰、**不加任何线**」，出图同步：颜色换 ink3，一道线都不画。 */
+  /* ---------------------------------------------------------------- 串星课
+   * 课页上没有九宫盘，所以不能套 render() 那套盘面几何 —— 这里只画：
+   * 标题 → 时刻 / 四柱 / 局·节气与农历 → **四数副行** → 上四格（三宫 + 天干）→ 下三格（六亲）。
+   * L 由 ui.js 的 cxMakeLesson() 算好传进来（同一份数据，省得两处口径打架），形状：
+   *   { mode:'six'|'star', modeName:'六神'|'九星', nums:[4], stem, ganEl,
+   *     from:'time'|'nums'|'rand', zero, three:[{name, el, qin, color, void}] }
+   * ★ 2026-11-13：出图尺寸**横 1000×460**（与设置里 .sh.lesson 那枚 36×17 的示意框同一比例）。
+   * ★ 空亡在屏幕上是「只压灰、不加线」，出图同步：颜色换 ink3，一道线都不画。
+   * ★ 卡片下面那行「三宫 = 天宫 · 地宫 · 人宫　第四格 主体 = 天干」**已整行删除**
+   *   （用户：「下面那个解释的天地人三宫、还有第四格的小字，也没必要加」）—— 不许换位置再放回去。
+   * ⚠ 函数名 renderLesson 被门禁钉着，改版式也别改名。
+   * ⚠ 版式候选（保守改良 / 打破居中）**不在这里**：它们是独立试稿，
+   *   见 设计-串星课/_lesson-export-sketch.js（只出预览图，等用户挑，挑完再落这里）。
+   * ------------------------------------------------------------------------- */
+  /* 课块里那一格的五行色：主题 token 优先，其次引擎兜底，最后 ink。
+     ⚠ 空亡不走这里 —— 它固定 P.ink3 灰、不画线（用户 2026-11-13 两轮确认）。 */
+  function elColorOf(P, t) {
+    if (!t) return P.ink;
+    return (P.el && P.el[t.el]) || t.color || P.ink;
+  }
+
   function renderLesson(L, chart, opts) {
     opts = opts || {};
     var P = palette();
-    var H = 500;          /* 460 → 500：课块外面多了一张卡片（见下）与卡片下方的注解行 */
+    var H = 460;          /* 横 1000×460（用户 2026-11-13 定；改这里要同步设置里的 .sh.lesson） */
     var cv = document.createElement('canvas');
     cv.width = W * SCALE; cv.height = H * SCALE;
     var ctx = cv.getContext('2d');
@@ -683,80 +743,97 @@
       var k = Math.max(W / im.naturalWidth, H / im.naturalHeight);
       var dw = im.naturalWidth * k, dh = im.naturalHeight * k;
       ctx.drawImage(im, (W - dw) / 2, (H - dh) / 2, dw, dh);
-      /* ⚠ 这个渐变**不能叫 g**：同函数里 `var g = panGeom(panW)` 是九宫几何，
-         覆盖它会让 panX 算成 NaN → 九宫盘整块画到 NaN 坐标上（2026-10-07 修的：
-         用户报「一加渲染背景，出图就只剩四柱、没有盘」）。 */
+      /* ⚠ 这个渐变**不能叫 g**：下面还有别的短变量名，覆盖了会画到 NaN 上（2026-10-07 修的） */
       var bgGrad = ctx.createLinearGradient(0, 0, 0, H);
       bgGrad.addColorStop(0, rgba(P.bg, .55)); bgGrad.addColorStop(.34, rgba(P.bg, .16));
       bgGrad.addColorStop(.74, rgba(P.bg, .16)); bgGrad.addColorStop(1, rgba(P.bg, .62));
       ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
     }
 
-    var y = PAD + 8;
-    ctx.font = '700 44px ' + SERIF; ctx.fillStyle = P.accent;
-    ctx.fillText('串星课', W / 2, y + 40);
-    y += 78;
-    var gz = chart.calendar.ganzhi;
-    ctx.font = '400 26px ' + SANS; ctx.fillStyle = P.ink;
-    if (chart.input) {
-      var inp = chart.input;
-      ctx.fillText(inp.y + '-' + p2(inp.m) + '-' + p2(inp.d) + ' ' + p2(inp.h) + ':' + p2(inp.mi), W / 2, y);
-      y += 40;
-      ctx.font = '700 30px ' + SERIF; ctx.fillStyle = P.ink;
-      ctx.fillText([gz.year, gz.month, gz.day, gz.hour].join(' '), W / 2, y);
-      y += 34;
-    } else {
-      /* 随机一局的课是 castManual（chart.input === null）。以前这里打印
-         「undefined-undefined-undefined」—— 2026-11-02 排查项 3，改成写局与时辰。 */
-      ctx.fillText('随机一局 · ' + (gz.hour || '—') + '时', W / 2, y);
-      y += 40;
-      ctx.font = '700 30px ' + SERIF; ctx.fillStyle = P.ink;
-      ctx.fillText('时干支 ' + (gz.hour || '—'), W / 2, y);
-      y += 34;
-    }
-    ctx.font = '400 20px ' + SANS; ctx.fillStyle = P.ink3;
-    ctx.fillText(chart.ju.juText + ' · 旬首 ' + chart.meta.xunShou + ' · 值使门 ' + chart.meta.zhiShiGate
-      + (chart.calendar.lateZiAdvance ? ' · 晚子时换日' : ''), W / 2, y);
+    /* 一行一槽，全部显式排定。
+       ★ 2026-11-13 用户从两套候选里挑了 A「保守改良」，这里是**定版**（B「打破居中」没采用）。
+         参数台账（与 设计-串星课/导出图版式-20261113/README 一致）：
+           标题 44→40 · 时刻 26→22（退成注脚）· 四柱 30→34（第一眼该读到"这是什么时刻"）
+           局/农历 20→18 · 四数副行 19（金色）
+           卡片 68%→74% · 名字 42 · **天干降一档 34** · 六亲 22 并贴近名字（基线差 46）
+           书口线回到六亲下方 12px（不再"迷路"）· 上下留白重排（顶 ~88 / 底 ~50）
+       ⚠ opts.layout 那个试稿开关已删：定版只有一套，不留分叉。 */
+    var yTitle = 88, yTime = yTitle + 36, yPillars = yTime + 44,
+      yInfo = yPillars + 30, yNums = yInfo + 34, cardTop = yNums + 30;
 
-    /* 课块：★ 2026-10-07 起它在 App 里是一张**卡片**
-       （串星课弹层 / 盘面同显共用：surface 75% + 1px 细边 + 圆角 16、**无投影**、
-        书口线贴卡片下缘）。导出图必须跟屏幕同一版式 —— 所以这里先画卡片，
-       再把四枚符号按「每列贴自己的字宽、余量均分到列间」排进去
-       （与 .xgrid 的 space-between 同一算法，首尾两枚正好落在卡片的内边距上）。 */
-    y += 46;
-    var cardW = W * 0.68, cardX = (W - cardW) / 2;   /* App 里卡片宽 = 视口 − 32% */
-    var padX = cardW * 0.06, padTop = cardW * 0.0674; /* 16 / 267.3 · 18 / 267.3（同一比例） */
-    var names = [L.three[0].starName, L.three[1].starName, L.three[2].starName, L.hourStem];
-    var cols = [L.three[0].color, L.three[1].color, L.three[2].color, P.ink];
-    ctx.font = '700 40px ' + SERIF;
+    ctx.font = '700 40px ' + SERIF; ctx.fillStyle = P.accent;
+    ctx.fillText('串星课', W / 2, yTitle);
+
+    var gz = (chart && chart.calendar && chart.calendar.ganzhi) ? chart.calendar.ganzhi : null;
+    ctx.font = '400 22px ' + SANS; ctx.fillStyle = P.ink2;
+    if (chart && chart.input) {
+      var inp = chart.input;
+      ctx.fillText(inp.y + '-' + p2(inp.m) + '-' + p2(inp.d) + ' ' + p2(inp.h) + ':' + p2(inp.mi), W / 2, yTime);
+    } else if (gz) {
+      /* 手动局 / 随机一局的课没有公历时刻（chart.input === null），写局与时辰 */
+      ctx.fillText('手动起局 · ' + (gz.hour || '—') + '时', W / 2, yTime);
+    } else {
+      ctx.fillText(L && L.from === 'nums' ? '数字起课' : (L && L.from === 'rand' ? '随机起课' : '—'), W / 2, yTime);
+    }
+    ctx.font = '700 34px ' + SERIF; ctx.fillStyle = P.ink;
+    ctx.fillText(gz ? [gz.year, gz.month, gz.day, gz.hour].join(' ') : '—', W / 2, yPillars);
+
+    ctx.font = '400 18px ' + SANS; ctx.fillStyle = P.ink3;
+    var infoTxt = '—';
+    if (chart && chart.ju) {
+      infoTxt = chart.ju.juText + ' · ' + (chart.calendar && chart.calendar.lunarText
+        ? '农历' + chart.calendar.lunarText : '')
+        + (chart.calendar && chart.calendar.lateZiAdvance ? ' · 晚子时换日' : '');
+    }
+    ctx.fillText(infoTxt, W / 2, yInfo);
+
+    /* ── 四数副行：把四个数写出来（用户明确要），并标出这是哪套译法 ── */
+    if (L) {
+      var two = L.nums.some(function (n) { return n >= 10; });
+      var pre = L.from === 'nums' ? '数字 ' : (L.from === 'rand' ? '随机 ' : '四数 ');
+      var numsLine = pre + L.nums.join(two ? ' ' : '') + ' · 天干 ' + L.stem + ' · ' + (L.modeName || '六神');
+      if (L.zero) numsLine += ' · 零课：三宫皆退一位';
+      ctx.font = '400 19px ' + SANS; ctx.fillStyle = P.accent;
+      ctx.fillText(numsLine, W / 2, yNums);
+    }
+
+    /* 课块：**卡片**（surface 75% + 1px 细边 + 圆角 + 无投影、书口线贴着六亲那行），
+       四枚符号按「每列贴自己的字宽、余量均分到列间」排（与 .xgrid 的 space-between 同一算法）。
+       天干只降字号、**位置仍站原位** —— 它是第四格（主体），不是第四个神。 */
+    var NAME = 42, STEM = 34, QIN = 22;
+    var cardW = W * 0.74, cardX = (W - cardW) / 2;   /* App 里卡片宽 = 视口 − 26% */
+    var padX = cardW * 0.062, padTop = cardW * 0.046;
+    var names = L ? [L.three[0].name, L.three[1].name, L.three[2].name, L.stem] : ['—', '—', '—', '—'];
+    var voided = L ? [!!L.three[0].void, !!L.three[1].void, !!L.three[2].void, false] : [false, false, false, false];
+    var cols = L ? [elColorOf(P, L.three[0]), elColorOf(P, L.three[1]), elColorOf(P, L.three[2]), P.ink]
+      : [P.ink, P.ink, P.ink, P.ink];
+    /* 列心按**名字字号**量宽（天干小一档但不该把自己的列拉窄，否则四个字看着不等距） */
+    ctx.font = '700 ' + NAME + 'px ' + SERIF;
     var nw = [], nsum = 0, i;
     for (i = 0; i < 4; i++) { nw[i] = ctx.measureText(names[i] || '—').width; nsum += nw[i]; }
     var gap = Math.max(0, (cardW - padX * 2 - nsum) / 3), centers = [], cxp = cardX + padX;
     for (i = 0; i < 4; i++) { centers[i] = cxp + nw[i] / 2; cxp += nw[i] + gap; }
-    var namesY = y + padTop + 40, qinY = namesY + 60, ruleY = qinY + 26;
-    var cardH = (ruleY - y) + cardW * 0.0187;         /* 书口线离卡片下缘 5 / 267.3 */
-    rrect(ctx, cardX, y, cardW, cardH, cardW * 0.0599);   /* 圆角 16 / 267.3 */
-    /* ★ 卡片是 **75% 不透明度**（用户定），不是实底 —— 导出的这张必须跟屏幕一致 */
-    ctx.fillStyle = rgba(P.surface, .75); ctx.fill();
+    var namesY = cardTop + padTop + NAME * 0.94, qinY = namesY + 46, ruleY = qinY + 12;
+    var cardH = (ruleY - cardTop) + cardW * 0.022;
+    rrect(ctx, cardX, cardTop, cardW, cardH, cardW * 0.0599);   /* 圆角 16 / 267.3 */
+    ctx.fillStyle = rgba(P.surface, .75); ctx.fill();      /* 卡片 75% 不透明（用户定） */
     ctx.strokeStyle = P.line; ctx.lineWidth = 1; ctx.stroke();
     for (i = 0; i < 4; i++) {
-      ctx.font = '700 40px ' + SERIF;
-      ctx.fillStyle = cols[i] || P.ink;
+      ctx.font = '700 ' + (i === 3 ? STEM : NAME) + 'px ' + SERIF;
+      /* 空亡：只换灰（--ink-3），**一道线都不画** —— 用户 2026-11-13 两轮确认 */
+      ctx.fillStyle = voided[i] ? P.ink3 : (cols[i] || P.ink);
       ctx.fillText(names[i] || '—', centers[i], namesY);
     }
     for (var j = 0; j < 3; j++) {
-      ctx.font = '600 24px ' + SANS;
+      ctx.font = '600 ' + QIN + 'px ' + SANS;
       ctx.fillStyle = P.ink3;
-      ctx.fillText(L.three[j].qin || '—', centers[j], qinY);
+      ctx.fillText((L && L.three[j].qin) || '—', centers[j], qinY);
     }
-    /* 书口线＝课块的**下框线**（.xk.rule .xkbody 的 border-bottom），不是星名与六亲之间那根 */
+    /* 书口线＝课块的**下框线**（贴卡片下缘），两端对齐卡片内边距 */
     ctx.strokeStyle = P.line; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(cardX + padX, ruleY); ctx.lineTo(cardX + cardW - padX, ruleY); ctx.stroke();
-    ctx.font = '400 18px ' + SANS; ctx.fillStyle = P.ink3;
-    ctx.fillText('三宫 = 天宫 · 地宫 · 人宫　　第四格 主体 = 时干', W / 2, y + cardH + 34);
     return cv;
   }
-
 
   /* ------------------------------------------------- ③ 盘面同显（串星课 + 九宫盘）
    * 出图尺寸与奇门盘一致（1000×1370），但一张图里要同时装下课与盘，于是版心重排：
@@ -780,116 +857,64 @@
     if (chart.manual) return '手动起局';
     return (chart.calendar.seasonText || '') + ' ' + (chart.ju.yuanName || '');
   }
+  /* 盘面同显（2026-11-13）：出图 = **标准盘 + 中宫里的课**，与屏幕同一版式、同一画布。
+     旧实现（抬头带里一条课 + 四柱缩放 + 另配画布高度）已删 —— 那是"课还没进宫"时的做法。
+     renderBoth 这个函数名被门禁钉着，不能改。 */
   function renderBoth(chart, analysis, starMap, face, opts) {
     opts = opts || {};
-    var P = palette();
-    var panW = W - PAD * 2;                 /* 912：盘与"左边四柱"都按这个宽度铺 */
-    var g = panGeom(panW), panH = g.panH;   /* 长方形盘满宽时的高（卡片版式比正方形高一截） */
-    var H = Math.round(PAD * 2 + 62 + 152 + panH + 50 + 106);   /* 画布跟着一起长高，版心比例照旧 */
-    var ROW_H = 152, LEFT_K = 0.5;          /* 上排高 · 四柱缩放（0.5 恰好占半宽） */
-    var pilH = 176;                         /* drawPillars 未缩放时的高度 */
+    return render(chart, analysis, starMap, face, {
+      rend: opts.rend, opacity: opts.opacity, lessonMid: opts.lesson
+    });
+  }
 
-    var cv = document.createElement('canvas');
-    cv.width = W * SCALE; cv.height = H * SCALE;
-    var ctx = cv.getContext('2d');
-    ctx.scale(SCALE, SCALE);
-    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
-    ctx.fillStyle = P.bg; ctx.fillRect(0, 0, W, H);
-
-    if (opts.rend) {                       /* 与奇门盘同一套底图处理：cover 铺满 + 上下重中间轻的罩 */
-      var im = opts.rend;
-      var k = Math.max(W / im.naturalWidth, H / im.naturalHeight);
-      var dw = im.naturalWidth * k, dh = im.naturalHeight * k;
-      ctx.drawImage(im, (W - dw) / 2, (H - dh) / 2, dw, dh);
-      var bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-      bgGrad.addColorStop(0, rgba(P.bg, .55)); bgGrad.addColorStop(.34, rgba(P.bg, .16));
-      bgGrad.addColorStop(.74, rgba(P.bg, .16)); bgGrad.addColorStop(1, rgba(P.bg, .62));
-      ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
+  /* 中宫那门课：屏幕上是 #xkMini（.qm-text-pan 里绝对定位、正好盖住中宫格），
+     出图按**实测比例**画（2026-11-13 在 390×844 上量到的 CSS px ÷ 单卡宽 112）：
+       角标 9.5 / 400 / 字距 .14em / 位 12,10   · 宫名 17 / 800 / 行距 32.2 / 位 23.2
+       六亲 10.5 / 400（位 65.9）               · 时干 11.5 / 800（右 12）
+     这些比值就是"与屏幕一致"的唯一真值；屏幕那套改了，这里要一起改。 */
+  var XK = {
+    mark: { fs: 9.5, ls: 1.33, x: 12, base: 18.5 },
+    name: { fs: 13, w: 400, x: 28.3, base: 57.2, step: 29.2 },
+    qin: { fs: 9.5, x: 62.9, base: 56.2 },
+    stem: { fs: 10.5, w: 400, right: 12, base: 23.5 }
+  };
+  function drawLessonInMid(ctx, L, P, x, y, w, h) {
+    if (!L || !L.three || L.three.length < 3) return;
+    var k = w / 112;                       /* 112 = 屏幕单卡宽（PAN_W 350 三等分） */
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    /* 角标「串星课」：字距是 CSS 的 letter-spacing .14em，canvas 没有，逐字加 */
+    ctx.font = '400 ' + (XK.mark.fs * k).toFixed(1) + 'px ' + SANS;
+    ctx.fillStyle = P.ink3 || P.ink;
+    var mx = x + XK.mark.x * k;
+    for (var c = 0; c < 3; c++) {
+      var ch = '串星课'[c];
+      ctx.fillText(ch, mx, y + XK.mark.base * k);
+      mx += ctx.measureText(ch).width + XK.mark.ls * k;
     }
-    P.cellA = (opts.opacity == null ? 100 : Math.max(0, Math.min(100, opts.opacity))) / 100;
-
-    /* 标题行（与奇门盘那张同一版式） */
-    ctx.font = '700 46px ' + SERIF; ctx.fillStyle = P.accent;
-    ctx.fillText(chart.ju.juText, PAD, PAD + 38);
-    var jw = ctx.measureText(chart.ju.juText).width;
-    ctx.font = '400 22px ' + SANS; ctx.fillStyle = P.ink3;
-    ctx.fillText(subTitle(chart), PAD + jw + 16, PAD + 36);
-    if (chart.input) {
-      var inp = chart.input;
-      ctx.textAlign = 'right';
-      ctx.fillText(inp.y + '-' + p2(inp.m) + '-' + p2(inp.d) + ' ' + p2(inp.h) + ':' + p2(inp.mi), W - PAD, PAD + 36);
-      ctx.textAlign = 'left';
+    /* 三行两列：宫名（左，颜色按五行取）＋ 六亲（右，次级灰）；
+       空亡只换成次级灰，不加任何线。 */
+    var cols = [elColorOf(P, L.three[0]), elColorOf(P, L.three[1]), elColorOf(P, L.three[2])];
+    for (var i = 0; i < 3; i++) {
+      var t = L.three[i];
+      var by = y + (XK.name.base + XK.name.step * i) * k;
+      ctx.font = XK.name.w + ' ' + (XK.name.fs * k).toFixed(1) + 'px ' + SERIF;
+      ctx.fillStyle = t.void ? (P.ink3 || P.ink) : (cols[i] || P.ink);
+      ctx.fillText(t.name || '—', x + XK.name.x * k, by);
+      ctx.font = '400 ' + (XK.qin.fs * k).toFixed(1) + 'px ' + SERIF;
+      ctx.fillStyle = P.ink3 || P.ink;
+      ctx.fillText(t.qin || '—', x + XK.qin.x * k, y + (XK.qin.base + XK.name.step * i) * k);
     }
-
-    /* 上下排之间那截余量一分为二：上 40% · 下 60%（下面留得多些，盘不至于顶到四柱） */
-    var slack = H - (PAD * 2 + 62 + ROW_H + panH + 30 + 20);
-    var rowY = PAD + 62 + Math.round(slack * .4);
-    var panY = rowY + ROW_H + Math.round(slack * .6);
-
-    /* 左：四柱整块等比缩小（128 格与字一起缩，版式不变） */
-    ctx.save();
-    ctx.translate(PAD, rowY + (ROW_H - pilH * LEFT_K) / 2);
-    ctx.scale(LEFT_K, LEFT_K);
-    drawPillars(ctx, chart, P, 0, 0, panW);
-    ctx.restore();
-
-    /* 右：小串星课（四格 + 三个六亲 + **书口线在整块底下**），与左边四柱同高居中。
-       ⚠ 两点必须照 App 来：① 书口线是课块的下框线（`.xk.rule .xkbody border-bottom`），
-         不是星名与六亲之间那根；② 名字与六亲同属一个四列网格、各自**居中** ——
-         这里 textAlign 还是标题行留下的 left，不掰回 center 就会各按左端对齐、看着全错位。 */
-    var L = opts.lesson;
-    if (L) {
-      var cx = PAD + panW * LEFT_K + 30;    /* 课的左边界 */
-      var cw = W - PAD - cx;                /* 一直顶到右边距 */
-      var col = cw / 4, top = rowY + (ROW_H - 96) / 2;
-      /* ★ 2026-10-07 用户第 3 条：同显里那块课也要有底色卡片（跟 App 的 .xk.xk-mini 同一张卡：
-         surface 75% + 1px line + 圆角，圆角按卡片宽等比 = 宽 × 16/350）。 */
-      var cpadX = 16, cpadY = 14;
-      var lcardX = cx - cpadX, lcardW = cw + cpadX * 2;
-      var lcardY = top - cpadY, lcardH = 96 + cpadY * 2;
-      rrect(ctx, lcardX, lcardY, lcardW, lcardH, lcardW * 16 / 350);
-      ctx.fillStyle = rgba(P.surface, .75); ctx.fill();
-      ctx.strokeStyle = P.line; ctx.lineWidth = 1; ctx.stroke();
-      var names = [L.three[0].starName, L.three[1].starName, L.three[2].starName, L.hourStem];
-      var cols = [L.three[0].color, L.three[1].color, L.three[2].color, P.ink];
-      ctx.textAlign = 'center';
-      for (var i = 0; i < 4; i++) {
-        ctx.font = '700 34px ' + SERIF;
-        ctx.fillStyle = cols[i] || P.ink;
-        ctx.fillText(names[i] || '—', cx + col * i + col / 2, top + 36);
-      }
-      for (var j = 0; j < 3; j++) {
-        ctx.font = '600 21px ' + SANS;
-        ctx.fillStyle = P.ink3;
-        ctx.fillText(L.three[j].qin || '—', cx + col * j + col / 2, top + 72);
-      }
-      ctx.strokeStyle = P.line; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(cx, top + 94); ctx.lineTo(cx + cw, top + 94); ctx.stroke();
-      ctx.textAlign = 'left';
-    }
-
-    /* 九宫盘：满宽 912 的九张长方形卡片 —— 与单独出图那一张同样大小、同一版式 */
-    var cell = g.w, cellH2 = g.h, gap2 = g.gap, panX = PAD;
-    for (var r = 0; r < 3; r++) {
-      for (var c = 0; c < 3; c++) {
-        var pal = CELL_ORDER[r * 3 + c], q = null;
-        chart.plate.forEach(function (z) { if (z.pal === pal) q = z; });
-        if (q) drawCell(ctx, q, chart, P, panX + c * (cell + gap2), panY + r * (cellH2 + gap2), cell, starMap, face, cellH2);
-      }
-    }
-
-    ctx.font = '400 18px ' + SANS; ctx.fillStyle = P.ink3;
-    ctx.fillText('星曜奇门 · 盘面同显 · 串星课 + 九宫盘', PAD, panY + panH + 50);
-    if (starMap) {
-      ctx.textAlign = 'right';
-      ctx.fillText('观测点 ' + starMap.lat.toFixed(1) + 'N ' + starMap.lon.toFixed(1) + 'E', W - PAD, panY + panH + 50);
-      ctx.textAlign = 'left';
-    }
-    return cv;
+    /* 时干：右上角一枚，与屏幕同字号同字重 */
+    ctx.textAlign = 'right';
+    ctx.font = XK.stem.w + ' ' + (XK.stem.fs * k).toFixed(1) + 'px ' + SERIF;
+    ctx.fillStyle = P.ink2 || P.ink;
+    ctx.fillText(L.stem || '', x + w - XK.stem.right * k, y + XK.stem.base * k);
+    ctx.textAlign = 'left';
   }
 
   function render(chart, analysis, starMap, face, opts) {
     opts = opts || {};
+    drawMidBlank = !!opts.lessonMid;
     var P = palette();
     var panW = W - PAD * 2;                    /* 满宽 912：盘子按这个宽度铺 */
     var pillarsH = 26 + (66 * 2 + 6 + 12);     /* 默认矩阵：26 + 132 + 缝6 + 边距12 = 176 */
@@ -990,7 +1015,10 @@
       for (var c = 0; c < 3; c++) {
         var pal = CELL_ORDER[r * 3 + c], p = null;
         chart.plate.forEach(function (q) { if (q.pal === pal) p = q; });
-        if (p) drawCell(ctx, p, chart, P, panX + c * (cell + gap), panY + r * (cellH + gap), cell, starMap, face, cellH);
+        var cxx = panX + c * (cell + gap), cyy = panY + r * (cellH + gap);
+        if (p) drawCell(ctx, p, chart, P, cxx, cyy, cell, starMap, face, cellH);
+        /* 盘面同显：课画进中宫（与屏幕同一版式） */
+        if (p && p.pal === 5 && opts.lessonMid) drawLessonInMid(ctx, opts.lessonMid, P, cxx, cyy, cell, cellH);
       }
     }
 
@@ -1100,5 +1128,5 @@
     msg('已生成图片');
   }
 
-  root.Snapshot = { render: render, renderLesson: renderLesson, renderBoth: renderBoth, shot: shot };
+  root.Snapshot = { render: render, renderLesson: renderLesson, renderBoth: renderBoth, shot: shot, preloadMarks: preloadMarks };
 })(typeof window !== 'undefined' ? window : globalThis);

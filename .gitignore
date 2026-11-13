@@ -46,3 +46,9 @@ Desktop.ini
 # ---- Python 缓存 ----
 __pycache__/
 *.pyc
+
+# ---- AgentTeams 运行态（队员/任务/邮箱，纯本机）----
+.agent-teams/
+
+# ---- 底本原文（版权材料，仅本机校对用，不入开源仓库）----
+小六壬·加干*.txt

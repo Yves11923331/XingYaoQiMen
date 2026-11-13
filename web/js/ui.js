@@ -10,10 +10,39 @@
   'use strict';
   var App = window.App;
   var Q = App.Q, P = App.P, S = App.S, Lunar = App.Lunar, Snap = App.Snap, Stars = App.Stars;
+  /* 共享随机源（web/js/rng.js）：起盘页的「随机一局 / 随机时刻」与串星课的随机四数
+     共用同一份熵（crypto.getRandomValues 无偏采样）。
+     ⚠ **本文件里不许再出现内置伪随机**（连注释里的字面量也别写，门禁会按源码 grep 数它）。
+     加载顺序由 index.html 保证：… → rng.js → cx.js → cxhelp.js → ui.js。 */
+  var RNG = window.RNG;
+  /* 五行色**主题化**（2026-11-13 用户定：五色 × 四主题一律取 --el-*，不做"素白回退旧值"的特例）。
+     盘面早就在用同一组值（pan.css 的 --qm-el-* 逐个等于 app.css 的 --el-*），
+     串星课原来那套写死的浅色调色板（水 #2b3440）是全 App 唯一异类 ——
+     在玄夜/墨玉上对比只有 1.41:1，等于看不见。
+     所以：真实上屏一律取当前主题的 token，引擎给的 color 只当兜底（取不到 token 时才用）。 */
+  var WX_VAR = { '木': '--el-wood', '火': '--el-fire', '土': '--el-earth', '金': '--el-metal', '水': '--el-water' };
+  function wxColor(el, fb) {
+    var v = '';
+    try {
+      var n = WX_VAR[el];
+      if (n) v = (getComputedStyle(document.documentElement).getPropertyValue(n) || '').trim();
+    } catch (e) { /* 没有 DOM（node 自测）就走兜底 */ }
+    return v || fb || '';
+  }
   var CELL = App.CELL, CELL_ORDER = App.CELL_ORDER, EL = App.EL,
     ZHI_WX = App.ZHI_WX, JU_CN = App.JU_CN, GAN10 = App.GAN10;
   var $ = App.$;
   var state = App.state;
+  /* 2026-11-13：马星剪影只有一份数据（marks.js 的 data URI）——
+     挂成 CSS 变量给屏幕的 mask 用，导出图那边读同一个常量。
+     放在 IIFE 顶部，保证首帧渲染前就位。 */
+  try {
+    if (window.QM_MARKS && QM_MARKS.horse) {
+      document.documentElement.style.setProperty('--qm-horse-mask', 'url("' + QM_MARKS.horse + '")');
+      /* 让导出图那份 Image 也在启动时就解码好（snapshot.js 比 marks.js 先加载，取不到） */
+      if (window.Snapshot && Snapshot.preloadMarks) Snapshot.preloadMarks();
+    }
+  } catch (e) {}
 
   /* 共享工具转一手：其余代码不用改（仍按原来的名字调用） */
   function esc(s) { return App.esc(s); }
@@ -334,16 +363,18 @@
   function castRandom() {
     if (state.randKind === 'ju') {
       state.mode = 'manual'; syncMode();
-      state.manual.polarity = Math.random() < 0.5 ? 1 : -1;
-      state.manual.cycle = 1 + Math.floor(Math.random() * 9);
-      state.manual.hourIdx = Math.floor(Math.random() * 60);
+      /* 三处全走共享 RNG（原来用的是内置伪随机 —— V8 的 xorshift，不是物理熵，取模还带偏） */
+      state.manual.polarity = RNG.u32in(2) ? 1 : -1;   /* 阳遁 / 阴遁 各 50% */
+      state.manual.cycle = 1 + RNG.u32in(9);           /* 一 ~ 九局，各 1/9 */
+      state.manual.hourIdx = RNG.u32in(60);            /* 六十甲子，各 1/60 */
       syncManual();
       castChart();
       toast('随机一局：' + state.chart.ju.juText + ' ' + state.chart.calendar.ganzhi.hour + '时');
       return;
     }
     var span = Date.UTC(2100, 0, 1) - Date.UTC(1950, 0, 1);
-    var d = new Date(Date.UTC(1950, 0, 1) + Math.random() * span);
+    /* 跨度 ≈ 4.7e12 ms，远超 2^32 —— u32in 不够，必须用 53 位无偏 double */
+    var d = new Date(Date.UTC(1950, 0, 1) + RNG.dbl() * span);
     var p = { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate(), h: d.getUTCHours(), mi: d.getUTCMinutes() };
     S.settings.mode = 'pick'; S.saveSettings();
     syncNowPick(); setPickInput(p);
@@ -385,12 +416,13 @@
     }
     var h = '';
     h += '<div class="qm-pal">' + Q.PAL_NAME[p.pal] + p.pal + '</div>';
-    /* 空亡 / 驿马：**一律用标准盘那两枚印章**（2026-11-12 用户：阴盘也用标准盘的）。
-       阴盘原来那套紧凑「○ / 马」已经撤掉，别再加 c.yinpan 分支。 */
+    /* 空亡 / 马星：2026-11-13 用户定版 —— **空亡画一个圆、马星画奔马剪影**，不再用文字印章。
+       空亡是纯 CSS 圆（A1 单环）；马星是 1.7KB 的位图掩膜（web/js/marks.js 的 data URI），
+       屏幕用 mask 染色、导出图用 canvas 合成，两处同一份数据。 */
     if (p.kong || p.ma) {
       h += '<div class="qm-void">' +
-        (p.kong ? '<i class="qm-seal qm-seal-void" title="空亡">空亡</i>' : '') +
-        (p.ma ? '<i class="qm-seal qm-seal-horse" title="驿马">驿马</i>' : '') + '</div>';
+        (p.kong ? '<i class="qm-seal qm-seal-void" title="空亡"><span class="qm-mark qm-mark-void"></span></i>' : '') +
+        (p.ma ? '<i class="qm-seal qm-seal-horse" title="马星"><span class="qm-mark qm-mark-horse"></span></i>' : '') + '</div>';
     }
     /* ★ 每一项都是"有才画"。中宫在转盘下没有八神、也没有门；三层的中宫没有神；
        飞盘的中门也可能飞到这里。原来不管有没有都照样吐一个 span/div 出来 ——
@@ -490,7 +522,12 @@
         if (pal === 5) { toast('心盘不列中五（中五之干寄坤二）'); return; }
         xpEdit(pal); return;
       }
-      if (pal === 5 && !flyMode()) { cycleFace(); return; }
+      /* 2026-11-13 用户：**盘面同显开着时，点中宫不切换界面** —— 同显下中宫已清空
+         （地盘干 / 金环 / 中心晕染都不画），再点它去切「卦象·地支面」只是误触，直接无操作。 */
+      if (pal === 5 && !flyMode()) {
+        if (S.settings.panLesson) return;
+        cycleFace(); return;
+      }
       openPalace(pal);
     });
     state.panBuilt = true;
@@ -523,7 +560,9 @@
         预留印章带 / 寄干右挂）一并打回基准包 —— 2026-11-02 排查项 6。 */
   function oldUIOn() {
     if (state.chartSub === 'yin') return false;
-    return !!(window.Plugins && (Plugins.enabled('mu') || Plugins.enabled('zw') || Plugins.enabled('sxm')));
+    /* 2026-11-13 用户：墓星改成**角标**（插件自带定位，与盘面几何无关）→ 开了它也不再
+       把整盘切回老 UI；紫微 / 长生尺仍按老规矩（它们是按老几何设计的）。 */
+    return !!(window.Plugins && (Plugins.enabled('zw') || Plugins.enabled('sxm')));
   }
 
   function renderPan() {
@@ -628,6 +667,9 @@
         el.appendChild(makeRow(list));
       }
     }
+    /* 同显（课放进中宫）：renderPan 会重建各宫内容，而课块是挂在盘容器 .qm-text-pan 上的 ——
+       这里再走一遍，防止"renderMiniLesson 先跑、buildPan 后建"时课块留在抬头带里。 */
+    if (S.settings.panLesson) renderMiniLesson(state.chart);
   }
 
   /* ---------------------------------------------------- 长方形盘自适应 */
@@ -660,8 +702,10 @@
     var m = $('xkMini');
     return !!(m && S.settings.panLesson && m.style.display !== 'none');
   }
+  /* 「加串星课」不再占抬头带的高度（课已放进中宫）→ 盘的"上移"只有一套值，
+     开/关同显完全一致；lessonOn() 仍保留给别处判断用。 */
   function liftPctNow() {
-    var v = lessonOn() ? S.settings.liftPctLesson : S.settings.liftPct;
+    var v = S.settings.liftPct;
     return Math.max(0, Math.min(100, +v || 0));
   }
   function updateLiftLabel() {
@@ -670,7 +714,7 @@
     var pct = liftPctNow();
     var rng = $('rngLift');
     if (rng && +rng.value !== pct) rng.value = pct;
-    var tag = lessonOn() ? '（加串星课）' : '';
+    var tag = '';   /* 课已放进中宫，不再占抬头带高度 → 不再区分「加串星课」的上移档 */
     if (pct === 0) { hint.textContent = '居中' + tag; return; }
     hint.textContent = lastLift.max
       ? ('上移 ' + pct + '% · ' + lastLift.lift + 'px / 最多 ' + lastLift.max + 'px' + tag)
@@ -690,7 +734,9 @@
     /* 用户第 4 条挑的是「**减少高度**」那一版：宽度照旧 350（九张卡仍然严格等大），
        只把高度压到 85% —— 卡片于是从 112×165 变成 112×140 左右，盘底就不再贴着屏幕轮廓。
        （不要改成等比缩小：那样宽度也跟着窄，卡的观感会变。） */
-    var kLessonH = lessonOn() ? 0.85 : 1;
+    /* ★ 2026-11-13 用户定稿「课放进中宫」：同显**不再占抬头带的高度**，
+       所以盘的尺寸系数恒为 1 —— 开/关同显，盘的宽高与位置完全一样。 */
+    var kLessonH = 1;
     var TW = PAN_W, TH = Math.round(PAN_H * kLessonH);
     var availW = wrap.clientWidth - 8 - 6;
     var availH = wrap.clientHeight - 12 - 6;
@@ -1911,38 +1957,66 @@
     toast('主题：' + S.THEMES[(i + 1) % keys.length].name);
   }
 
-  /* ================================================================ 串星（加干）
-   * 口径照隔壁那份「奇门·加干」工具（它内联的就是我们 web/js 的引擎）：
-   *   天宫 ＝ 值符星（符头所在宫的那颗星）　地宫 ＝ 天盘时干星　人宫 ＝ 值使宫星　主体 ＝ 时干
-   *   六亲以**星五行**对**时干五行**定：生我者父母 · 我生者子孙 · 克我者官鬼 · 我克者妻财 · 同者兄弟
-   *   ⚠ 主体**照真时干写**：甲时就显示「甲」（六亲也按甲的五行算）。
-   *      盘上不出现甲，只有"找地宫那颗星"这一步才借旬首之仪定位（见 lessonPick 的 hs）。
-   *      转盘里天禽寄天芮，星名合写「禽芮」。
+  /* ================================================================ 串星（小六壬·加干 / 加星）
+   * 2026-11-13 整体换口径（原「奇门·加干」那套九星取星逻辑已整段删除，含「甲不上盘」）：
+   *   天宫 / 地宫 / 人宫 ＝ 报数前三数**连根**数到的六神（大安·留连·速喜·赤口·小吉·空亡）
+   *   第四数 ＝ 天干（1 甲 … 10 癸；0 与 10 → 癸、11 → 甲）；六亲 ＝ 六神五行 对 天干五行
+   *   另有一套**九星**译法：同一组四数、同一段连根，1 天蓬 … 9 天英（不用阳顺阴逆）。
+   * 口径唯一依据 校验/串星课-规则口径-20261113.md；算法全在 web/js/cx.js（window.CX），
+   * 这一段只管「读数 / 落成课 / 画出来 / 记偏好」，一个数都不在这里算。
+   *
+   * ⚠ 四件最容易写错的事：
+   *   ① **甲就是 1** —— 旧代码 `if (hs === 1) hs = c.meta.hourLead`（甲不上盘）已删除；
+   *   ② 切译法**不重算四数**：同一组四数在新表里重读一遍，三宫名与六亲一起原位交叉淡变
+   *      （见 setCxMode）。⚠ 六亲**会跟着变**，而且必须变 —— 六亲＝liuQin(该宫符号五行, 天干五行)，
+   *      六神与九星同一宫位的五行本就不同（大安木 / 天蓬水），锁死六亲等于用错的五行去修饰对的符号。
+   *      真正不变的是四数与天干；新六亲恒等于「用新表重算」的结果（口径表 §4）。
+   *   ③ 时间档的四数走 CX.numsFromChart(chart)，读**这一盘的 calendar**，不拿公历重算
+   *      —— 真太阳时 / 晚子时 / 闰月都在 calendar 里，重算必跟盘面对不上；
+   *   ④ 空亡虽授土（与留连同色），课页上**单独一档**：只压灰、不加线（用户 2026-11-13 两轮拍板）。
    * ============================================================== */
-  var CXPAL = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
-  var GAN_WX = { '甲': '木', '乙': '木', '丙': '火', '丁': '火', '戊': '土',
-                 '己': '土', '庚': '金', '辛': '金', '壬': '水', '癸': '水' };
-  var WX_SHENG = { '木': '火', '火': '土', '土': '金', '金': '水', '水': '木' };
-  var WX_KE = { '木': '土', '土': '水', '水': '火', '火': '金', '金': '木' };
-  var WX_COLOR = { '木': '#1a8f4a', '火': '#d2362a', '土': '#b8860b', '金': '#7f8792', '水': '#2b3440' };
+  var CX_LB = ['天宫', '地宫', '人宫', '天干'];
+  var CX_IN = ['cxN0', 'cxN1', 'cxN2', 'cxN3'];
+  var CX_FIELD_RE = /^\d{1,2}$/;         /* 口径表 §8：只拦空 / 非数字 / 负数 / ≥3 位 */
 
-  function liuQin(starEl, ganEl) {
-    if (starEl === ganEl) return '兄弟';
-    if (WX_SHENG[starEl] === ganEl) return '父母';
-    if (WX_SHENG[ganEl] === starEl) return '子孙';
-    if (WX_KE[starEl] === ganEl) return '官鬼';
-    if (WX_KE[ganEl] === starEl) return '妻财';
-    return '';
+  /* ---------------- 口径（六神 / 九星） ---------------- */
+  /* 偏好只存在 settings.cxMode（'six' | 'star'，缺省 six）。
+     **设置页里一个控件都不加**（用户 2026-11-13 硬约束）：它纯粹是存储，
+     唯一入口是**起课页分段行右首那枚小勾选**：`#cxMode`（label）＋ `#cxStar`（真 checkbox）。
+     课页弹层 / 盘面同显 / 导出图 / 设置页**都不许**出现切换入口（用户 2026-11-13 定）。 */
+  /* 口径偏好回读：store.js 的 DEFAULTS 里没有 cxMode（那是串星页自己的键），
+     而读档只搬 DEFAULTS 里有的键 —— 所以这里从存档里自己捞一次，缺省六神。
+     两路都试：localStorage，以及壳子给的 lsGet（file:// 下 localStorage 可能被锁）。 */
+  function cxModeRestore() {
+    if (S.settings.cxMode === 'star' || S.settings.cxMode === 'six') return;
+    var raw = null;
+    try { if (window.localStorage) raw = localStorage.getItem('xymq.set.v1'); } catch (e) {}
+    if (!raw) { try { if (window.Xyqimen && Xyqimen.lsGet) raw = Xyqimen.lsGet('xymq.set.v1'); } catch (e) {} }
+    try {
+      var s = raw ? JSON.parse(raw) : null;
+      if (s && (s.cxMode === 'star' || s.cxMode === 'six')) S.settings.cxMode = s.cxMode;
+    } catch (e) {}
   }
-  function starName(idx, flyStar) {
-    if (!idx) return '';
-    if (flyStar) return Q.STAR[idx];
-    return (idx === 5 || idx === 2) ? '禽芮' : Q.STAR[idx];   /* 转盘禽芮同宫合写 */
+  cxModeRestore();
+
+  function cxModeOf(m) { return m === 'star' ? 'star' : 'six'; }
+  function cxMode() { return cxModeOf(S.settings.cxMode); }
+  function cxModeName(m) { return cxModeOf(m) === 'star' ? '九星' : '六神'; }
+  /* 档位：时间（默认）/ 数字 / 随机 三档（用户 2026-11-13 定稿）。
+     切档**不静默带数过去** —— 数字格一直是用户自己填的那四个值；随机档每次起课现抽。 */
+  var CX_TABS = ['time', 'nums', 'rand'];
+  function cxTab() { return CX_TABS.indexOf(state.cxTab) >= 0 ? state.cxTab : 'time'; }
+  function reduceMotion() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }
-  /* 起课页用的时刻（不跟起盘页共用设置，各选各的） */
-  /* 串星页的时刻来源：此刻 / 随机（state.cxRand）/ 点大时刻选的（#cxPick） */
+  function cxInputEl(i) { return $(CX_IN[i]); }
+  function cxInputVals() {
+    return CX_IN.map(function (id) { var el = $(id); return el ? String(el.value) : ''; });
+  }
+
+  /* 起课页的时刻来源：此刻 / 点大时刻选的（#cxPick）—— 与起盘页各选各的 */
   function cxParts() {
-    if (state.cxMode === 'pick') {
+    if (state.cxTimeSrc === 'pick') {
       var v = ($('cxPick') || {}).value || '';
       var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(v);
       if (m) return { y: Math.max(1900, Math.min(2100, +m[1])), m: +m[2], d: +m[3], h: +m[4], mi: +m[5] };
@@ -1955,217 +2029,371 @@
     fo.ju = S.settings.juMethod;
     return Q.cast(p.y, p.m, p.d, p.h, p.mi, fo);
   }
-  /* 四个值 + 三宫六亲 */
-  function lessonPick(c) {
-    var flyStar = !!(c.fly && c.fly.star);
-    var hourStem = c.calendar.ganzhi.hour.charAt(0);
-    var hs = Q.STEM.indexOf(hourStem);
-    /* 只在**定位地宫星**时借旬首之仪；主体显示仍是真时干（甲就写甲） */
-    if (hs === 1) hs = c.meta.hourLead;
-    var pStar = null, pGate = null, i, p;
-    for (i = 0; i < c.plate.length; i++) {
-      p = c.plate[i];
-      if (p.heaven === hs || p.mid === hs) { pStar = p; break; }   /* 天盘诸干＝heaven＋寄干 mid */
-    }
-    for (i = 0; i < c.plate.length; i++) if (c.plate[i].dutyGate) { pGate = c.plate[i]; break; }
-    var names = {};
-    c.plate.forEach(function (x) { names[x.pal] = x.name; });
-  function palTxt(n) { return names[n] ? names[n] + CXPAL[n] + '宫' : ''; }
-    /* 天宫＝值符星。它有个坑：转盘里引擎把天禽/天芮合写成**「禽芮」**，这个名字**不在 Q.STAR 里**，
-       拿 indexOf 反查会得 −1 → 天宫与它的六亲就空了（用户报的"串星→此刻→起课 天宫信息丢失"正是这个）。
-       所以：星序优先用 starDuty（它就是星序），合写时落到天芮（天禽、天芮同为土，五行一致）；
-       显示名**直接用引擎给的 zhiFuStar**，保住"禽芮"这个合写。 */
-    var ziFuName = c.meta.zhiFuStar;
-    var ziFuIdx = Q.STAR.indexOf(ziFuName);
-    if (ziFuIdx < 0) ziFuIdx = (c.meta.starDuty === 5) ? 2 : c.meta.starDuty;
-    var idx = [ziFuIdx, pStar ? pStar.star : 0, pGate ? pGate.star : 0];
-    var ganEl = GAN_WX[hourStem] || '';
+  /* 「这一刻」的那张盘：起课页的四数、课页抬头的四柱、导出图都从它来 */
+  function cxChart() { return castAt(solarParts(cxParts())); }
+
+  /* 课的统一形状（课页弹层 / 盘面同显 / 导出图三处共用一份，省得口径打架）：
+       { mode, modeName, nums[4], stem, ganEl, from:'time'|'nums',
+         three:[{name, el, yy, qin, color, void}], zero } */
+  function cxMakeLesson(r, from) {
     return {
-      hourStem: hourStem, ganEl: ganEl, gz: c.calendar.ganzhi,
-      ju: c.ju.juText, xun: c.meta.xunShou, gate: c.meta.zhiShiGate,
-      zhiFu: c.meta.zhiFuStar, lateZi: !!c.calendar.lateZiAdvance,
-      three: idx.map(function (k, n) {
-        var el = Q.STAR_WX[k] || '';
-        return { starName: (n === 0) ? ziFuName : starName(k, flyStar),
-                 el: el, qin: liuQin(el, ganEl), color: WX_COLOR[el] || 'var(--ink)' };
-      })
+      ok: true,
+      mode: r.mode, modeName: cxModeName(r.mode),
+      nums: r.nums.slice(), stem: r.stem, ganEl: r.ganEl,
+      three: r.three.map(function (x) {
+        return { name: x.name, el: x.el, yy: x.yy, qin: x.qin,
+                 color: x.color, void: x.name === '空亡' };
+      }),
+      from: (from === 'time' || from === 'rand') ? from : 'nums',
+      zero: r.nums.every(function (n) { return n === 0; })   /* 零课：三宫皆退一位 */
     };
   }
-
-  /* 起课页的时刻卡 */
-  function renderCx() {
-    var p = cxParts(), c;
-    var ps = solarParts(p);
-    try { c = cxChart(); } catch (e) { return; }
-    state.cxChart = c;
-    var g = c.calendar.ganzhi;
-    if (state.cxMode === 'rand') {
-      /* 2026-10-21：点「随机」不立刻抽、也不替换时间栏；随机只在点「起课」时发生。
-         起课后时间栏仍显示时刻，随机局信息放在副行，完整课页在弹层里看。 */
-      $('cxTime').textContent = fmtParts(ps);
-      if (state.cxBuilt) {
-        $('cxPillars').textContent = g.year + ' ' + g.month + ' ' + g.day + ' ' + g.hour;
-        $('cxSub').textContent = '随机局：' + c.ju.juText + ' · ' + g.hour + '时 · 点课卡看课页' + tsTag(p);
-      } else {
-        $('cxPillars').textContent = '随机 · 点「起课」时抽一局';
-        $('cxSub').textContent = '时间栏保持不动，随机结果只出现在课页里' + tsTag(p);
-      }
-    } else {
-      $('cxTime').textContent = fmtParts(ps);
-      $('cxPillars').textContent = g.year + ' ' + g.month + ' ' + g.day + ' ' + g.hour;
-      $('cxSub').textContent = c.ju.juText + ' · 旬首 ' + c.meta.xunShou + ' · 值使门 ' + c.meta.zhiShiGate
-        + tsTag(p);
+  /* 盘面同显 / 盘面页截图：按**盘面那一刻**算（读 chart.calendar，不另算时间）。
+     只有时家盘能直译四数 —— 年/月/日家没有时干支、手动局没有农历月日、心盘根本没有
+     calendar；阴盘暂时维持关闭（用户 2026-11-13 未解禁）。算不出来就返回 null，界面自会隐藏。 */
+  /* 盘面同显（中宫）里的课 —— **随机取数，不跟盘面时刻走**（用户 2026-11-13 定案）。
+     阴盘 2026-11-13 23:1x 用户追加：也显（角标/课与排法无关）。
+     熵源就是已有的 CX.RNG（web/js/rng.js：crypto.getRandomValues + 无偏拒绝采样），
+     不另造随机。每起一盘抽一次并存进 state，同一盘内反复重排（切主题、改字号、
+     renderPan 重画）都拿同一组，不会闪；换一盘（下一时辰 / 重新起局）才重抽。
+     两套域各抽一组（六神 1–6 / 九星 1–9），切译法不必重抽 —— 六神的数也在九星域内。
+     阴盘 / 心盘 / 四层照旧不显（它们连四数都给不出，别硬凑）。 */
+  function boardLesson(c) {
+    /* 2026-11-13 用户：阴盘也显（角标/课与排法无关）；心盘与四层仍不显（给不出四数）。 */
+    if (!c || c.xinpan || c.layer) return null;
+    if (state.cxBoardRef !== c || !state.cxBoardNums) {
+      state.cxBoardRef = c;
+      state.cxBoardNums = {
+        six: CX.randomNums('six'),
+        star: CX.randomNums('star')
+      };
     }
-    Array.prototype.forEach.call($('segCxPick').children, function (b) {
-      b.classList.toggle('on', b.dataset.mode === (state.cxMode || 'now'));
+    var nums = state.cxBoardNums[cxMode()] || state.cxBoardNums.six;
+    var r = CX.castByNumbers(nums, cxMode());
+    return r.ok ? cxMakeLesson(r, 'rand') : null;
+  }
+
+  /* 数字档：**不预览结果**（用户 2026-11-13：「数字下面 不要写结果」）。
+     这里只做一件事 —— 逐格验 1–2 位数字，非法的框染红，底部一行把话说全。
+     不在格子下面写占位字，也不偷偷改用户填的字。 */
+  function paintCxNums() {
+    var bad = [], empty = 0;
+    for (var i = 0; i < 4; i++) {
+      var el = cxInputEl(i);
+      if (!el) continue;
+      var v = String(el.value).trim();
+      var good = CX_FIELD_RE.test(v);
+      if (!v) empty++;
+      if (!good && v) bad.push(CX_LB[i]);
+      var box = el.parentNode;
+      if (box) box.classList.toggle('bad', !good && !!v);
+    }
+    var err = $('cxNumErr');
+    if (err) {
+      err.textContent = bad.length
+        ? (bad.join(' / ') + ' 要填 1–2 位数字（0 也认，两位数 10–99 按循环算）')
+        : '';
+    }
+    return { bad: bad.length > 0, empty: empty === 4 };
+  }
+  /* 时间档：四数只读（**只有数**） */
+  function paintCxTime() {
+    var box = $('cxTimeNums'); if (!box) return;
+    var cells = box.children, r = state.cxTimeNums;
+    for (var i = 0; i < 4; i++) {
+      var b = cells[i].querySelector('b');
+      if (b) b.textContent = (r && r.ok) ? String(r.nums[i]) : '—';
+    }
+  }
+  /* 随机档：只回显**上一次起课抽到的四数**（还没抽就是「—」） */
+  function paintCxRand() {
+    var box = $('cxRandNums'); if (!box) return;
+    var nums = state.cxRandNums;
+    for (var i = 0; i < 4; i++) {
+      var b = box.children[i].querySelector('b');
+      if (b) b.textContent = (nums && nums[i] != null) ? String(nums[i]) : '—';
+    }
+    if (box.classList) box.classList.toggle('is-rand', !nums);
+  }
+
+  /* ---------------- 口径勾选（六神 / 九星） ----------------
+     ★ 2026-11-13 用户定稿：**不要那枚 46×48 的大方章**，换成小的"可勾选"控件：
+       视觉 18px 方框 + 两个字（六神 ☐ 九星），整枚 label 40px 高当触控区。
+       走真 `input[type=checkbox]`（读屏最稳），aria 由原生语义 + aria-label 承担。
+     切换**只放在起课页这一处**：课页 / 盘面同显 / 导出图 / 设置页四处都不许有入口。
+     换译法不重新起课：四数照旧，只按同样的四数在新表里再读一遍（六亲随表重算）。 */
+  function syncCxMode() {
+    var star = cxMode() === 'star';
+    var cb = $('cxStar'), lab = $('cxMode');
+    if (cb) { cb.checked = star; cb.setAttribute('aria-checked', star ? 'true' : 'false'); }
+    if (lab) lab.classList.toggle('star', star);
+    /* 九星态那三个数的域变了（六神 1–6 / 九星 1–9，末位恒 1–10），占位提示跟着走 */
+    for (var i = 0; i < 3; i++) {
+      var el = cxInputEl(i);
+      if (el) el.placeholder = star ? '1–9' : '1–6';
+    }
+    var g4 = cxInputEl(3);
+    if (g4) g4.placeholder = '1–10';
+  }
+  function syncCxSrc() {
+    var bar = $('segCxSrc'); if (!bar) return;
+    var tab = cxTab();
+    Array.prototype.forEach.call(bar.children, function (b) {
+      b.classList.toggle('on', b.dataset.src === tab);
     });
+    /* 与起盘页同一套口径：选过时刻后，「时间」那格变成「返回时」——
+       状态与回到此刻的入口合成一处（点了就把时间重置为当前时刻）。
+       只在时间档上改字：在数字 / 随机档时它仍是「时间」，点它是切档，不是重置。 */
+    var tb = bar.querySelector('button[data-src="time"]');
+    if (tb) {
+      var back = state.cxTimeSrc === 'pick' && tab === 'time';
+      var label = back ? '返回时' : '时间';
+      if (tb.textContent !== label) tb.textContent = label;
+      tb.setAttribute('aria-label', back ? '返回当前时刻' : '按所选时刻起课');
+    }
+    ['time', 'nums', 'rand'].forEach(function (k) {
+      var pn = $('cxPanel' + k.charAt(0).toUpperCase() + k.slice(1));
+      if (pn) pn.classList.toggle('on', tab === k);
+    });
+  }
+  function setCxSrc(src) {
+    var tab = CX_TABS.indexOf(src) >= 0 ? src : 'time';
+    if (tab === cxTab()) return;
+    state.cxTab = tab;
+    state.cxBuilt = false;          /* 换档 = 换口径来源，课页里的课作废，点「起课」再算 */
+    closeCxPop();
+    syncCxSrc();
+    renderCx();
+  }
+  function setCxMode(m) {
+    m = cxModeOf(m);
+    if (m === cxMode()) return;
+    S.settings.cxMode = m;
+    S.saveSettings();
+    var card = document.querySelector('.cxpop-card');
+    function applyAll() {
+      /* 课页里若已有一课：**用同一组四数**在新表里重读一遍 ——
+         四数与天干一个不动；三宫名换表；六亲按新表五行重算（必然跟着变，这才是对的） */
+      var L = state.cxLesson;
+      if (state.cxBuilt && L) {
+        var r = CX.castByNumbers(L.nums, cxMode());
+        if (r.ok) { state.cxLesson = cxMakeLesson(r, L.from); renderCxPop(); }
+      }
+      syncCxMode();
+      paintCxNums();
+      /* 盘面页开着「盘面同显」时，那段迷你课也跟着换名字（不重排，只重绘） */
+      if (state.chart && S.settings.panLesson) renderMiniLesson(state.chart);
+    }
+    if (reduceMotion()) { applyAll(); return; }
+    /* 课页开着就做一次原位交叉淡变（页面三档不显示结果，没什么可淡的） */
+    if (card) card.classList.add('xfade');
+    setTimeout(function () {
+      applyAll();
+      if (card) card.classList.remove('xfade');
+    }, 150);
+  }
+
+  /* ---------------- 起课页 ---------------- */
+  function renderCx() {
+    if (state.cxTimeSrc !== 'pick') state.cxTimeSrc = 'now';
+    var p = cxParts(), c;
+    try { c = cxChart(); } catch (e) { return; }
+    state.cxTimeChart = c;
+    var g = c.calendar.ganzhi;
+    $('cxTime').textContent = fmtParts(solarParts(p));
+    $('cxPillars').textContent = g.year + ' ' + g.month + ' ' + g.day + ' ' + g.hour;
+    $('cxSub').textContent = c.ju.juText + ' · 农历' + c.calendar.lunarText
+      + ' · ' + g.hour + '时' + tsTag(p);
     /* 透明感应层：#cxPick 的值始终跟着当前时刻，点开选择器就停在它上面 */
     $('cxPick').value = p.y + '-' + pad(p.m) + '-' + pad(p.d) + 'T' + pad(p.h) + ':' + pad(p.mi);
-    /* ★ 2026-10-21：起课页不再摆课卡 —— 起课后由 #cxPop 弹层展示；
-       同一套 .xcell 样式仍给「盘面同显」的 #xkMini 用。 */
+    state.cxTimeNums = CX.numsFromChart(c);
+    syncCxSrc();
+    syncCxMode();
+    paintCxTime();
+    paintCxNums();
+    paintCxRand();
   }
-  /* 六亲＝以「主体」（时干）为参照，给三宫（卦象）下的定语。
-     所以第二行不写"六亲"二字 —— 它就是上面那一格的定语。 */
+
+  /* 三宫 + 天干那七格的 HTML（课页弹层与「盘面同显」共用一份，省得两处口径打架）
+     只有三宫名跟五行上色；天干（主体）与六亲不着色 —— 用户定的规矩。
+     空亡另挂 .void（次级灰、**不加任何线**），与其余五神分开。 */
   function xcellHTML(lb, nm, sub, color, extra) {
     return '<div class="xcell ' + (extra || '') + (color ? '' : ' plain') + '"'
       + (color ? ' style="--tint:' + color + '"' : '') + '>'
       + (lb ? '<span class="lb">' + lb + '</span>' : '') + '<span class="nm">' + nm + '</span>'
       + (sub ? '<span class="sub">' + sub + '</span>' : '') + '</div>';
   }
-  /* 三宫 + 六亲那七格的 HTML（课页弹层与「盘面同显」共用一份，省得两处口径打架）
-     只有九星的字跟五行上色；主体（天干）与六亲不着色 —— 用户定的规矩。
-     （2026-11-02 排查项 8：全屏课页删除后只剩 k1 一款。） */
-  /* chartIn：可选。起课页要拿"这一页刚算出来的课"来画，不能等 state.chart
-     （那是盘面页用的）；不传就还是老口径 state.chart。 */
-  function lessonCellsHTML(chartIn) {
-    var c = chartIn || state.chart;
+  function cxCellsHTML(L) {
     var cls = 'xkbody xgrid';
-    if (!c) return { html: '', cls: cls };
-    var d = lessonPick(c);
-    /* 2026-11-02 用户：第 4 列保留**时干那颗字**，但不加「时干」标签（标签多余） */
-    var r1 = d.three.map(function (s) {
-      return xcellHTML('', s.starName || '—', '', s.color);
-    }).join('') + xcellHTML('', d.hourStem, '', '');
-    var r2 = d.three.map(function (s) {
+    if (!L) return { html: '', cls: cls };
+    var r1 = L.three.map(function (s) {
+      /* 主题色优先（--el-*）；空亡不给颜色 —— 它固定走 .void 的 --ink-3 灰、无线 */
+      var tint = s.void ? '' : wxColor(s.el, s.color);
+      return xcellHTML('', s.name || '—', '', tint, s.void ? 'void' : '');
+    }).join('') + xcellHTML('', L.stem || '—', '', '');
+    var r2 = L.three.map(function (s) {
       return xcellHTML('', s.qin || '—', '', '', 'qin');
     }).join('');
     return { html: r1 + r2, cls: cls };
   }
-  /* 排法 ·「盘面同显串星课」：开着就在盘上方摆一段迷你课，九宫盘被挤下去（fitPan 会自己缩） */
+
+  /* 排法 ·「盘面同显串星课」：开着就在盘上方摆一段迷你课，九宫盘被挤下去（fitPan 会自己缩）
+     ⚠ 心盘与年/月/日家不显（见 boardLesson）。 */
   function renderMiniLesson(c) {
     var box = $('xkMini'); if (!box) return;
-    var on = !!(c && S.settings.panLesson && state.chartSub !== 'xin' && state.chartSub !== 'yin');
+    /* 中宫那门课＝**随机取数**（boardLesson；不跟盘面时刻走），每盘抽一次、盘内稳定。 */
+    var L = (c && S.settings.panLesson) ? boardLesson(c) : null;
+    var on = !!L;
     box.style.display = on ? '' : 'none';
-    if (!on) return;
-    box.style.marginTop = Math.max(0, +S.settings.lessonTop || 0) + 'px';   /* 串星课上下偏移 */
-    var o = lessonCellsHTML();
+    /* ★ 2026-11-13 用户定稿：**课放进中宫，其余一切照旧**。
+       抬头带（四柱 / 元信息）、盘的尺寸与位置都不因同显而变 —— 所以这里
+       不再给 .info 挂 has-lesson、不钉 --band-h、也不吃 lessonTop 偏移。 */
+    var vw = document.getElementById('view-chart');
+    if (vw) vw.classList.toggle('lesson-on', on);
+    if (!on) { box.style.height = ''; box.style.marginTop = ''; return; }
+    /* 课块搬进 .qm-text-pan：那是 position:relative 的盘容器，绝对定位后不占宫位
+       （见 app.css「课放进中宫」段）。盘重排只换各宫 innerHTML，所以搬一次就一直有效。 */
+    var pan = $('qm_text_pan');
+    if (pan && box.parentNode !== pan) pan.appendChild(box);
+    box.style.height = '';
+    box.style.marginTop = '';
+    var o = cxCellsHTML(L);
     var g = $('xkMiniGrid');
     g.className = o.cls;
     g.innerHTML = o.html;
-    /* ⚠ --xk-s 是 transform: scale()，**transform 不占布局** ——
-       不按比例把高度还给布局的话，课一变大就盖到盘上、盘也不会让位。
-       这里把"看得见的那份高"写回盒子，fitPan() 随后就能正确给盘让位。 */
-    var s = parseFloat(getComputedStyle(box).getPropertyValue('--xk-s')) || 1;
-    box.style.height = Math.round((g.offsetHeight || 0) * s) + 'px';
   }
-  /* 串星课 · 读法（弹层）。文案由用户逐条给定并确认，改字前先问 —— 尤其别自己加"甲不上盘"之类。
-     四节：实例（一卡，含偷牛 / 鬼神 / 赌博三卷）→ 三宫 → 六亲（太极点 + 持世 + 生克）→ 断法（用神类神 + 诸神）。
-     六亲持世那五条是用户认定的精华，别动；其余各节尽量一句话说完。
-     星行的末位是主体（时干），用户要求原样贴尾、不加"主体"二字，别再给它加标签。
-     ⚠ 三传那句**故意**是初 → 末 → 中：初传（值符宫）与末传（值使宫）是一个惯性，
-     中传走天盘时干、另起一路，所以压尾 —— 别按"初 · 中 · 末"顺次改回去。
-     ⚠ 改这个函数请用 app/patch_xkhelp.py（它会先注释后函数），别手写行号切片。 */
+
+  /* 串星课 · 读法（弹层）：正文改用 web/js/cxhelp.js 的原文再加工稿（window.CxHelp），
+     本函数只管接线 + 在九星态顶部插一行口径提示 —— **正文一个字都不改**。
+     （用户 2026-11-13 追加：读法定为「方案 A 素纸分节卡」并去掉「掌诀」一节，
+       那两处都在 cxhelp.js 里改，这里不用动。） */
   function openXkHelp() {
-    function row(name, zhu, good, bad) {
-      return '<p class="docp"><b>' + name + '持世</b><br>所主：' + zhu + '<br>利：' + good + '<br>不利：' + bad + '</p>';
-    }
+    var H = window.CxHelp;
+    var body = (H && H.html) ? H.html : '';
+    if (!body) { toast('读法没加载（js/cxhelp.js）'); return; }
+    /* 外壳由这里自己拼（不用 CxHelp.sheet()）：九星态要在正文**之前**插一行口径提示，
+       而往 cxhelp 的成品字符串里塞锚点是易碎做法 —— 它改内部结构就断。
+       提示行用 app.css 里自己的类 .cxhnote（类名在自己的语料里，不依赖 cxhelp 的样式表）。 */
+    var note = (cxMode() === 'star')
+      ? '<p class="cxhnote"><b>九星口径</b>：同一组四数、同一段连根，三宫改读九星 —— '
+        + '1 天蓬 · 2 天芮 · 3 天冲 · 4 天辅 · 5 天禽 · 6 天心 · 7 天柱 · 8 天任 · 9 天英，'
+        + '不按阳顺阴逆。下面正文仍是原文的六神口径，把神名换成星名读即可。</p>'
+      : '';
     openSheet('<div class="bar"></div><h2>串星<b>课 · 读法</b></h2>'
-      + '<div class="sub">实例 · 三宫 · 六亲</div>'
-      + '<p class="docp" style="margin:0 0 14px"><b>总纲</b>：占断以六亲为主，九星意象为补充。</p>'
-      + '<div class="card" style="margin:0 0 12px"><h3>一、实例</h3>'
-      + '<p class="docp"><b>卷一 · 偷牛</b><br>天柱　天芮　天英　乙<br>官鬼　妻财　子孙<br>占问：去邻村偷牛，如何？害人之事以官鬼为用神；子孙克官鬼，故不喜见子孙。<br>初传见子孙 —— 起手即被察觉，遭人驱赶；<br>中传见子孙 —— 行至中途再被察觉，仍遭驱赶；<br>末传见子孙 —— 事后方被寻来，讨还。</p>'
-      + '<p class="docp"><b>卷二 · 鬼神</b><br>天柱　天英　天心　己<br>子孙　父母　子孙<br>问：近日噩梦频仍，可是鬼神侵扰？<br>官鬼为鬼神之类神；今官鬼不上卦 —— 并无鬼神惊扰。</p>'
-      + '<p class="docp"><b>卷三 · 赌博</b><br>天冲　天辅　天蓬　戊<br>官鬼　官鬼　妻财<br>断：初传官鬼 —— 开局即输；中传官鬼 —— 中盘仍输；末传妻财 —— 终局能赢些小钱。</p></div>'
-      + '<div class="card" style="margin:0 0 12px"><h3>二、三宫</h3>'
-      + '<p class="docp">三宫自左至右：<b>天宫 · 地宫 · 人宫</b> —— 三面同看，同时成立。</p>'
-      + '<p class="docp">事件　　起因 · 经过 · 结果<br>等级　　领导 · 干部 · 成员<br>此彼　　彼方 · 关系 · 己方'
-      + '<br>亲属一　祖辈 · 父母 · 己身<br>亲属二　父母 · 同辈 · 己身<br>亲属三　父母 · 己身 · 子女</p>'
-      + '<p class="docp" style="color:var(--ink-3)">宫下并无固定含义 —— 随所问之事流变。</p>'
-      + '<p class="docp">ps：取<b>值符宫九星</b>为初传，<b>值使宫九星</b>为末传，<b>天盘时干宫九星</b>为中传 —— 仿六壬三传所设。</p></div>'
-      + '<div class="card" style="margin:0 0 12px"><h3>三、六亲</h3>'
-      + '<p class="docp">第四格<b>主体</b>即时干，为这一课的太极点；生我者<b>父母</b>、我生者<b>子孙</b>、克我者<b>官鬼</b>、我克者<b>妻财</b>、同我者<b>兄弟</b>。</p>'
-      + '<p class="docp">又以人宫（末传）为己身，看它持的是哪一个六亲，即“何世”。所主与宜忌，借<b>六爻六亲持世</b>之说：</p>'
-      + row('父母', '文书、学业、考试、证书、房产、契约，及长辈、上司之助', '文书、学业、考试、房产、长辈与上司之助', '子孙之事（父母克子孙）；主辛劳')
-      + row('兄弟', '同辈、朋友、同事、合伙、竞争；口舌破耗', '交友、合伙、托人办事', '求财（兄弟劫财，“兄弟持世莫求财”）、婚姻；易口舌破耗')
-      + row('子孙', '子女、晚辈、下属、才艺；福神，能生财、解厄，又主医药', '求财（子孙生财）、求医解厄、生产、才艺', '求官求名（子孙克官鬼），“子孙持世莫求官”')
-      + row('妻财', '钱财、买卖、器物；男占为妻', '求财、买卖、婚姻（男）', '文书学业（财克父母）')
-      + row('官鬼', '官职、功名、上司；又主疾病、官非、盗贼、忧疑', '求官、求职、功名', '自身安宁（“官鬼持世身不安”）；疾病、官非、忧疑')
-      + '<p class="docp" style="color:var(--ink-3)">末传人宫即结果 —— 这一格最要看：事情最后落在谁手里。</p>'
-      + '<p class="docp">六亲依五行相生相克：父母 → 兄弟 → 子孙 → 妻财 → 官鬼 → 父母，一链相生；隔位则父母克子孙、子孙克官鬼、官鬼克兄弟、兄弟克妻财、妻财克父母 —— 名取人伦，理在五行。</p></div>'
-      + '<div class="card" style="margin:0"><h3>四、断法：用神 · 类神 · 诸神</h3>'
-      + '<p class="docp"><b>成事</b>之六亲为<b>用神</b>，代表事物本身之符号为<b>类神</b> —— 用神是工具、类神是目的，实战中常为同一符号。</p>'
-      + '<p class="docp">生用神者<b>元神</b>、克用神者<b>忌神</b>、生忌神者<b>仇神</b>；用神所生者<b>喜神</b>，用神旺则喜神得力、衰则退为<b>闲神</b>。</p></div>'
+      + '<div class="sub">起课 · 天干论 · 六亲 · 实例 · 类象</div>'
+      + note + body
       + '<button class="btn" style="width:100%;margin-top:12px" id="btnXkHelpOk">知道了</button>');
-    $('btnXkHelpOk').addEventListener('click', closeSheet);
+    /* 空值保护：万一弹层内容没落地（CxHelp 未就绪等），别让这里抛 null.addEventListener */
+    var ok = $('btnXkHelpOk');
+    if (ok) ok.addEventListener('click', closeSheet);
   }
 
-  /* 串星页「随机」＝**随机一局**（与起盘页的「随机一局」同口径）：
-     阴/阳遁随机、九局随机、时干支随机 —— 不上日期，所以显示的是局与时干支。 */
-  function cxRandJu() {
-    state.cxRand = {
-      polarity: Math.random() < 0.5 ? 1 : -1,
-      cycle: 1 + Math.floor(Math.random() * 9),
-      hourIdx: Math.floor(Math.random() * 60)
-    };
-    state.cxMode = 'rand';
-  }
-  /* 当前该起的那张课（随机一局走 castManual，其余走时刻） */
-  function cxChart() {
-    if (state.cxMode === 'rand' && state.cxRand) {
-      var r = state.cxRand;
-      return Q.castManual(r.polarity, r.cycle, (r.hourIdx % 10) + 1, (r.hourIdx % 12) + 1, flyOpts());
-    }
-    return castAt(solarParts(cxParts()));
+  /* 时间档那粒 ⓘ：四个数是**直译**来的，不另立数法（口径表 §5）。 */
+  function openCxNumsHelp() {
+    openSheet('<div class="bar"></div><h2>四数<b>从哪来</b></h2>'
+      + '<div class="sub">农历月 · 农历日 · 时辰序 · 时干序</div>'
+      + '<p class="docp"><b>天宫数</b>＝农历月号　<b>地宫数</b>＝农历日号　'
+      + '<b>人宫数</b>＝时辰序（子＝1）　<b>天干数</b>＝时干序（甲＝1 … 癸＝10）。</p>'
+      + '<p class="docp">这四个数是从<b>这一刻的农历与时干支直译</b>来的，不另立一套时间数法：'
+      + '换时刻，四数跟着换；闰月照月号读（闰六月就是 6）。</p>'
+      + '<p class="docp">想自己改数，切到<b>数字</b>档 —— 数字档的四格与这里互不干扰，'
+      + '不会把这里的数偷偷带过去；懒得填就切<b>随机</b>档，点「起课」那一刻现抽四个数、'
+      + '弹层「重排」再抽一组（抽的是<b>四数</b>、不抽时刻）。</p>'
+      + '<p class="docp">抽数的域跟着口径走 —— <b>六神</b>：前三数 1–6；'
+      + '<b>九星</b>：前三数 1–9（不然天心 / 天柱 / 天任 / 天英永远抽不到）；末位天干两套都是 1–10。</p>'
+      + '<p class="docp" style="color:var(--ink-3)">四数只决定三宫与天干：'
+      + '三宫按<b>连根数起</b>（数到哪一宫，下一数从那宫重新起 1），第四数定天干，六亲再按五行生克落。</p>'
+      + '<button class="btn" style="width:100%;margin-top:12px" id="btnCxNumsHelpOk">知道了</button>');
+    $('btnCxNumsHelpOk').addEventListener('click', closeSheet);
   }
 
+  /* 「起课」：按当前档位取四数 → CX 出一课 → 记进 state → 开课页弹层。
+     · 时间档：读这一刻的 calendar（CX.castFromChart）
+     · 数字档：读四格（CX.castByNumbers，逐格数组）
+     · 随机档：这一刻现抽四数（CX.randomNums，域随口径），记进 state.cxRandNums 回显 */
   function castLesson(openPop) {
-    /* 随机：点「起课」这一刻才抽（2026-10-21 用户定的时机；点「随机」只切模式） */
-    if (state.cxMode === 'rand' && !state.cxRand) cxRandJu();
-    try { state.cxChart = cxChart(); } catch (e) { toast('起课失败：' + e.message); return; }
+    var mode = cxMode(), r = null, from = cxTab(), c = null;
+    if (from === 'nums') {
+      r = CX.castByNumbers(cxInputVals(), mode);
+      if (!r.ok) { toast(r.err); focusBadCxField(); return; }
+    } else {
+      try { c = cxChart(); } catch (e) {
+        if (from === 'rand') { toast('起课失败：' + e.message); return; }
+      }
+      if (c) state.cxTimeChart = c;
+      if (from === 'rand') {
+        state.cxRandNums = CX.randomNums(mode);
+        r = CX.castByNumbers(state.cxRandNums, mode);
+      } else {
+        if (!c) { toast('这一刻起不出课'); return; }
+        r = CX.castFromChart(c, mode);
+      }
+      if (!r.ok) { toast(r.err); return; }
+    }
+    state.cxLesson = cxMakeLesson(r, from);
     state.cxBuilt = true;
-    renderCx();                       /* 就地渲染起课页课卡片，不跳全屏课页 */
+    syncCxMode();
+    paintCxNums();
+    paintCxTime();
+    paintCxRand();
     if (openPop !== false) openCxPop();
   }
-  /* 「重排」：随机模式再抽一局，时刻模式按当前时刻重算；弹层保持打开 */
+  /* 起课失败时把光标落到第一个不合法的格子上（只指路，不改用户填的字） */
+  function focusBadCxField() {
+    for (var i = 0; i < 4; i++) {
+      var el = cxInputEl(i);
+      if (el && !CX_FIELD_RE.test(String(el.value).trim())) {
+        try { el.focus(); } catch (e) {}
+        return CX_LB[i];
+      }
+    }
+    return '';
+  }
+  /* 「重排」（课页弹层里那颗，保持打开）：
+     随机档 → 再抽一组；数字档 → 同一组数重起（要换数请改格）；时间档 → 按当前时刻重算 */
   function recastLesson() {
-    var wasRand = (state.cxMode === 'rand');
-    if (wasRand) state.cxRand = null;
+    var tab = cxTab();
     castLesson(false);
     renderCxPop();
-    toast(wasRand ? '已重新抽一局' : '已按当前时刻重排');
+    toast(tab === 'rand' ? '已再抽一组四数' : (tab === 'nums' ? '已按这四数重起' : '已按当前时刻重起'));
   }
 
-  /* ---------------- 串星课弹层（2026-10-21） ----------------
-     用户：起课后**留在这一页**，用弹窗/类弹窗展示课页，并给「返回 / 重排」。
-     所以不再 setView('chart') 跳全屏课页。 */
-  function cxPopText(c) {
-    if (state.cxMode === 'rand') return c.ju.juText + ' · ' + c.calendar.ganzhi.hour + '时 · 随机一局';
-    return fmtParts(solarParts(cxParts())) + ' · ' + c.ju.juText + ' · ' + c.calendar.ganzhi.hour + '时';
+  /* ---------------- 串星课弹层 ----------------
+     用户：起课后**留在这一页**，用弹层展示课页，并给「返回 / 截图 / 重排」。 */
+  function cxNumText(L) {
+    /* 全是 1 位数就挨着写（数字档 1527）；有两位数就空开（10 5 4 8），免得看串 */
+    var two = L.nums.some(function (n) { return n >= 10; });
+    return L.nums.join(two ? ' ' : '');
+  }
+  function cxSubText(L) {
+    if (!L) return '—';
+    var head = L.modeName + ' · ';
+    if (L.from === 'nums') {
+      return head + '数字 ' + cxNumText(L) + ' · 天干 ' + L.stem
+        + (L.zero ? ' · 零课：三宫皆退一位' : '');
+    }
+    if (L.from === 'rand') {
+      return head + '随机 ' + L.nums.join(' ') + ' · 天干 ' + L.stem
+        + (L.zero ? ' · 零课：三宫皆退一位' : '');
+    }
+    return head + '时间 ' + fmtParts(solarParts(cxParts())) + ' · 四数 ' + L.nums.join(' ')
+      + ' · 天干 ' + L.stem + (L.zero ? ' · 零课：三宫皆退一位' : '');
   }
   function renderCxPop() {
-    var c = state.cxChart; if (!c) return;
-    var o = lessonCellsHTML(c);
+    var L = state.cxLesson; if (!L) return;
+    var o = cxCellsHTML(L);
     var g = $('cxPopGrid');
     g.className = o.cls;
     g.innerHTML = o.html || '<div class="cxempty">这一刻起不出课</div>';
-    $('cxPopSub').textContent = cxPopText(c);
+    $('cxPopSub').textContent = cxSubText(L);
+    syncCxMode();
   }
   function cxPopOpen() {
     var p = $('cxPop');
     return !!(p && p.classList.contains('on'));
   }
   function openCxPop() {
-    if (!state.cxChart) return;
+    if (!state.cxLesson) return;
     renderCxPop();
     $('cxPop').classList.add('on');
     $('cxPopMask').classList.add('on');
@@ -2177,16 +2405,16 @@
     if (m) m.classList.remove('on');
     if (p) popModal(p);
   }
-  /* 串星课弹层里的「截图」：与侧边签同一套数据，用这一页刚算出来的课 */
+  /* 串星课弹层里的「截图」：同一份课数据交给 Snapshot，走 renderLesson（横 1000×460） */
   function shotCxLesson() {
-    var c = state.cxChart;
-    if (!state.cxBuilt || !c) { toast('先点「起课」生成串星课'); return; }
-    var L;
-    try { L = lessonPick(c); } catch (e) { toast('这一刻起不出课'); return; }
+    var L = state.cxLesson, c = state.cxTimeChart;
+    if (!state.cxBuilt || !L) { toast('先点「起课」生成串星课'); return; }
+    if (!c) { try { c = state.cxTimeChart = cxChart(); } catch (e) { c = null; } }
     toast('正在生成…');
     Snap.shot(c, state.analysis, state.starMap, toast, state.face,
       { rendImage: S.settings.rendImageLesson, opacity: S.settings.opacity, lesson: L });
   }
+
 
   /* ---------------------------------------------------------------- 视图 */
   /* 底栏三项的先后顺序，页面切换的滑动方向照它算（盘面页不占底栏，单独算） */
@@ -2335,6 +2563,46 @@
     }
   }
 
+  /* --------------------------------------------------------- 开源声明（2026-11-13） */
+  /* 用户：「有没有一些内容，其实不需要声明，因为就算让你重新写，写出来的也是那么一个东西。」
+     于是按「要不要声明」分成两档（判定说明见 web/licenses/THIRD-PARTY.md）：
+       ① **必须声明**：字体 QM Serif（Noto Serif CJK SC 子集）· SIL OFL 1.1
+          —— 我们分发的是字体文件本身，OFL 要求随附许可证，给全文、可点开看；
+       ② **数据与规则参照**：iztro · MIT ／ qimen-dunjia · MIT ／ bigfishmarquis-qimen · MIT
+          —— 事实性数据（十干四化、客应歌诀）与规则口径对齐，没复制代码，
+          只列名字与许可名，**不给全文**；
+       另：cities.js / lunar.js 参照的是同作者的 mQimen，不算第三方。
+     其余模块全自研。字体全文由 web/licenses/licenses.js 内联成 window.LICENSES.ofl
+     （file:// 下 fetch 读 .txt 会被部分 WebView 拒）。 */
+  function licText(key) {
+    var L = window.LICENSES;
+    return (L && L[key]) || '';
+  }
+  /** 二级弹层：把 window.LICENSES[key] 的全文铺出来（纯文本、可滚动） */
+  function openLicense(key) {
+    var txt = licText(key);
+    var named = (window.LICENSES && window.LICENSES.title && window.LICENSES.title[key]) || key;
+    if (!txt) { toast('许可全文没加载（web/licenses/licenses.js）'); return; }
+    openSheet('<div class="bar"></div><h2>许可<b>全文</b></h2>'
+      + '<div class="sub">' + esc(named) + '</div>'
+      + '<div class="card" style="margin:0;padding:12px 13px">'
+      + '<div style="white-space:pre-wrap;word-break:break-word;max-height:58vh;overflow:auto;'
+      + 'font-size:11px;line-height:1.65;color:var(--ink-2);'
+      + 'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">'
+      + esc(txt) + '</div></div>'
+      + '<button class="btn" style="width:100%;margin-top:12px" id="btnLicOk">知道了</button>');
+    var ok = $('btnLicOk');
+    if (ok) ok.addEventListener('click', closeSheet);
+  }
+  /* 关于卡里的「许可全文」小键：inline 样式，不新增 CSS 类（本轮只动 ui.js） */
+  var LIC_BTN = 'style="border:0;background:none;padding:0 0 0 6px;font-size:11.5px;'
+    + 'color:var(--accent);text-decoration:underline;text-underline-offset:2px;'
+    + '-webkit-tap-highlight-color:transparent"';
+  function licBtn(key, label) {
+    return '<button type="button" data-lic="' + key + '" ' + LIC_BTN + '>'
+      + (label || '许可全文') + '</button>';
+  }
+
   /* -------------------------------------------------- 主页模式与控件同步 */
   /* 四柱标签：时家四柱全给；三层只给本层那一柱，其余留白 */
   function syncLayerHead() {
@@ -2479,7 +2747,24 @@
         + '· 农历/朔望：朔望月现场推算，2023–2026 春节、中秋、端午与公认历表一致；<br>'
         + '· 四柱：按北京时间，时刻精确到分钟；晚子时换日可开关；<br>'
         + '· 失效边界：ΔT 适用 1600–2150，界面年份 1900–2100；交节、子夜、立春前后 1 分钟内的盘请人工复核。'
-        + '</div></div>');
+        + '</div></div>'
+        /* ★ 2026-11-13 用户定：开源声明**只保留必要的一条** —— 字体。
+             其余（iztro / qimen-dunjia / bigfishmarquis-qimen / mQimen / 自研清单）全删：
+             它们或属事实性数据、或只是规则口径对齐，不构成随副本分发许可的义务。
+             四条的**判定说明**仍留在 web/licenses/THIRD-PARTY.md（书面凭据，不进 UI）。 */
+        + '<div class="card" style="margin:12px 0 0"><div class="fhint">'
+        + '<b>开源声明</b><br>'
+        + '字体 <b>QM Serif</b>（Noto Serif CJK SC 子集）· <b>SIL OFL 1.1</b>'
+        + licBtn('ofl')
+        + '</div></div>'
+        + '<div class="sub" style="margin-top:12px">本应用 © 2026 魔门 · MIT</div>');
+    });
+
+    /* 关于 →「许可全文」：委托在 #sheet 上（弹层内容每次 openSheet 会换，外层元素不变） */
+    $('sheet').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-lic]');
+      if (!b) return;
+      openLicense(b.getAttribute('data-lic'));
     });
 
     /* 底栏 / 弹层 */
@@ -2585,6 +2870,8 @@
   function initCx() {
 
     /* 串星：起课页的控件与「起课」按钮（函数体在模块层，见上面的串星段） */
+    state.cxTab = cxTab();                 /* 'time'（默认）| 'nums' */
+    if (state.cxTimeSrc !== 'pick') state.cxTimeSrc = 'now';
     $('btnCastX').addEventListener('click', function () { castLesson(); });
     /* 课页弹层：返回 / 截图 / 重排 / 点遮罩关
        ★ 2026-10-21：起课页的课卡去掉后，截图入口从右侧边签挪进弹层。 */
@@ -2592,26 +2879,42 @@
     $('cxPopMask').addEventListener('click', closeCxPop);
     $('cxPopShot').addEventListener('click', shotCxLesson);
     $('cxPopAgain').addEventListener('click', recastLesson);
-    /* 「读法」：原全屏课页的 ? 键删除后，入口收进课页弹窗标题右侧（2026-11-02 排查项 8） */
+    /* 「读法」：入口在课页弹窗标题右侧（2026-11-02 排查项 8） */
     $('cxPopHelp').addEventListener('click', openXkHelp);
-    $('segCxPick').addEventListener('click', function (e) {
-      var b = e.target.closest('button'); if (!b) return;
-      if (b.dataset.mode === 'rand') {
-        state.cxMode = 'rand';
-        state.cxRand = null;           /* 只切模式：随机在点「起课」时才抽 */
-      } else {
-        state.cxMode = 'now';
-      }
-      state.cxBuilt = false;           /* 换时刻 → 课重新变空白，点「起课」再算 */
-      closeCxPop();
-      renderCx();
+    /* 口径勾选（六神 ☐ 九星）：**只有起课页这一处**。
+       换的是三宫的名字与随之重算的六亲；四数与天干一个不动。
+       ⚠ 它不在设置页出现、也不进分段；课页 / 同显 / 导出图里都不许有 —— 用户 2026-11-13 的硬约束。 */
+    $('cxStar').addEventListener('change', function () {
+      setCxMode(this.checked ? 'star' : 'six');
     });
+    /* 档位：时间 / 数字 / 随机（时间在前且默认） */
+    $('segCxSrc').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      /* 「返回时」：时间档上点这一格＝回到此刻，不是切档 */
+      if (b.dataset.src === 'time' && state.cxTimeSrc === 'pick' && cxTab() === 'time') {
+        state.cxTimeSrc = 'now';
+        state.cxBuilt = false;
+        closeCxPop();
+        syncCxSrc();
+        renderCx();
+        toast('已回到此刻');
+        return;
+      }
+      setCxSrc(b.dataset.src);
+    });
+    /* 数字档四格：只验不预览（标红 + 底部一行提示，不改用户填的字） */
+    CX_IN.forEach(function (id) {
+      var el = $(id); if (!el) return;
+      el.addEventListener('input', function () { paintCxNums(); });
+      el.addEventListener('change', function () { paintCxNums(); });
+    });
+    $('cxTimeHelp').addEventListener('click', openCxNumsHelp);
     /* 串星页「点大时刻」同理：点击 → 显式打开原生选择器 */
-    var cxTimecard = document.querySelector('#view-chuanxing .timecard');
+    var cxTimecard = $('cxTimecard') || document.querySelector('#view-chuanxing .timecard');
     if (cxTimecard) cxTimecard.addEventListener('click', function () { openTimePicker($('cxPick')); });
     $('cxPick').addEventListener('change', function () {
-      state.cxMode = 'pick';    /* 点了时间就不再是"此刻/随机" */
-      state.cxBuilt = false;     /* 换时刻 → 课重新变空白，点「起课」再算 */
+      state.cxTimeSrc = 'pick';   /* 点了时间就不再是"此刻" */
+      state.cxBuilt = false;      /* 换时刻 → 课作废，点「起课」再算 */
       closeCxPop();
       renderCx();
     });
@@ -2625,9 +2928,15 @@
       /* ★ 截图要跟屏幕同源：渲染背景 + 盘面不透明度 一并带下去 */
       /* 盘面同显 —— 屏幕上课与盘同框，出图也得同框（形状仍按奇门盘 1000×1370）。
          盘面同显只在时家盘上有意义（阴盘/心盘不走串星课那套）。 */
-      var isBoth = !!S.settings.panLesson && state.chartSub !== 'yin' && state.chartSub !== 'xin';
+      /* 2026-11-13：阴盘也出同显图（心盘仍不显） */
+      var isBoth = !!S.settings.panLesson && state.chartSub !== 'xin';
       var so = { rendImage: S.settings.rendImage, opacity: S.settings.opacity };
-      if (isBoth) { so.both = true; so.lesson = lessonPick(state.chart); }
+      if (isBoth) {
+        /* 课与屏幕同源：走 boardLesson（**随机取数**，不用盘面时刻），
+           与中宫里显示的是同一组数据；算不出来就不带 lesson，出图仍是一张盘。 */
+        var Lm = boardLesson(state.chart);
+        if (Lm) { so.both = true; so.lesson = Lm; }
+      }
       Snap.shot(state.chart, state.analysis, state.starMap, toast, state.face, so);
     });
     /* 折叠把手：旬空正下方那条短线 */
@@ -2839,6 +3148,16 @@
         setSeg(box, S.settings[k] ? '1' : '0');
       });
       setSeg($('segSgDir'), S.settings.sgDir === 'yinyang' ? 'yinyang' : 'shun');
+      /* ★ 2026-11-13 用户：盘面同显**仅限转盘** ——
+         盘式切「飞盘」，或 九星/八门/八神 任一走飞盘（flyMode 三者取或），都与同显互斥：
+         自动关掉同显（存档同步），并把「盘面同显」那一格置灰（class lock：仍可点，点了给提示）。 */
+      if (flyMode() && S.settings.panLesson) {
+        S.settings.panLesson = false;
+        S.saveSettings();
+        if (state.chart) renderMiniLesson(state.chart);
+      }
+      var lp = $('segPanLesson');
+      if (lp) Array.prototype.forEach.call(lp.children, function (b) { b.classList.toggle('lock', flyMode()); });
       setSeg($('segPanLesson'), S.settings.panLesson ? '1' : '0');
       setSeg($('segSizhu'), (+S.settings.sizhu === 1) ? '1' : '0');
       setSeg($('segGodDir'), S.settings.godDir === 'yang' ? 'yang' : 'yinyang');
@@ -2850,26 +3169,31 @@
     $('segPanMode').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       var fei = b.dataset.v === 'fei';
+      var hadLesson = !!S.settings.panLesson;
       PAN_KEYS.forEach(function (k) { S.settings[k] = fei; });
       S.saveSettings();
       syncPanOpts();
-      afterPanOpt(fei ? '已切到飞盘' : '已切到转盘');
+      afterPanOpt(fei
+        ? (hadLesson && !S.settings.panLesson ? '已切到飞盘 · 盘面同显已关（仅限转盘）' : '已切到飞盘')
+        : '已切到转盘');
     });
     /* 分项微调：星 / 门 / 神 各自转↔飞 */
     [['segFlyStar', 'flyStar'], ['segFlyGate', 'flyGate'], ['segFlyGod', 'flyGod']].forEach(function (pair) {
       $(pair[0]).addEventListener('click', function (e) {
         var b = e.target.closest('button'); if (!b) return;
+        var hadLesson = !!S.settings.panLesson;
         S.settings[pair[1]] = b.dataset.v === '1'; S.saveSettings();
         syncPanOpts();
-        afterPanOpt('盘式已改');
+        afterPanOpt(hadLesson && !S.settings.panLesson ? '盘式已改 · 盘面同显已关（仅限转盘）' : '盘式已改');
       });
     });
-    /* 排法 · 盘面同显串星课 */
+    /* 排法 · 盘面同显串星课（仅限转盘：飞盘下这一格置灰，点了给提示、不改设置） */
     $('segPanLesson').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.v === '1' && flyMode()) { toast('盘面同显仅限转盘：先把盘式切回转盘'); return; }
       S.settings.panLesson = b.dataset.v === '1'; S.saveSettings();
       syncPanOpts();
-      afterPanOpt(S.settings.panLesson ? '盘面同显串星课：已开启' : '盘面同显串星课：已关闭');
+      afterPanOpt(S.settings.panLesson ? '盘面同显串星课：已开启（课放进中宫）' : '盘面同显串星课：已关闭');
     });
     /* 排法 · 四柱形制（2026-11-02：从插件收进设置；默认＝方块四柱，简洁＝五行色字） */
     $('segSizhu').addEventListener('click', function (e) {

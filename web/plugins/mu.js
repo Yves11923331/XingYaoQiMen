@@ -1,16 +1,72 @@
 /* ============================================================================
  * 插件 · 墓星（com.momen.xingyaoqimen / plugins/mu）
  * ----------------------------------------------------------------------------
- * 从 ui.js / snapshot.js 迁出来的第一个真插件（2026-10-25）。
- * 只声明 manifest + palace（盘面 DOM）+ snap（导出图 Canvas），
- * 开关 / 阴盘拦截 / 独占让位 全交给运行时 Plugins 协调，这里不再自己判。
+ * 2026-11-13：碑改成**位图掩膜**（与马星同一套做法），并从「八门行与星曜之间的留白」
+ *   挪进**右上角标组**，与空亡 / 马星同一行：一宫最多一枚（只标其象，不按星/门各出一枚）。
+ *   角标组是 ui.js 生成的（.qm-void，右上角 flex 行），本插件不碰 ui.js / pan.css：
+ *   自己绝对定位，按空亡 / 马星的有无算 right；样式与掩膜变量也在本文件里注入。
+ *   ⚠ 2026-11-13 用户：**只在标准盘上显示，不再为了它把整盘切回老 UI**
+ *     （ui.js / snapshot.js 的 oldUIOn 已把 mu 摘出去；zw / sxm 仍按老规矩切）。
+ *   ⚠ 阴盘**一律不渲染**（flags.blockInYin）：阴盘只显示它自己那套（星门干 + 暗干），
+ *     这是硬规矩、不是开关 —— 别为了「角标与排法无关」给它开口子。
  * ========================================================================== */
 (function () {
   'use strict';
 
-  var SVG = '<svg viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.35" ' +
-    'stroke-linecap="round" stroke-linejoin="round"><path d="M3.9 14.9V8.1a4.1 4.1 0 0 1 8.2 0v6.8z"/>' +
-    '<path d="M8 5.6v5.8M6 7.9h4"/><path d="M2.4 16.3h11.2"/></svg>';
+  /* 掩膜：墓碑 + 宽碑座，RGBA 100×154（alpha 定形，RGB 全 0），与马星同构。
+     来源 设计-布盘/墓星/墓星-掩膜-256x154.png —— 屏幕 CSS mask、导出图 canvas 共用这一份。 */
+  var MASK = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAACaCAYAAABfeu09AAABZUlEQVR42u3Ziw2DQAxEQbz990xqQOFggXkFRJxH5qPM1t2+6Hen9cDZVNV8aCseMYP5METlLAZE10wGRNdsBkTXjAKj65oDo+vaB0bXzAKj6zyB0XWuwOg6X2B0FRhdZw2MrjMHRtfZ/R/y0meIh/hJM7AhL9wQ23HiLGzIyzbEdpw8ExvygS913QTidrVgNjbELUtAgOhqEA/0RTOyIW5ZAgJEQIAICBABASIgAgJEQIAICBABASIgAgJEQIAICBABASIgAgJEQIAICBABASIgAgJEQIAICBABASIgAgJEQIAICBABASIgAgJEQIAICBABASIgAgJEQIAICBABASIgAgJEQIAICBABASIgAgJEQIAICBABAaLHgIzRrZmRDXHL0j9rtRvRtXMPjFvaj4LAuAklMLpQAqMLxVtW8Wuv7SjYkgHhw1BAgAgIEAEBIiBABERAgAgIEAEBIiBABERAgOhwP9GeLwjSsAb+AAAAAElFTkSuQmCC';
+
+  var CSS = [
+    '.qm-mark-mu{position:absolute;top:4px;width:8.5px;height:13px;pointer-events:none;',
+    'background-color:var(--ink);',
+    '-webkit-mask:var(--qm-mu-mask) center/contain no-repeat;',
+    'mask:var(--qm-mu-mask) center/contain no-repeat}'
+  ].join('');
+
+  function inject() {
+    try {
+      var st = document.getElementById('mu-style');
+      if (!st) {
+        st = document.createElement('style');
+        st.id = 'mu-style';
+        st.textContent = CSS;
+        (document.head || document.documentElement).appendChild(st);
+      }
+      document.documentElement.style.setProperty('--qm-mu-mask', 'url("' + MASK + '")');
+    } catch (e) {}
+  }
+  inject();
+
+  /* 导出图用的位图（离屏 source-in 染色，与马星同一个套路） */
+  var _img = null, _ready = false;
+  try {
+    _img = new Image();
+    _img.onload = function () { _ready = true; };
+    _img.src = MASK;
+  } catch (e) { _img = null; }
+
+  function drawMask(c, x, y, w, h, color) {
+    if (!_ready || !(w > 0) || !(h > 0)) return;
+    var oc = document.createElement('canvas');
+    oc.width = Math.max(1, Math.round(w));
+    oc.height = Math.max(1, Math.round(h));
+    var g = oc.getContext('2d');
+    g.drawImage(_img, 0, 0, oc.width, oc.height);
+    g.globalCompositeOperation = 'source-in';
+    g.fillStyle = color;
+    g.fillRect(0, 0, oc.width, oc.height);
+    c.drawImage(oc, x, y, w, h);
+  }
+
+  /* 角标组里的右偏移：组是 .qm-void（right 7 / 8、gap 3），空亡 13、马星 17.5；
+     墓星 8.5×13 排在它们左边，**与组内同一档 3px 间距**（2026-11-13 实测校准：
+     空亡左缘离宫右 21、马星左缘 25.5 → 碑右缘各再让 3px）。 */
+  function rightOf(p) {
+    /* 与角标组同一档间距 3px。空亡是描边圆（笔触内缩 .8）、马星是位图剪影（左缘自带 ~1.5
+       透明边），所以"墨迹间距"会是 ~3.8 / ~4.5 —— 两组都在 3–4.5 之间，看上去是同一档。 */
+    return 7 + (p && p.kong ? 13 + 3 : 0) + (p && p.ma ? 17.5 + 3 : 0);
+  }
 
   window.Plugins.register({
     id: 'mu',
@@ -18,51 +74,29 @@
     desc: '星门入墓之说，古今本有争议。墓星法自定一规：星门临墓之地，则生一枚墓星。' +
       '墓星者，入墓之虚象也——只标其象，不使事物真陷囚困、衰败。',
     note: '墓支：水／土墓辰 · 木墓未 · 火墓戌 · 金墓丑；中五宫不判。' +
-      '碑落在八门行与星曜之间的留白，一宫最多三枚（每个入墓的星、门各一枚）。',
+      '碑作**右上角标**（与空亡 / 马星同一行、同一档间距），一宫最多一枚；只标其象。',
+    /* 插件不入阴盘（硬规矩）：阴盘里星门干 + 暗干之外不挂任何插件渲染。 */
     flags: { blockInYin: true },
 
-    /* 盘面（DOM）：往宫里塞一枚（或多枚）圆顶碑 */
+    /* 盘面（DOM）：角标组里补一枚碑（不碰宿主 DOM，绝对定位） */
     palace: function (pal, ctx) {
       var mus = ctx.Q.muAt(pal, ctx.p);
       if (!mus || !mus.length) return '';
-      return '<div class="qm-mu">' + mus.map(function (it) {
-        var nm = it.kind === 'star' ? (ctx.Q.STAR[it.no] || '') : (ctx.Q.GATE[it.no] || '');
-        return '<i class="qm-mu-1" title="' + ctx.esc(nm) + '入墓">' + SVG + '</i>';
-      }).join('') + '</div>';
+      var it = mus[0];
+      var nm = it.kind === 'star' ? (ctx.Q.STAR[it.no] || '') : (ctx.Q.GATE[it.no] || '');
+      return '<i class="qm-mark-mu" title="' + ctx.esc(nm) + '入墓"'
+        + ' style="right:' + rightOf(ctx.p) + 'px"></i>';
     },
 
-    /* 导出图（Canvas）：与 DOM 同位置同形制（ty = y + SH*0.640） */
+    /* 导出图（Canvas）：同一枚碑、同一组几何（单位 k = 单卡宽 / 112） */
     snap: function (pal, ctx) {
-      var c = ctx.ctx, Q = ctx.Q, x = ctx.x, y = ctx.y, S = ctx.S, SH = ctx.SH, P = ctx.P;
-      var list = Q.muAt(pal, ctx.p);
+      var list = ctx.Q.muAt(pal, ctx.p);
       if (!list || !list.length) return;
-      var w = S * 0.098, h = S * 0.116, gap = S * 0.042;
-      var n = list.length, total = n * w + (n - 1) * gap;
-      var sx = x + (S - total) / 2, ty = y + SH * 0.640;
-      c.save();
-      c.strokeStyle = P.inkSoft || P.ink2 || P.ink;
-      c.lineWidth = Math.max(1, S * 0.0095);
-      c.lineCap = 'round'; c.lineJoin = 'round';
-      for (var i = 0; i < n; i++) {
-        var bx = sx + i * (w + gap);
-        c.beginPath();
-        c.moveTo(bx + w * 0.16, ty + h * 0.90);
-        c.lineTo(bx + w * 0.16, ty + h * 0.40);
-        c.arc(bx + w * 0.5, ty + h * 0.40, w * 0.34, Math.PI, 0);
-        c.lineTo(bx + w * 0.84, ty + h * 0.90);
-        c.stroke();
-        c.beginPath();
-        c.moveTo(bx + w * 0.5, ty + h * 0.26);
-        c.lineTo(bx + w * 0.5, ty + h * 0.68);
-        c.moveTo(bx + w * 0.31, ty + h * 0.44);
-        c.lineTo(bx + w * 0.69, ty + h * 0.44);
-        c.stroke();
-        c.beginPath();
-        c.moveTo(bx - w * 0.04, ty + h * 0.99);
-        c.lineTo(bx + w * 1.04, ty + h * 0.99);
-        c.stroke();
-      }
-      c.restore();
+      var S = ctx.S, k = S / 112, P = ctx.P;
+      var mw = 8.5 * k, mh = 13 * k;
+      var x = ctx.x + S - rightOf(ctx.p) * k - mw;
+      var y = ctx.y + 4 * k;
+      drawMask(ctx.ctx, x, y, mw, mh, P.ink);
     }
   });
 })();

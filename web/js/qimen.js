@@ -463,7 +463,6 @@ var DEITY_WX = ['', '木', '火', '金', '木', '金', '水', '土', '金', '土
 
   /* 旬首名：甲子 / 甲戌 / … */
   function xunShouName(leadEb) {
-    var XUN_ZHI = [0, 0, 10, 8, 6, 4, 2];   // 旬首仪(5戊..10癸) → 旬首地支 1..12
     var map = { 5: 1, 6: 11, 7: 9, 8: 7, 9: 5, 10: 3 };
     var z = map[leadEb] !== undefined ? map[leadEb] : 1;
     return '甲' + Lunar.ZHI[z - 1];

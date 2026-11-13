@@ -281,14 +281,40 @@ html[data-theme="white"] .qm-text-pan {
     border: 1px solid var(--qm-seal-horse-line);
 }
 
+/* ---------------- 空亡 / 马星 · 图形化（2026-11-13 用户定版） ----------------
+   空亡：一个圆（A1 单环，朱红细环）—— 阴盘与标准盘都用它。
+   马星：奔腾剪影（位图掩膜），屏幕用 mask 染色，颜色跟 --qm-seal-horse-ink 走，
+        深色主题自动变亮，不需要再存一份彩色图。
+   文字印章那套 padding / 边框 / 底色在这里全部清零，`.qm-void` 的定位与 3px 间距不变。 */
+.qm-seal-void, .qm-seal-horse { padding: 0; border: 0; background: none; line-height: 0; }
+.qm-mark { display: block; }
+.qm-mark-void {
+    width: 13px; height: 13px;
+    box-sizing: border-box;
+    border: 1.6px solid var(--qm-seal-void-ink);
+    border-radius: 50%;
+}
+.qm-mark-horse {
+    width: 17.5px; height: 10.53px;   /* 掩膜 256×154（1.662:1）等比；17.5 与 3.1.1 的观感一致（那版方图留白，可见只有 ~17.5） */
+    background-color: var(--qm-seal-horse-ink);
+    -webkit-mask: var(--qm-horse-mask) center / contain no-repeat;
+    mask: var(--qm-horse-mask) center / contain no-repeat;
+}
+/* 老 UI（开墓星/紫微/长生尺时）印章也跟着放大一档，图标同步放大 */
+.qm-text-pan[data-ui="old"] .qm-mark-void { width: 15px; height: 15px; border-width: 1.8px; }
+.qm-text-pan[data-ui="old"] .qm-mark-horse { width: 19.8px; height: 11.9px; }
+
 /* 八神：**回基准形制**（疏排小字 + 渐变发丝线），只跟整体放大到 .905em、去加粗。
    ⚠ 2026-11-02 用户定：八神字号不跟星门等大，仍是顶部那行小字。 */
 .qm-shen {
+    /* 2026-11-13 用户：八神的字与星/门/干不是一路 —— 原来没写 font-family，吃的是
+       页面默认的黑体；这里补上 QM Serif，与 .qm-line .qm-name / .qm-gans 同一套字。 */
+    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
     margin-top: var(--qm-shen-mt, 30px);   /* 兜底值；实际由 ui.js 的 DENSITY.sm 写入（390 屏档 30px） */
     align-self: stretch;
     text-align: center;
     font-size: .905em;            /* 基准 .78em × 1.16 */
-    font-weight: 400;
+    font-weight: 600;             /* 2026-11-13 用户「加粗一点」：400→600（500 在这套字里看不出差别） */
     letter-spacing: .24em;
     text-indent: .24em;
     color: var(--qm-ink-soft);
@@ -468,20 +494,6 @@ html[data-theme="white"] .qm-text-pan {
    top 用 em（跟着 --qm-cell-fs 一起缩放），**别改成 px**，否则换屏宽会飘。
    形制：圆顶碑＋碑面十字＋土台（内联 SVG 在 ui.js 的 MU_TOMB_SVG）。
    口径：只表示「入墓之虚象」，不参与吉凶；一宫最多 3 枚。 */
-.qm-mu {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 7.50em;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    gap: .42em;
-    color: var(--qm-ink-soft);
-    line-height: 1;
-}
-.qm-mu .qm-mu-1 { display: flex; }
-.qm-mu svg { display: block; width: .78em; height: .90em; }
 /* 星曜：压在格子底部那条留白带里，整条宽度都归它（卦象已去掉）。
    ★ 2026-11-02 晚修订：不再用 `flex-wrap: wrap-reverse` 让浏览器自己折行 ——
      那样 8 颗只放得下 6 颗时，被顶到上一行的是**最后 2 颗**；用户要的是
@@ -503,8 +515,13 @@ html[data-theme="white"] .qm-text-pan {
     justify-content: flex-start;
     row-gap: 2px;
     overflow: hidden;
-    font-size: .74em;
-    font-weight: 400;
+    /* 2026-11-13 用户定版 B：星曜是"名号"不是注释 ——
+       字体跟星名/门名/八神一样用 QM Serif；字重 500（八神 600、星门干 400，它居中）；
+       字号从 .74em 提到 .78em；整体压到 90% 不透明，让它再退半步。 */
+    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    font-size: .78em;
+    font-weight: 500;
+    opacity: .9;
     line-height: 1.15;
     letter-spacing: .02em;
     white-space: nowrap;
@@ -674,6 +691,23 @@ html[data-theme="white"] .qm-text-pan {
     box-shadow: 0 0 18px var(--qm-glow2);
     pointer-events: none;
 }
+/* ---------------- 中宫不要特效（2026-11-13 用户） ----------------
+   素白的中宫是干净的：盘心没有金色 radial（--qm-halo: none），金环也不发光（--qm-glow2: transparent）。
+   另外三套主题照这个口径改：只掐中宫这两处，**不动 --qm-glow2 变量本身** ——
+   时干那颗金环（.qm-gan.qm-hour 的 box-shadow 也用它）要保持原样。 */
+html[data-theme="blue"] .qm-text-pan::after,
+html[data-theme="slate"] .qm-text-pan::after,
+html[data-theme="brown"] .qm-text-pan::after {
+    background-image: var(--qm-dots), var(--qm-vig);   /* 去掉中间的 --qm-halo 层 */
+    background-size: 100% 100%, 100% 100%;
+    background-repeat: no-repeat, no-repeat;
+}
+html[data-theme="blue"] .qm-cell.qm-mid::after,
+html[data-theme="slate"] .qm-cell.qm-mid::after,
+html[data-theme="brown"] .qm-cell.qm-mid::after {
+    box-shadow: none;                                  /* 金环不再发辉光 */
+}
+
 /* 内圈：**已去掉**（2026-09-26 用户要求"弄成纯白的，加一个圆环就好"）。
    中宫现在只有 ::after 那一个圆环，其余留白。 */
 .qm-mid-line {
@@ -886,8 +920,13 @@ html[data-theme="white"] .qm-text-pan {
 .qm-text-pan[data-ui="old"] .qm-seal { font-size: .58em; }
 .qm-text-pan[data-ui="old"] .qm-stars { font-weight: 700; }
 
-/* ---------------- 阴盘专属配色 · P2「鲜而不淡」（2026-11-13 用户选） ----------------
-   只影响阴盘：时家 / 心盘 / 三层全部照旧走各主题原色。
+/* ---------------- 标准配色 · P2「鲜而不淡」（2026-11-13 用户定） ----------------
+   ★ 2026-11-13 末轮（用户）：「阴盘的神星门干的颜色 作为标准的配色」——
+     这组原本只挂阴盘（`[data-sub="yin"]`），现已**提升为全站标准**：
+     时家 / 日家 / 月家 / 年家 / 心盘 / 阴盘**所有盘**的神（按五行）、星、门、天地盘干都走这套。
+     阴盘原本就用它，所以阴盘观感不变；变化的是标准盘那一侧。
+   只影响盘面：`
+   暗干不在其中——它是 --qm-ink-soft 的灰墨小字，按用户要求不参与上色。
    做法是**在阴盘这一层重挂五行色与星门九色**，神（按五行取色）与干（五行色）会一起变；
    暗干不在其中——它是 --qm-ink-soft 的灰墨小字，按用户要求不参与上色。
    ⚠ 选择器带 html[data-theme] 是为了压过四套主题各自的 `html[data-theme="…"] .qm-text-pan`
@@ -895,7 +934,7 @@ html[data-theme="white"] .qm-text-pan {
    ⚠ 400 字重下比的是**对比度**：这组对白底的对比度 木 3.61 · 火 4.79 · 土 3.35 ·
      金 5.62 · 水 6.36。别再往上提亮：土黄到 3.0 以下，小字会糊在白卡上。
    ⚠ 星/门按五行同色（原主题里门比星略浅一档，这里统一）；要分档可单独给 --qm-men-* 换值。 */
-html[data-theme] .qm-text-pan[data-sub="yin"] {
+html[data-theme] .qm-text-pan {
     --qm-el-wood: #0a9a63;
     --qm-el-fire: #dc2a18;
     --qm-el-earth: #b9821a;
@@ -920,4 +959,37 @@ html[data-theme] .qm-text-pan[data-sub="yin"] {
     --qm-men-7: #4f6a86;
     --qm-men-8: #b9821a;
     --qm-men-9: #dc2a18;
+}
+/* ★ 2026-11-13 末轮（用户拍板「同色相、深色主题提亮一档」）：
+   上面那组 P2 是**为素白调的**，直接放到玄夜/墨玉/铜仪上，金 3.48、水 3.07 会发闷。
+   这三套深色主题改挂**同色相、提亮一档**的一组（与 app.css 深色主题的 --el-* 完全同值，
+   这样「盘面」与「串星课」跨组件仍严格同色，p11 才绿）。
+   实测对比度：木 9.86 · 火 7.50 · 土 10.96 · 金 11.41 · 水 8.06（都 ≫4.5）。 */
+html[data-theme="blue"] .qm-text-pan,
+html[data-theme="slate"] .qm-text-pan,
+html[data-theme="brown"] .qm-text-pan {
+    --qm-el-wood: #63d6a0;
+    --qm-el-fire: #ff8574;
+    --qm-el-earth: #e8c877;
+    --qm-el-metal: #c7d0dc;
+    --qm-el-water: #6fb4f5;
+
+    --qm-tian-1: #6fb4f5;
+    --qm-tian-2: #e8c877;
+    --qm-tian-3: #63d6a0;
+    --qm-tian-4: #63d6a0;
+    --qm-tian-5: #e8c877;
+    --qm-tian-6: #c7d0dc;
+    --qm-tian-7: #c7d0dc;
+    --qm-tian-8: #e8c877;
+    --qm-tian-9: #ff8574;
+
+    --qm-men-1: #6fb4f5;
+    --qm-men-2: #e8c877;
+    --qm-men-3: #63d6a0;
+    --qm-men-4: #63d6a0;
+    --qm-men-6: #c7d0dc;
+    --qm-men-7: #c7d0dc;
+    --qm-men-8: #e8c877;
+    --qm-men-9: #ff8574;
 }
