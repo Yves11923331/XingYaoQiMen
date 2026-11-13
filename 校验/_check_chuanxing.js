@@ -306,6 +306,18 @@ ok(/数字定局/.test(xpTxt), '阴盘定局行应写「数字定局」');
 ok(!/手动指定/.test(xpTxt), '阴盘不该被写成「手动指定」');
 console.log('    阴盘详情：' + xpTxt.replace(/\s+/g, ' ').slice(0, 84));
 
+/* ⑦1d 阴盘专属配色（2026-11-13 用户选 P2「鲜而不淡」） */
+{
+  const panCss4 = fs.readFileSync(path.join(ROOT, 'web', 'css', 'pan.css'), 'utf8');
+  const pal = (panCss4.match(/html\[data-theme\] \.qm-text-pan\[data-sub="yin"\]\s*\{[\s\S]*?\}/) || [''])[0];
+  ok(!!pal, '阴盘配色块存在（html[data-theme] .qm-text-pan[data-sub="yin"]）');
+  ok(/--qm-el-wood:\s*#0a9a63/.test(pal) && /--qm-el-fire:\s*#dc2a18/.test(pal) && /--qm-el-water:\s*#0f5cbf/.test(pal),
+     'P2 五行色：木 #0a9a63 / 火 #dc2a18 / 水 #0f5cbf');
+  ok(/--qm-tian-9:\s*#dc2a18/.test(pal) && /--qm-men-1:\s*#0f5cbf/.test(pal), 'P2 星门九色跟上五行');
+  ok(!/--qm-ink-soft/.test(pal), '暗干（--qm-ink-soft）不参与阴盘上色');
+  ok(/data-sub="yin"/.test(pal) && !/html\[data-theme\] \.qm-text-pan\s*\{/.test(pal), '配色只挂阴盘，不泄漏到标准盘');
+}
+
 /* ⑦1c 插件 · 虚实法（2026-11-12）：四柱地支 ∩ 宫位纳支 */
 {
   const PZ = { 1: ['子'], 8: ['丑', '寅'], 3: ['卯'], 4: ['辰', '巳'], 9: ['午'], 2: ['未', '申'], 7: ['酉'], 6: ['戌', '亥'] };

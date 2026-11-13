@@ -885,3 +885,39 @@ html[data-theme="white"] .qm-text-pan {
 .qm-text-pan[data-ui="old"] .qm-pal { font-size: .7em; }
 .qm-text-pan[data-ui="old"] .qm-seal { font-size: .58em; }
 .qm-text-pan[data-ui="old"] .qm-stars { font-weight: 700; }
+
+/* ---------------- 阴盘专属配色 · P2「鲜而不淡」（2026-11-13 用户选） ----------------
+   只影响阴盘：时家 / 心盘 / 三层全部照旧走各主题原色。
+   做法是**在阴盘这一层重挂五行色与星门九色**，神（按五行取色）与干（五行色）会一起变；
+   暗干不在其中——它是 --qm-ink-soft 的灰墨小字，按用户要求不参与上色。
+   ⚠ 选择器带 html[data-theme] 是为了压过四套主题各自的 `html[data-theme="…"] .qm-text-pan`
+      （特异性 0,3,1 > 0,2,1）；不带的话块内声明会被主题块盖掉，白改。
+   ⚠ 400 字重下比的是**对比度**：这组对白底的对比度 木 3.61 · 火 4.79 · 土 3.35 ·
+     金 5.62 · 水 6.36。别再往上提亮：土黄到 3.0 以下，小字会糊在白卡上。
+   ⚠ 星/门按五行同色（原主题里门比星略浅一档，这里统一）；要分档可单独给 --qm-men-* 换值。 */
+html[data-theme] .qm-text-pan[data-sub="yin"] {
+    --qm-el-wood: #0a9a63;
+    --qm-el-fire: #dc2a18;
+    --qm-el-earth: #b9821a;
+    --qm-el-metal: #4f6a86;
+    --qm-el-water: #0f5cbf;
+
+    --qm-tian-1: #0f5cbf;  /* 天蓬 · 水 */
+    --qm-tian-2: #b9821a;  /* 天芮 · 土 */
+    --qm-tian-3: #0a9a63;  /* 天冲 · 木 */
+    --qm-tian-4: #0a9a63;  /* 天辅 · 木 */
+    --qm-tian-5: #b9821a;  /* 天禽 · 土 */
+    --qm-tian-6: #4f6a86;  /* 天心 · 金 */
+    --qm-tian-7: #4f6a86;  /* 天柱 · 金 */
+    --qm-tian-8: #b9821a;  /* 天任 · 土 */
+    --qm-tian-9: #dc2a18;  /* 天英 · 火 */
+
+    --qm-men-1: #0f5cbf;
+    --qm-men-2: #b9821a;
+    --qm-men-3: #0a9a63;
+    --qm-men-4: #0a9a63;
+    --qm-men-6: #4f6a86;
+    --qm-men-7: #4f6a86;
+    --qm-men-8: #b9821a;
+    --qm-men-9: #dc2a18;
+}
