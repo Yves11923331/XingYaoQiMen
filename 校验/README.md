@@ -1,150 +1,73 @@
-# 校验脚本
+# 校验 · 门禁与复核脚本
 
-以前这些脚本都丢在 `/root/`（容器重启会清掉，只留 `at/`、`dl/` 两份 jar）——
-从第十七轮起，**每轮新写的自检脚本在这里留一份档**，改完算法/界面直接重跑。
+> 改完 `web/` 必跑。所有脚本都按**相对路径**读 `web/`（`process.env.XYQ_ROOT || process.cwd()`），
+> 在工程根跑就行。最后更新：2026-11-13 · 3.2.6。
 
-## 这一轮（转盘禽芮「天禽寄干」那一格）
-
-```bash
-# ① 十干克应那条寄干之格：转盘 1080 盘 + 飞盘 81 盘 + 5 个真日期，逐宫查条数与天干
-node 校验/_check_keying_mid.js
-
-# ② 「看天盘干的判断」两干参论的独立复算对表（2788 盘，另抄一份古籍表来比）
-node 校验/_check_heaven_stems.js
-
-# ③ 界面层（jsdom，走"点起盘 → 点宫位"的真实手势路径，26 条断言）
-npm install jsdom --prefix /root/dsh-dom     # 只需一次
-node 校验/_walk_keying_mid.js
-```
-
-脚本都按绝对路径读 `web/js/`，在哪个目录跑都行（脚本里写死了项目路径）。
-
-## 老脚本去哪儿了
-
-`_valid_qimen.js`、`_valid_astro.js`、`_valid_lunar2.js`、`_valid_keying.mjs`、`_valid_layers.mjs`、
-`_valid_zhirun.mjs`、`_valid_nodes.js`、`_walk_v3/v5.js`、`_walk_loc.js`、`_walk_shot.js`、
-`_walk_layers.js`、`_walk_fly.js`、`_walk_bg.js`、`_walk_apk.js`、`_audit_plates.js`、`_fuzz1000.js`
-—— **已随容器重置丢失**（2026-09-18 查过，`/root` 里只剩 `at/`、`dl/`）。项目记录里那些"全绿"数字是当时的实测值。
-要重建的话从对应轮次的描述 + 本节的两个新脚本当模板写。
-
-## 开源声明与许可随包（2026-11-13 新增 · 动「关于」或 web/licenses/ 后必跑）
+## 0. 一次性准备
 
 ```bash
-NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_license.js
+export NODE_PATH=/root/dsh-dom/node_modules          # jsdom / 门禁依赖
+# 需要真浏览器的脚本：playwright 在 DSH 自带包里
+export PW=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules
 ```
 
-**56 条**断言（2026-11-13 末轮：用户要求「仅保留必要的」后从 49 增至 56），查的是「用户裁定之后」的那套口径：
+## 1. 八道构建门禁（`python3 app/build_xingyao.py` 第 0 步自动跑）
 
-- **「关于」里必须有**：`开源声明` / `SIL OFL 1.1` / `Noto Serif CJK SC`（+ `QM Serif`、许可全文入口、版权行）。
-  → 用户 2026-11-13 末轮裁定：**只声明字体一条**，"数据与规则参照"整段（iztro / qimen-dunjia /
-  bigfishmarquis-qimen / mQimen / 全部自研」已从「关于」删除。
-- **反向守护（重要）**：「关于」里**不许再出现** `iztro` / `qimen-dunjia` / `bigfishmarquis-qimen` /
-  `数据与规则参照` / `mQimen` / `全部自研` / `非第三方` —— 防以后有人"保险起见"又搬回来。
-- **只有字体给「许可全文」入口**：`#sheet [data-lic]` 恰好 1 枚且指向 `ofl`。点开能读到 `SIL OPEN FONT LICENSE`。
-- `window.LICENSES` **只有 `ofl`** 全文（非空且与 `web/licenses/OFL-1.1.txt` **逐字相同**），
-  不再内联那三份 MIT。
-- `web/licenses/` 里 `OFL-1.1.txt`（>200B）、`LICENSE`、`THIRD-PARTY.md`、`licenses.js` 都在；
-  **三份 MIT 全文文件必须不存在**（用户裁定不需要）。
-- `THIRD-PARTY.md` 仍是**书面凭据**（不进 UI）：四条判定都在，且写明法律依据关键词（思想 / 事实 / 公有领域）——
-  它正是"为什么只声明字体"的依据，**不要删**。
-- `app/build_xingyao.py` 的 `check_licenses()` **调用早于 `stage_www()`**（复制 `web/` 之前先验）。
-- `L6c`：断言本脚本确实挂在构建第 0 步的**八道门禁**清单里（防哪天被悄悄摘掉）。
-- 「关于」里 `<div class="sub">版本 x.y.z</div>` 这一行没被破坏（打包脚本的替换锚点）。
+| 脚本 | 管什么 | 当前基线 |
+|---|---|---|
+| `_check_css.js` | 代码里用到的类名 CSS 全有定义；「关于」版本锚点 `版本 1.1.N` 还在 | 全过 |
+| `_check_chuanxing.js` | 串星页面层：三档 / 九星 / 读法入口 / 中宫同显 / 导出（真 index.html 里点） | 375 过 / 0 败 |
+| `_check_cx_engine.js` | 串星引擎：四数→课、六亲、两套译法、不随盘面变、随机分布 | 253 过 / 0 败（1 条预期跳过） |
+| `_check_cxhelp.js` | 读法七节正文与底本逐字 | 全过 |
+| `_check_license.js` | 「关于 → 开源声明」只留字体一条 + 许可全文随包 | 56 过 / 0 败 |
+| `_check_truesolar.js` | 真太阳时 / 统一时间 | 14 过 / 0 败 |
+| `_check_mu.js` | 墓星判定（`Q.muAt`） | 38 过 / 0 败 |
+| `_check_ziwei.js` | 紫微安星 | 145 过 / 0 败 |
 
-改 `web/licenses/*.txt` 之后要重跑生成脚本，否则那条「逐字相同」会红：
+> `_check_cx_engine` 的 M5 是统计断言（6×6 卡方，p>0.001），偶有抖动；
+> 红了先重跑一次，**连续两次红才是真问题**。
+
+## 2. 复核组（`_review-t7/`，非门禁但应收绿）
 
 ```bash
-NODE_PATH=/root/dsh-dom/node_modules node 校验/_gen-license-js.js
+cd web && (python3 -m http.server 8799 --bind 127.0.0.1 >/dev/null 2>&1 &) ; cd ..
+NODE_PATH=$PW node 校验/_review-t7/p9-colors.js     # 43/0  五行色 == --el-*
+NODE_PATH=$PW node 校验/_review-t7/p10-export.js    # 26/0  导出图版式（含 renderBoth 中宫课）
+NODE_PATH=$PW node 校验/_review-t7/p11-cross.js     # 60/0  串星课 == 盘面 跨组件同色
+pkill -f "http.server 8799"
 ```
 
-## 运行时探针（2026-10-07 新增 · 改界面后必跑）
+## 3. 运行时探针
 
 ```bash
-python3 校验/_probe_runtime.py        # 测 web/ 源码
-python3 校验/_probe_runtime.py apk    # 测 app/out 里最新那个包 —— 交付前用这个
+# 源码（加载 → 起盘 → 下一时辰 → 串星课弹层）
+NODE_PATH=$PW node 校验/_probe_runtime.js
+# 打出来的包（同上，但只 27 条：包内资产路径/版本）
+NODE_PATH=$PW node 校验/_probe_runtime.js apk
 ```
 
-无头浏览器真点一遍：加载（查 console/pageerror）→ 点「起盘」进盘面页、#panHost 非空 →
-点「› 下一时辰」四柱更新 → 触发串星课 · 读法弹窗并确认展开。全过打印 ✓ 并返回 0。
+## 4. 一次性工具（留档用，不再随轮维护）
 
-> ★ 2026-10-28：本机 python 侧没有 playwright（`import playwright` 失败），另写了
-> **`校验/_probe_runtime.js`**（node + playwright-core），同一套四步手势，另加一条
-> 「阴盘 · 空亡/驿马印章不得压到八神字」的几何断言。`BASE` 也随之改成按脚本位置推
-> （工程目录曾整体搬过一次，脚本里写死的绝对路径已改成按脚本位置推导 `BASE`）。
-> ```bash
-> NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules node 校验/_probe_runtime.js [apk]
-> ```
+- `_check_stem_align.js` 天地盘干对齐；`_probe_runtime.py` 旧版探针（已被 .js 取代）
+- `_gen-license-js.js` 生成 `web/licenses/licenses.js`（改许可全文后跑）
+- `_preview_*` / `_probe_*`（sizhu、sxm、yin、layers、changshengchi）/ `_render_sxm.js` /
+  `_shot_*`：对应设计轮次的截图与探针，参数见文件头注释
+- `_review-t7/p1–p8`：复核组的其它判据（颜色、版式、交互），多数依赖 8799 端口
 
+## 5. 报告与资料（读，不跑）
 
-**为什么非要有它**：有一次替换弹窗函数时行号错位，把注释的 `*/` 吃掉了，
-未闭合的 `/*` 让后面（含起盘初始化、openXkHelp 本身）全变成注释 ——
-`node --check` 通过、jsdom 自检也全绿，上机才发现「起盘啥都点不了」。这类故障只有真点才现形。
+| 文件 | 内容 |
+|---|---|
+| `复核报告-t7-20261113.md` | 独立复核（四点判据 + 改前基线） |
+| `代码审查-死代码-20261113.md` | 全库死代码/孤儿扫描的方法与账（3.2.6 又删了一批，见 §6） |
+| `串星课-规则口径-20261113.md` | 串星课口径（四数、连根、六亲、六神/九星、边界） |
+| `多引擎校对报告-2026-11-11.md` | 与五个开源/在线引擎的逐盘对表 |
+| `星曜九星同宫-时刻表.md`、`星曜容量-实测.md` | 星曜插件实测 |
+| `资料-七政古义今义.md`、`资料-现代改写与西学影响.md` | 七政/星曜的文献与改写资料 |
+| `_strays.json` | 死代码扫描的机器账（symbol / 引用数 / 处置） |
 
-配套：`python3 app/patch_xkhelp.py` 是读法弹窗的安全替换脚本（先注释后函数 + 自检），
-`--verify` 可以顺带把探针跑掉。
+## 6. 3.2.6 这一轮删掉的死代码
 
----
-
-## 引擎移植验收（已废弃 · 2026-10-18 晚删除）
-
-> 原生版、它的 Java 引擎移植（`app/android/src/.../engine/`）以及这套对拍工具 `engine-port/`
-> 已按「以后以前端 app 为主」的决定**整目录删除**。
-> 前端唯一的引擎在 `web/js/`；排盘正确性现在靠 `_check_chuanxing.js`（jsdom 真点）+
-> `_probe_runtime.py`（无头浏览器真点）兜底。历史验收数字（4104 条节气 / 1986 行排盘 / 600 行格局 /
-> 300 组星曜，全零差异）见 `项目记录.md`。
-
-## 插件 · 墓星（2026-10-21 新增）
-
-```bash
-NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_mu.js   # 38 过 / 0 败
-```
-
-锁的是墓星判定口径：墓支表、星/门逐项、上限 3 枚、1080 域遍历
-（四正宫与中五宫零墓星、每条五行的墓支必须落在该宫纳支里）、
-转盘禽芮宫"同宫两枚星"必现、飞盘必为 0。已接进 `build_xingyao.py` 门禁第 0 步。
-
-## 插件 · 紫微（2026-10-21 新增）
-
-```bash
-NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_ziwei.js   # 73 过 / 0 败
-```
-
-对表来源是开源库 **iztro**（SylarLong/iztro）的官方测试：`getStartIndex()`（2023-08-01 各时辰紫微/天府宫序）、
-`getMajorStar()`（2023-03-06 辰时十四主星逐宫 + 亮度）、癸年四化。另跑 6060 盘全域：
-每盘十四颗不缺不重、单宫最多 4 颗。已接进 `build_xingyao.py` 门禁第 0 步。
-
-## 阴盘 · 版面与印章（2026-11-12 定版）
-
-```bash
-# 预览/量测类脚本要真页面：先在 web/ 下起静服务（受管后台 job，别用 nohup）
-cd web && python3 -m http.server 8767 --bind 127.0.0.1
-
-# ① 扫一批阴盘：空亡+驿马同宫的宫数、印章与八神紧字框 / 暗干的重叠面积（应为 0）
-NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules node 校验/_probe_yin_seal.js
-
-# ② 导出图单盘（canvas 真出图，存 PNG）
-NODE_PATH=... node 校验/_probe_yin_export.js 2026-01-01T04:00 校验/_yin_export_after.png
-```
-
-**当前口径（2026-11-12 定版）**：阴盘整体并入**标准盘**——神/星/门/天地盘干、空亡/驿马印章
-全部与拆补/置闰同一套，只有两处不同：① 暗干（隐干）排在本宫**星曜（政余）那一行**的槽位
-（左下角 `left:5 / bottom:4`、`.9em`、靠左一行）；② 阴盘不排政余、插件一律不入。
-
-历史：2026-10-28 的「暗干排盘外一圈（左 4/3/8 · 右 2/7/6 · 上 9 · 下 1）+ 盘面收 48px」
-与 2026-11-11 的「宫底居中无声落字」都已废弃；**外圈那套死代码**（`#qmRing` / `.qm-ring` /
-`.qm-rg` / `has-ring` / `renderRing` / `paintRing` / `RING_W` / 阴盘 480px 最小高度）
-已于 2026-11-12 清理干净，`_preview_yin_ring.js`、`_preview_yin_shift.js` 也一并删除。
-`_check_chuanxing` 的阴盘段随之改成「8 枚 `.qm-yin-agan` 在本宫左下角 / 无 `.qm-rg` /
-空亡是「空亡」二字印章」。
-
-## 天地盘干对齐（2026-11-03 新增 · 改盘面行排布后必跑）
-
-```bash
-NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules node 校验/_check_stem_align.js
-```
-
-锁「同一宫天盘干列右缘 == 地盘干列右缘」。320/340/360/375/390/412/430 七档标准盘
-+ 360 阴盘 + 360 老 UI，逐宫量两行 `.qm-gans` 的右缘差，并查星名/门名有没有压到干字。
-当前 9 组全过（最大差 0.00px）。背景见 `项目记录.md` 的 2026-11-03 条目：
-flex + space-between 在窄屏退化成 flex-start，两行干列差一个星名宽度（2.02px）。
-预览图：`_预览-天地盘干对齐-修复前后-20261103.png`。
+`cx.js domainOf`、`qimen.js XUN_ZHI`、`ui.js CX_NM / LIC_KEYS / cxLessonFromChart`、
+`snapshot.js baseOf` + `metrics()` 六个未消费字段、CSS `.qm-mu*` / `.cxnote` / `.card.foldable*`。
+判据见 `代码审查-死代码-20261113.md` §1–§2（引用数 =1 才动）。
