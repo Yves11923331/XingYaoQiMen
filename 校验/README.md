@@ -11,7 +11,7 @@ export NODE_PATH=/root/dsh-dom/node_modules          # jsdom / 门禁依赖
 export PW=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules
 ```
 
-## 1. 八道构建门禁（`python3 app/build_xingyao.py` 第 0 步自动跑）
+## 1. 七道构建门禁（`python3 app/build_xingyao.py` 第 0 步自动跑）
 
 | 脚本 | 管什么 | 当前基线 |
 |---|---|---|
@@ -22,7 +22,6 @@ export PW=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules
 | `_check_license.js` | 「关于 → 开源声明」只留字体一条 + 许可全文随包 | 56 过 / 0 败 |
 | `_check_truesolar.js` | 真太阳时 / 统一时间 | 14 过 / 0 败 |
 | `_check_mu.js` | 墓星判定（`Q.muAt`） | 38 过 / 0 败 |
-| `_check_ziwei.js` | 紫微安星 | 145 过 / 0 败 |
 
 > `_check_cx_engine` 的 M5 是统计断言（6×6 卡方，p>0.001），偶有抖动；
 > 红了先重跑一次，**连续两次红才是真问题**。

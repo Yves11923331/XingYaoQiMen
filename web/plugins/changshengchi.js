@@ -127,9 +127,9 @@
       '点亮那格写所临之阶。入墓加粗转墨，击刑朱红，又墓又刑＝朱红字＋横线。',
     note: '四隅宫两支取一：阳干 冠带临官→临官、衰病两格分书、墓绝→墓、养长生→长生；' +
       '阴干 帝旺衰→帝旺、冠带沐浴→沐浴、胎养两格分书、死墓→墓。只标天地盘干。' +
-      '<b>开启期间禁用星曜</b>（与紫微同一规矩：长生尺与星曜抢盘底位置；只抵星曜、不占用插件运行，' +
-      '关掉即恢复）。',
+      '<b>开启期间禁用星曜</b>（长生尺与星曜抢盘底位置；只抵星曜、不占用其他插件，关掉即恢复）。',
     /* 2026-11-02 用户：长生尺也**禁用星曜**（与紫微同一效果，但不独占其他插件） */
+    /* 2026-11-14 用户：长生尺**不适配阴盘**（唯一还标 blockInYin 的插件）。 */
     flags: { blockInYin: true, noStars: true },
 
     /* ------------------------------------------------------------ 屏幕（DOM） */
@@ -148,35 +148,38 @@
       var a = infoOf(c, p, 'heaven'), b = infoOf(c, p, 'earth');
       if (!a && !b) return;
       var g = ctx.ctx, P = ctx.P, x = ctx.x, y = ctx.y, S = ctx.S, SH = ctx.SH;
+      var M = ctx.M || {};
+      var k = M.k || (S / 112);                 /* 单卡宽比例尺（屏幕 112px = 1） */
+      var E = M.E || (S * 0.11);                /* 屏幕 1em 的像素当量 */
       var SANS = ctx.SANS || '-apple-system, "PingFang SC", sans-serif';
-      var padL = S * 0.045, padR = S * 0.06;
-      var w = S - padL - padR;
+      /* 与 pan.css 的 .sxr 同一组数：左右 8、贴底 8、上边框 1 + padding 3、两行各 11 + 间 2 */
+      var padX = 8 * k, bottom = 8 * k;
+      var rowH = 11 * k, gap = 2 * k, padTop = 3 * k;
+      var bandH = 1 + padTop + rowH * 2 + gap;
+      var w = S - padX * 2;
+      var top = y + SH - bottom - bandH;
       var ink = P.ink || '#1b2028', ink3 = P.ink3, red = P.sealVoidInk || '#b23a2c';
-      var fsK = Math.round(S * 0.05);
-      var rowH = Math.round(fsK * 1.9);          /* 一行留足：字高 1×，再加横线与行距 */
-      var bandH = rowH * 2;
-      /* ★ 尺子贴底（2026-11-01 修「截图错位」）：屏幕上是 absolute bottom:18px 贴着宫底，
-         出图这边原来按 SH 的比例算（0.685×SH），卡片一高尺子就悬在半空。
-         改成同样的「离底固定」：底距 = 0.25×S（给星曜留位，星曜画在 SH×0.893 那条线上），
-         上沿 = SH − 0.25S − 尺高 —— 屏幕/出图的相对位置就对齐了。 */
-      var top = y + SH - S * 0.25 - bandH;
+      var fsK = 0.46 * E;                        /* .sxr-k */
+      var fsOn = 0.58 * E;                       /* .sxr-on b */
+      var fsPair = 0.54 * E;                     /* .sxr-pair b */
+      var labelW = 10 * k;
       var rows = [[a, '天'], [b, '地']];
 
       g.save();
       g.strokeStyle = P.hair || P.line; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(x + padL, top - 2); g.lineTo(x + padL + w, top - 2); g.stroke();
+      g.beginPath(); g.moveTo(x + padX, top); g.lineTo(x + padX + w, top); g.stroke();
+      var rowTop0 = top + 1 + padTop;
 
       rows.forEach(function (r, ri) {
         var it = r[0]; if (!it) return;
-        var ry = top + ri * rowH;                 /* 本行顶 */
-        var base = ry + Math.round(rowH * 0.72);  /* 本行文字基线 */
-        var labelW = fsK * 1.9;
-        var railX = x + padL + labelW, railW = w - labelW;
+        var ry = rowTop0 + ri * (rowH + gap);      /* 本行顶 */
+        var base = ry + rowH * 0.72;               /* 本行文字基线（与 .sxr-t 底对齐） */
+        var railX = x + padX + labelW, railW = w - labelW;
         var step = railW / 12;
 
-        g.font = '400 ' + fsK + 'px ' + SANS;
+        g.font = '400 ' + Math.round(fsK) + 'px ' + SANS;
         g.fillStyle = ink3; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
-        g.fillText(r[1], x + padL, base);
+        g.fillText(r[1], x + padX, base);
 
         var color = it.state === 'xing' || it.state === 'both' ? red
           : (it.state === 'mu' ? ink : ink3);   /* 墓＝墨（暗色主题的 ink 是白） */
@@ -185,18 +188,18 @@
           var cx = railX + step * (n + 0.5);
           var lit = (n === it.idx) || (it.pair && it.pair.indexOf(n) >= 0);
           if (lit) {
-            g.font = '700 ' + (it.pair ? Math.round(fsK * 0.9) : fsK) + 'px ' + SANS;
+            g.font = '700 ' + Math.round(it.pair ? fsPair : fsOn) + 'px ' + SANS;
             g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
             g.fillText(SHORT[LONG[n]], cx, base);
             if (it.state === 'both') {           /* 又墓又刑：红字 + 一道横线 */
               g.strokeStyle = ink; g.lineWidth = Math.max(1, S * 0.006);
               g.beginPath();
-              g.moveTo(cx - fsK * 0.62, base + fsK * 0.3);
-              g.lineTo(cx + fsK * 0.62, base + fsK * 0.3);
+              g.moveTo(cx - fsOn * 0.62, base + fsOn * 0.3);
+              g.lineTo(cx + fsOn * 0.62, base + fsOn * 0.3);
               g.stroke();
             }
             g.textAlign = 'left'; g.textBaseline = 'alphabetic';
-            g.font = '400 ' + fsK + 'px ' + SANS;
+            g.font = '400 ' + Math.round(fsK) + 'px ' + SANS;
           } else {
             g.strokeStyle = P.hair || P.line; g.lineWidth = 1;
             g.beginPath();

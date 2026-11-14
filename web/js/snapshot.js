@@ -127,16 +127,15 @@
      再按「画布格子 ÷ 屏幕格子」的比例整体缩放。
      这样截图不再是"照着 CSS 估个 0.26 / 0.46 / 0.76"，而是同一套数字 ——
      以后改 pan.css 的间距，截图会跟着走，不会再各画各的。 */
-  /* 老 UI 判定：与 ui.js 的 oldUIOn() 同一口径 —— 紫微 / 长生尺 任一开启，
+  /* 老 UI 判定：与 ui.js 的 oldUIOn() 同一口径 —— 只剩长生尺，
      导出图也回**基准包**画法（方章 / 加粗 / 字号原大 / 八神小字+发丝线 / 寄干角注 / 贴边）。
      三个都关 = 标准盘新样式（裸干 / ×1.16 / 寄干右挂灰墨 / 八神等大 / 时干加粗 / 内缩 14px）。
      阴盘不参与插件旧 UI 切换，始终沿用标准盘新样式（裸干与右侧寄干）。 */
   function oldUIOn(chart) {
     try {
       if (chart && chart.yinpan) return false;
-      /* 2026-11-13：墓星改成角标后不再切老 UI（与 ui.js 同步），只剩紫微 / 长生尺 */
-      var P = root.Plugins;
-      return !!(P && (P.enabled('zw') || P.enabled('sxm')));
+      /* 2026-11-14：长生尺改适配标准盘 → 不再有任何插件切老 UI（与 ui.js 同步）。 */
+      return false;
     } catch (e) { return false; }
   }
   function metrics(S, chart) {
@@ -482,7 +481,7 @@
          （2026-11-12 虚实法；原来只给 x/y/S/SH，圆角与线宽算不准）。 */
       M: M,
       chart: chart, chartSub: chart.yinpan ? 'yin' : 'pan',
-      p: p, pal: p.pal, Q: Q, zw: chart.__zw,
+      p: p, pal: p.pal, Q: Q,
       SERIF: SERIF, SANS: SANS, rgba: rgba
     });
 

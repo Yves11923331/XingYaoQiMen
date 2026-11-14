@@ -27,7 +27,7 @@ ZIPALIGN = '/usr/bin/zipalign'
 APKSIGNER_JAR = '/usr/share/java/apksigner.jar'
 AT = '/root/at'
 
-NAME, VER, CODE = '星曜奇门', '3.2.6', 224
+NAME, VER, CODE = '星曜奇门', '3.2.8', 226
 PKG, ALIAS = 'com.momen.xingyaoqimen', 'xingyao'
 MIN_SDK, TARGET_SDK = 29, 34
 
@@ -113,7 +113,7 @@ def main():
     for d in [BUILD, OUT, AT]:
         os.makedirs(d, exist_ok=True)
 
-    # ---- 0) 前端门禁：CSS + 串星 + 串星引擎 + 读法 + 开源声明 + 真太阳时 + 墓星 + 紫微（失败直接中止） ----
+    # ---- 0) 前端门禁：CSS + 串星 + 串星引擎 + 读法 + 开源声明 + 真太阳时 + 墓星（失败直接中止） ----
     print('[0/6] 前端自检')
     proj = os.path.dirname(WWW_SRC)
     # jsdom 安装位置：可用 XYQ_NODE_PATH 覆盖，默认沿用开发容器布局
@@ -129,7 +129,7 @@ def main():
                          ('_check_cx_engine.js', '串星引擎'), ('_check_cxhelp.js', '串星读法'),
                          ('_check_license.js', '开源声明'),
                          ('_check_truesolar.js', '真太阳时'), ('_check_mu.js', '墓星判定'),
-                         ('_check_ziwei.js', '紫微安星')]:
+                         ]:
         q = subprocess.run(['node', os.path.join(proj, '校验', script)], cwd=proj, env=genv,
                            capture_output=True, text=True)
         tail = (q.stdout + q.stderr).strip().splitlines()

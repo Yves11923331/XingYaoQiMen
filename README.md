@@ -6,16 +6,16 @@
 
 [![Build APK](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml/badge.svg)](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-3.2.7-orange)
+![Version](https://img.shields.io/badge/version-3.2.8-orange)
 ![Android](https://img.shields.io/badge/Android-10%2B%20(minSdk%2029)-blue)
 
 ## 下载
 
-最新版 **3.2.7（225）**，已签名、可直接覆盖安装：
+最新版 **3.2.8（226）**，已签名、可直接覆盖安装：
 
 | 文件 | 大小 | SHA-256 |
 |---|---|---|
-| [`dist/星曜奇门-3.2.7.apk`](dist/星曜奇门-3.2.7.apk) | 640 KB | `0aa89756…`（见 `dist/README.md`） |
+| [`dist/星曜奇门-3.2.8.apk`](dist/星曜奇门-3.2.8.apk) | 629 KB | `217f0454…`（见 `dist/README.md`） |
 
 > 包名 `com.momen.xingyaoqimen`，minSdk 29（Android 10+）。
 > 自行构建见文末「构建」；签名密钥不入库，按说明自备即可。
@@ -69,19 +69,19 @@
 往 `web/plugins/` 放一个 JS、调用一次 `Plugins.register({...})`，主程序就会自动在
 「设置 → 插件」里生成开关，并把内容渲染进盘面与导出图，**不用改主代码**。
 插件可以挂在宫位，也可以接管抬头四柱；`exclusive` 的插件会自动让其他插件让位。
-**阴盘是硬规矩**：阴盘只显示它自己那套（星门干 + 暗干），插件一律不渲染 —— 这不是开关。
+**阴盘默认也适配**：插件默认在所有盘（含阴盘）渲染；只有排不进去的特殊插件才排除，
+目前只有长生尺（标了 `blockInYin`）—— 这是硬规矩，不是开关。
 契约见 [`web/plugins/README.md`](web/plugins/README.md)。
 
-仓库自带七个：
+仓库自带六个：
 
 | 插件 | 做什么 |
 |---|---|
-| 长生尺 | 每宫补一条十二长生尺：天盘干、地盘干各一轨，十二阶成刻度，点亮所临之阶 |
+| 长生尺 | 每宫补一条十二长生尺：天盘干、地盘干各一轨，十二阶成刻度，点亮所临之阶；按标准盘几何排，阴盘不适配 |
 | 浑仪 | 截图整张换成浑仪盘：八宫占八向、五层成五环，星曜按真实方位落在外环 |
 | 日月年家 | 打开后起盘页出现「时家 / 日家 / 月家 / 年家」四层切换 |
 | 墓星 | 星门临墓之地生一枚墓星：黑色墓碑角标，与空亡 / 马星同一行，一宫最多一枚；只标其象，不改事物本义 |
 | 四柱 | 抬头四柱换一种排法：五行色、发丝框、柱间竖线 |
-| 紫微 | 紫微斗数十四主星折进九宫，带年干四化；独占显示，开着时星曜自动让位 |
 | 虚实法 | 四柱地支与宫位纳支对照：有支的宫（实）宫卡边框加深，没有的（虚）变浅；中五恒虚 |
 
 <p align="center"><img src="docs/screenshots/plugins.png" width="46%" alt="插件设置"></p>
@@ -152,7 +152,8 @@ python3 build_xingyao.py
 # 产物：app/out/星曜奇门-<版本>.apk
 ```
 
-构建脚本内置质量门禁（串星集成 116 条、真太阳时 14 条、墓星 38 条、紫微 145 条），
+构建脚本内置七道质量门禁（CSS / 串星页面层 375 条 / 串星引擎 253 条 / 读法 / 开源声明 56 条 /
+真太阳时 14 条 / 墓星 38 条），
 任一失败即中止，不会产出坏包。
 
 **签名密钥需要自备**：本仓库按安全原则不包含签名密钥。构建前请自建：
@@ -189,7 +190,6 @@ node 校验/_check_chuanxing.js   # 串星集成：88 过
 node 校验/_check_css.js         # 样式门禁
 node 校验/_check_truesolar.js   # 真太阳时：14 过
 node 校验/_check_mu.js          # 墓星判定：38 过
-node 校验/_check_ziwei.js       # 紫微安星：145 过
 
 # 无头浏览器真点一遍（加载 → 起盘 → 下一时辰 → 串星课弹窗）
 python3 校验/_probe_runtime.py          # 测 web/ 源码

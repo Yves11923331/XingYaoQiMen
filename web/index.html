@@ -663,8 +663,6 @@ html.booting { background: var(--bg, #fff); }
         <div class="fhint">真太阳时：<b>关闭</b>＝用标准时；<b>开启</b>＝按观测点经度（经度时差）＋均时差换算，
           四层与串星共用同一套换算。时间样件里填的仍是<b>标准时</b>，副行显示换算后的真太阳时；
           节气/立春是天文瞬间，仍按标准时判定。默认关，想对照标准时的盘随时切回来。</div>
-        <div class="fhint">日月年家起盘：已做成插件（<b>设置 → 插件 → 日月年家</b>）。打开后起盘页出现
-          「时家 / 日家 / 月家 / 年家」四层切换；关掉就收回时家、那排切换也不出现。</div>
         <div class="fhint">八神名：<b>自动</b>＝转盘阳遁用白虎·玄武、飞盘阳遁用勾陈·朱雀（两派各自的主流口径）；
           要固定一派就选「白虎」或「勾陈」。</div>
         <div class="fhint">九星 · 八门 · 八神：默认跟着「盘式」走；要配「星转门飞」这类混盘，各自改一格就行。</div>
@@ -726,11 +724,12 @@ html.booting { background: var(--bg, #fff); }
            一个插件一张卡（标题 + 开关 + 说明）；开关即时生效（重排盘面 + 导出图同步）。
            插件本体在 web/plugins/*.js，契约见 web/plugins/README.md。 -->
       <div class="setgroup" data-g="plugin">
-        <div class="sline"><b>插件</b><small>按需开 · 不动基础盘面 · 不入阴盘</small></div>
+        <div class="sline"><b>插件</b><small>按需开 · 不动基础盘面 · 默认适配全部盘</small></div>
         <div id="pluginList"></div>
 
-        <div class="fhint">插件<b>不入阴盘</b>：阴盘只显示它自己那套（星门干＋暗干），
-          插件在阴盘里一律不渲染——这是硬规矩，不是开关。</div>
+        <div class="fhint">插件<b>默认适配所有盘</b>（含阴盘）。只有确实不适配的<b>特殊插件</b>
+          才排除：目前只有<b>长生尺</b>——它按标准盘几何排，阴盘里不渲染（硬规矩，不是开关）。
+          阴盘盘面照常显示星门干＋暗干；空亡·马星与串星课同显不是插件，也不受影响。</div>
       </div>
 
     </section>
@@ -791,7 +790,6 @@ html.booting { background: var(--bg, #fff); }
      且 cx.js 要吃 qimen.js 的 Q.STAR 与 lunar.js 的 Lunar.cast。 -->
 <script src="js/cx.js"></script>
 <script src="js/cxhelp.js"></script>
-<script src="js/ziwei.js"></script>
 <script src="js/bazi.js"></script>
 <script src="js/yinpan.js"></script>
 <script src="js/xinpan.js"></script>
@@ -813,7 +811,6 @@ html.booting { background: var(--bg, #fff); }
 <script src="licenses/licenses.js"></script>
 <script src="js/marks.js"></script>
 <script src="plugins/mu.js"></script>
-<script src="plugins/zw.js"></script>
 <script src="plugins/sizhu.js"></script>
 <script src="plugins/changshengchi.js"></script>
 <script src="plugins/huny.js"></script>

@@ -392,7 +392,7 @@
   function plugCtx(p, c) {
     return {
       chart: c, chartSub: state.chartSub, p: p, pal: p.pal,
-      zw: state.zw, Q: Q, esc: esc
+      Q: Q, esc: esc
     };
   }
 
@@ -552,17 +552,15 @@
     if (mid) mid.style.backgroundColor = 'rgba(' + midRgb + ',' + a + ')';
   }
 
-  /* ★ 2026-11-02 用户定：墓星 / 紫微 / 长生尺 任一插件开启 → 整盘回**基准包老 UI**。
-     这三个插件是按基准盘面的几何设计的（方章、字号原大、八神小字+发丝线、寄干角注、
-     星门干贴边），新盘面（去章 / ×1.16 / 八神等大 / 寄干右挂）会把它们顶歪。
+  /* ★ 2026-11-02 用户定：长生尺开启 → 整盘回**基准包老 UI**（它按基准几何设计；
+     2026-11-14 紫微插件删除、墓星改角标后都不再切）。
      标准 UI（三个都关）＝现在这套。CSS 见 pan.css 尾部的 [data-ui="old"] 段。
      ⚠ 阴盘一律不切老 UI：插件本来就不入阴盘，旧逻辑却会把阴盘的新布局（裸干 / 方章暗干 /
         预留印章带 / 寄干右挂）一并打回基准包 —— 2026-11-02 排查项 6。 */
   function oldUIOn() {
-    if (state.chartSub === 'yin') return false;
-    /* 2026-11-13 用户：墓星改成**角标**（插件自带定位，与盘面几何无关）→ 开了它也不再
-       把整盘切回老 UI；紫微 / 长生尺仍按老规矩（它们是按老几何设计的）。 */
-    return !!(window.Plugins && (Plugins.enabled('zw') || Plugins.enabled('sxm')));
+    /* 2026-11-14 用户：长生尺重做、适配**标准盘** → 已没有任何插件需要把整盘切回老 UI。
+       函数与 CSS 的 [data-ui="old"] 段暂留（导出/兼容），恒 false。 */
+    return false;
   }
 
   function renderPan() {
@@ -581,10 +579,8 @@
       pan.dataset.fly = (mid && (mid.star || mid.deity || mid.gate || mid.gateMid)) ? '1' : '0';
       /* 阴盘要单独一套宫内排布（内容下移 + 暗干进角），给 CSS 一个钩子 */
       pan.dataset.sub = state.chartSub || '';
-      /* 插件 · 紫微：整盘只算一次（宫中之宫要用），关掉时置空 */
-      state.zw = (Plugins.enabled('zw') && c.calendar) ? Ziwei.cast(c.calendar) : null;
       /* 寄干形制设置已在 2026-11-02 撤掉（改为固定的「右挂灰墨小字」），不再写 data-foot */
-      /* 老 UI 钩子：三个插件任一开启 → 整盘回基准包样式（见 CSS 尾部 [data-ui="old"]） */
+      /* 老 UI 钩子：只有长生尺还在用（见 CSS 尾部 [data-ui="old"]） */
       pan.dataset.ui = oldUIOn() ? 'old' : '';
     }
     c.plate.forEach(function (p) {
@@ -996,10 +992,10 @@
        谁先注册谁先得；插件不接（或阴盘/手动盘不接）就回到默认的无缝矩阵。
        ⚠ 插件自己吐柱名那一行，所以这时要把默认的 #plabel 藏掉，不然会叠两行。 */
     syncLayerHead();
-    /* 2026-11-02 用户：四柱收进设置（排法 → 四柱：默认 / 简洁），不再走插件通道；
-       阴盘一律回默认四柱（与插件时代 blockInYin 的硬规矩一致）。 */
+    /* 2026-11-02 用户：四柱收进设置（排法 → 四柱：默认 / 简洁），不再走插件通道。
+       2026-11-14 规则改为「插件默认适配所有盘」→ 阴盘也用简洁四柱。 */
     var plugHead = '';
-    if (+S.settings.sizhu === 1 && window.SizhuUI && state.chartSub !== 'yin') {
+    if (+S.settings.sizhu === 1 && window.SizhuUI) {
       try { plugHead = SizhuUI.html({ chart: c, chartSub: state.chartSub, esc: esc, Q: Q }) || ''; }
       catch (e) { plugHead = ''; }
     }

@@ -38,10 +38,11 @@ Plugins.register({
 | `snapHead` | fn | ❌ | 抬头在导出图里的画法，返回画出来的高度 |
 
 `flags`：
-- `blockInYin: true` —— 插件**不入阴盘**（硬规矩，凡往盘面加东西的插件都该标）
-- `exclusive: true` —— **独占**：开着时主程序自动抵掉星曜，其他插件一律让位（紫微用）
-  ⚠ 独占只管 `palace` / `snap` 那条线；**抬头通道（`head` / `snapHead`）不吃独占让位** ——
-  紫微开着时，四柱该换皮照样换皮（紫微说的是星曜，不关抬头的事）。
+- `blockInYin: true` —— 插件**不适配阴盘**。**默认不标**：插件默认适配所有盘（含阴盘）；
+  只有确实排不进去的特殊插件才标（2026-11-14 改口径，目前只有**长生尺** `sxm`）。
+- `exclusive: true` —— **独占**：开着时主程序自动抵掉星曜，其他插件一律让位
+  （机制保留，2026-11-14 删掉紫微后暂时没有插件在用）。
+  ⚠ 独占只管 `palace` / `snap` 那条线；**抬头通道（`head` / `snapHead`）不吃独占让位**。
 - `layers: true` —— **能力标志**：打开这个插件 = 允许起盘页的「时家 / 日家 / 月家 / 年家」四层切换
   （`web/plugins/layers.js`，2026-11-02 从设置里的「日月年家」搬过来）。
   宿主 `ui.js` 的 `applyLayers()` 读 `Plugins.flagOn('layers')`，不写死插件名；
@@ -60,7 +61,6 @@ Plugins.register({
 | `ctx.chartSub` | `'pan'`（转盘/飞盘）或 `'yin'`（阴盘） |
 | `ctx.p` | 当前宫那一格的数据（`chart.plate` 里 `pal` 对应项：`star`/`gate`/`deity`/`mid`/`earth`/`earth2`/`agan`…） |
 | `ctx.pal` | = pal |
-| `ctx.zw` | 紫微数据（`Ziwei.cast(calendar)` 的结果；插件若没启用可能为 null） |
 | `ctx.Q` | 排盘引擎 `Qimen`（要查表用它） |
 | `ctx.esc` | HTML 转义函数（拼文字前先转义） |
 
@@ -96,7 +96,7 @@ cellClass: function (pal, ctx) { return 'qm-xs-shi'; }   // 宿主挂到 .qm-cel
   所以插件一关残类自动消失，不会粘在格子上；
 - 仍然过 `active()` 三关（开关 / `blockInYin` / 独占让位）；
 - 「卦象 · 地支面」那一面不挂（`face` 模式下宿主跳过这个钩子）；
-- 样式写在 `web/css/pan.css`（与墓星、紫微一致），如 `.qm-text-pan .qm-cell.qm-xs-shi { … }`；
+- 样式写在 `web/css/pan.css`（与墓星一致），如 `.qm-text-pan .qm-cell.qm-xs-shi { … }`；
 - 导出图那边没有类名，得在 `snap(pal, ctx)` 里自己重描边框——`ctx.M` 是这一档的度量
   （`M.k` 比例、圆角 6k），2026-11-12 随本条一起补进 ctx。
 
@@ -109,7 +109,7 @@ cellClass: function (pal, ctx) { return 'qm-xs-shi'; }   // 宿主挂到 .qm-cel
 - 接管的范围是 `#plabel`（柱名行）＋ `#gz`（干支矩阵）整块：插件要自己吐柱名行，
   主程序会隐藏默认的 `#plabel` 并把 `#gz` 上的 `.pillars` 类摘掉（否则整块会被塞进
   4 列网格的第一列）。**别只吐干支**。
-- 阴盘照样拦（`blockInYin`）；手动起局没有年月日，插件应返回 `''` 交回默认（画「—」）。
+- 默认阴盘也接；标了 `blockInYin` 的特殊插件不接。手动起局没有年月日，插件应返回 `''` 交回默认（画「—」）。
 - 三层盘（年/月/日家）：`ctx.chart.layer` 是 `'nian' | 'yue' | 'ri'`，
   只有本层那一柱有值，其余 `ctx` 里的 `calendar.index` 字段是 `-1`。
 

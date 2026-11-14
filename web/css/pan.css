@@ -782,8 +782,10 @@ html[data-theme="brown"] .qm-cell.qm-mid::after {
  * 墓已并入长生，不再单列：**入墓＝字加黑**；**击刑＝朱红**；又墓又刑＝朱红字压黑底线。
  * 绝对定位贴宫底，不挤神/星/门。
  * ========================================================================== */
+/* 2026-11-14 适配标准盘：不再要求整盘切老 UI。贴底 8px（本插件开着时星曜被 noStars 让位，
+   盘底没有别的行），左右各 8px；两条轨各 11px、间距 2px —— 屏幕与导出图同一组数。 */
 .sxr {
-  position: absolute; left: 6px; right: 6px; bottom: 18px;   /* 18：上让墓星（top 7.5em，底 119.3）、下让星曜（贴底 4px） */
+  position: absolute; left: 8px; right: 8px; bottom: 8px;
   border-top: 1px solid var(--qm-hair);
   padding-top: 3px;
   pointer-events: none;
@@ -791,7 +793,7 @@ html[data-theme="brown"] .qm-cell.qm-mid::after {
 .sxr-t { display: flex; align-items: flex-end; height: 11px; }
 .sxr-t + .sxr-t { margin-top: 2px; }
 .sxr-k {
-  flex: 0 0 10px; font-size: .4em; line-height: 1;
+  flex: 0 0 10px; font-size: .46em; line-height: 1;
   color: var(--qm-dim); letter-spacing: 0;
 }
 .sxr-rail {
@@ -809,11 +811,11 @@ html[data-theme="brown"] .qm-cell.qm-mid::after {
   justify-self: center;
 }
 .sxr-on b {
-  font-size: .54em; font-weight: 700; line-height: 1; letter-spacing: 0;
+  font-size: .58em; font-weight: 700; line-height: 1; letter-spacing: 0;
   color: var(--qm-ink-soft);                /* 平常：淡墨 */
 }
 /* 衰病 / 胎养：相邻两格各写一个字，字略小一点免得贴住 */
-.sxr-pair b { font-size: .5em; }
+.sxr-pair b { font-size: .54em; }
 /* 点不再画：底线已经承担「墓」的语义，再留一颗点会被误读成下划线 */
 .sxr-on s { display: none; }
 /* 入墓：加粗 + 墨色（浅色主题＝黑、暗色主题自动转白），不画线 */
