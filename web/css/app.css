@@ -1012,6 +1012,68 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .sheet h2 b { color: var(--accent); }
 .sheet .sub { font-size: 12px; color: var(--ink-3); margin-bottom: 12px; }
 
+/* ---------------------------------------------------------------- 「关于」弹层（2026-11-14 重做）
+   结构：题头（关于 / 星曜奇门 / 版本）→ 精度与边界（键值表）
+        → 开源声明（一行 + 次级链接）→ 版权。
+   只作用于 `#sheet .about-*`：.sheet / .card / .fhint 是设置页、许可全文、读法共用的公共规则，这里一概不碰。
+   全局无投影（3.3.1 定），层次只靠发丝线 / 字重 / 极淡底色，四套主题共用令牌。
+   2026-11-14 用户定：不要定位语（零依赖 / 离线可跑 属这类软件的常态，写了冗余）；
+   版本号也不做「印章」式的 chip，纯文字即可。 */
+#sheet .about { padding-top: 2px; }
+#sheet .about-head { padding-bottom: 15px; border-bottom: 1px solid var(--line); }
+#sheet .about-eyebrow {
+  font-size: 10.5px; font-weight: 600; letter-spacing: .3em;
+  line-height: 1; color: var(--ink-3);
+}
+#sheet .about-name { margin: 7px 0 0; font-size: 21px; line-height: 1.25; letter-spacing: .08em; }
+/* 版本号：纯文字一行。⚠ 这一行的**文本**必须保持「版本 x.y.z」—— build_xingyao.py 按它替换（门禁钉着），
+   这里只换外层观感，不许改文本，也不要加第二个版本字样。 */
+#sheet .about-head .sub {
+  margin: 8px 0 0; font-size: 11.5px; line-height: 1.5; letter-spacing: .02em;
+  color: var(--ink-3); font-variant-numeric: tabular-nums;
+}
+
+#sheet .about-sec { margin-top: 19px; }
+#sheet .about-h {
+  margin-bottom: 5px; font-size: 11.5px; font-weight: 700;
+  letter-spacing: .18em; line-height: 1.6; color: var(--accent);
+}
+/* 精度与边界：键 + 值两栏。标签列定宽，四行起点对齐；数字走等宽（tabular-nums）不跳位。 */
+#sheet .about-kv .about-row {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 8px 0; font-size: 12.5px; line-height: 1.7;
+  border-bottom: 1px solid var(--line-2);
+}
+#sheet .about-kv .about-row:last-child { padding-bottom: 1px; border-bottom: 0; }
+#sheet .about-kv .k { flex: 0 0 5.4em; font-size: 12px; letter-spacing: .02em; color: var(--ink-3); }
+#sheet .about-kv .v { flex: 1 1 auto; min-width: 0; color: var(--ink-2); }
+#sheet .about-kv .v b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* 开源声明：主行「字体 QM Serif」+ 右侧次级链接，副行给字体子孙与许可名。
+   为什么拆两行：全角括号夹在拉丁字中间会留出一段空洞（四主题下都显脏），
+   拆开后主次也更清楚。⚠ 链接文字必须恰好是「许可全文」；箭头用 ::after，别写进标签（门禁比 textContent）。 */
+#sheet .about-lic-main {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  font-size: 12.5px; line-height: 1.7; color: var(--ink-2);
+}
+#sheet .about-lic-main b { color: var(--ink); font-weight: 700; letter-spacing: .02em; }
+#sheet .about-lic-sub {
+  margin-top: 3px; font-size: 11.5px; line-height: 1.65; letter-spacing: .02em;
+  color: var(--ink-3);
+}
+#sheet .about-link {
+  flex: 0 0 auto; padding: 0;
+  font-size: 11.5px; color: var(--accent);
+  text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-thickness: 1px; text-decoration-color: var(--accent-line);
+}
+#sheet .about-link::after { content: "›"; margin-left: 4px; }
+/* 版权：末尾一行小字，收在一道发丝线下面 */
+#sheet .about-foot {
+  margin-top: 20px; padding-top: 13px; border-top: 1px solid var(--line);
+  text-align: center; font-size: 11.5px; letter-spacing: .04em; color: var(--ink-3);
+}
+
 /* 十干克应：把「哪两个天干」用方章体摆在格名前（壬加戊 小蛇化龙），断语另起一行。
    宫位弹窗与格局总览共用这一套。 */
 .plist .stems, .ky .stems {

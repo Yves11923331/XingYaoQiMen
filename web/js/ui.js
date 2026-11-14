@@ -2590,12 +2590,11 @@
     var ok = $('btnLicOk');
     if (ok) ok.addEventListener('click', closeSheet);
   }
-  /* 关于卡里的「许可全文」小键：inline 样式，不新增 CSS 类（本轮只动 ui.js） */
-  var LIC_BTN = 'style="border:0;background:none;padding:0 0 0 6px;font-size:11.5px;'
-    + 'color:var(--accent);text-decoration:underline;text-underline-offset:2px;'
-    + '-webkit-tap-highlight-color:transparent"';
+  /* 关于里的「许可全文」小键：样式走 `#sheet .about-link`（app.css，2026-11-14 起）。
+     ⚠ 按钮文字必须**恰好**是「许可全文」——门禁按 textContent.trim() 逐字比对；
+     右侧的箭头用 ::after 画，不要写进标签里。 */
   function licBtn(key, label) {
-    return '<button type="button" data-lic="' + key + '" ' + LIC_BTN + '>'
+    return '<button type="button" class="about-link" data-lic="' + key + '">'
       + (label || '许可全文') + '</button>';
   }
 
@@ -2731,29 +2730,45 @@
     $('btnBack').addEventListener('click', function () { goBack(); });
     $('btnTheme').addEventListener('click', cycleTheme);
     $('btnAbout').addEventListener('click', function () {
-      openSheet('<div class="bar"></div><h2>关于<b>星曜奇门</b></h2>'
+      /* 2026-11-14 版式重做：题头（关于 / 星曜奇门 / 版本 chip + 定位语）→ 精度与边界（键值表）
+         → 开源声明（一行 + 次级链接）→ 版权。**不再用卡片 + `.fhint` 小灰字**：
+         四块等重、卡片里套小字，读起来像说明书。样式全部挂在 `#sheet .about-*`（app.css）。 */
+      openSheet('<div class="bar"></div>'
+        + '<div class="about">'
+        + '<div class="about-head">'
+        + '<div class="about-eyebrow">关于</div>'
+        + '<h2 class="about-name">星曜<b>奇门</b></h2>'
         /* ★ 版本号：这一行**由打包脚本自动同步**（build_xingyao.py 会按 VER 替换
            `版本 1.1.NN`），所以不用每次手动改 —— 但写法别动，
            改了写法门禁会报"找不到可替换的版本串"（2026-10-07 用户报过：包到 1.1.23 了、
-           关于里还写着 1.1.10）。 */
+           关于里还写着 1.1.10）。
+           2026-11-14 用户：不要做成一枚「印章」，纯文字就好。 */
         + '<div class="sub">版本 1.1.25</div>'
-        + '<div class="card" style="margin:0"><div class="fhint">'
-        + '<b>精度与边界</b><br>'
-        + '· 节气：VSOP87 + ΔT，2024 年 24 节气平均差 21 秒、最大 48 秒（立冬）；<br>'
-        + '· 农历/朔望：朔望月现场推算，2023–2026 春节、中秋、端午与公认历表一致；<br>'
-        + '· 四柱：按北京时间，时刻精确到分钟；晚子时换日可开关；<br>'
-        + '· 失效边界：ΔT 适用 1600–2150，界面年份 1900–2100；交节、子夜、立春前后 1 分钟内的盘请人工复核。'
-        + '</div></div>'
+        + '</div>'
+        + '<section class="about-sec">'
+        + '<div class="about-h">精度与边界</div>'
+        + '<div class="about-kv">'
+        + '<div class="about-row"><span class="k">节气</span>'
+        + '<span class="v">VSOP87 + ΔT，2024 年 24 节气平均差 <b>21</b> 秒、最大 <b>48</b> 秒（立冬）</span></div>'
+        + '<div class="about-row"><span class="k">农历/朔望</span>'
+        + '<span class="v">朔望月现场推算，2023–2026 春节、中秋、端午与公认历表一致</span></div>'
+        + '<div class="about-row"><span class="k">四柱</span>'
+        + '<span class="v">按标准时（东八区），时刻精确到分钟；可切真太阳时；晚子时换日可开关</span></div>'
+        + '<div class="about-row"><span class="k">失效边界</span>'
+        + '<span class="v">ΔT 适用 1600–2150，界面年份 1900–2100；交节、子夜、立春前后 1 分钟内的盘请人工复核</span></div>'
+        + '</div>'
+        + '</section>'
         /* ★ 2026-11-13 用户定：开源声明**只保留必要的一条** —— 字体。
              其余（iztro / qimen-dunjia / bigfishmarquis-qimen / mQimen / 自研清单）全删：
              它们或属事实性数据、或只是规则口径对齐，不构成随副本分发许可的义务。
              四条的**判定说明**仍留在 web/licenses/THIRD-PARTY.md（书面凭据，不进 UI）。 */
-        + '<div class="card" style="margin:12px 0 0"><div class="fhint">'
-        + '<b>开源声明</b><br>'
-        + '字体 <b>QM Serif</b>（Noto Serif CJK SC 子集）· <b>SIL OFL 1.1</b>'
-        + licBtn('ofl')
-        + '</div></div>'
-        + '<div class="sub" style="margin-top:12px">本应用 © 2026 魔门 · MIT</div>');
+        + '<section class="about-sec">'
+        + '<div class="about-h">开源声明</div>'
+        + '<div class="about-lic-main"><span>字体 <b>QM Serif</b></span>' + licBtn('ofl') + '</div>'
+        + '<div class="about-lic-sub">Noto Serif CJK SC 子集 · SIL OFL 1.1</div>'
+        + '</section>'
+        + '<div class="about-foot">本应用 © 2026 魔门 · MIT</div>'
+        + '</div>');
     });
 
     /* 关于 →「许可全文」：委托在 #sheet 上（弹层内容每次 openSheet 会换，外层元素不变） */
