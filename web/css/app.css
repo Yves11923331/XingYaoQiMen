@@ -38,8 +38,8 @@ html[data-theme="blue"] {
   --accent-bg: rgba(216,180,95,.12);
   --accent-line: rgba(216,180,95,.42);
   --ji: #63d6a0; --xiong: #ff8574; --ping: #a9b8ce;
-  --shadow: 0 12px 34px rgba(0,0,0,.5);
-  --sheet-shadow: 0 -10px 40px rgba(0,0,0,.45);
+  --shadow: none;
+  --sheet-shadow: none;
   --el-wood:#63d6a0; --el-fire:#ff8574; --el-earth:#e8c877; --el-metal:#c7d0dc; --el-water:#6fb4f5;
 }
 /* 墨玉 */
@@ -58,8 +58,8 @@ html[data-theme="slate"] {
   --accent-bg: rgba(105,183,155,.12);
   --accent-line: rgba(105,183,155,.40);
   --ji: #7fd6a4; --xiong: #ff8a7a; --ping: #a3bcb3;
-  --shadow: 0 12px 34px rgba(0,0,0,.55);
-  --sheet-shadow: 0 -10px 40px rgba(0,0,0,.45);
+  --shadow: none;
+  --sheet-shadow: none;
   --el-wood:#63d6a0; --el-fire:#ff8574; --el-earth:#e8c877; --el-metal:#c7d0dc; --el-water:#6fb4f5;
 }
 /* 铜仪 */
@@ -78,8 +78,8 @@ html[data-theme="brown"] {
   --accent-bg: rgba(207,143,78,.13);
   --accent-line: rgba(207,143,78,.42);
   --ji: #8fd6a0; --xiong: #ff8a70; --ping: #c0ad97;
-  --shadow: 0 12px 34px rgba(0,0,0,.55);
-  --sheet-shadow: 0 -10px 40px rgba(0,0,0,.45);
+  --shadow: none;
+  --sheet-shadow: none;
   --el-wood:#63d6a0; --el-fire:#ff8574; --el-earth:#e8c877; --el-metal:#c7d0dc; --el-water:#6fb4f5;
 }
 /* 素白 */
@@ -104,8 +104,8 @@ html[data-theme="white"] {
   --accent-bg: rgba(168,132,44,.08);
   --accent-line: rgba(168,132,44,.35);
   --ji: #0f7a4d; --xiong: #c0392b; --ping: #5d6772;
-  --shadow: 0 10px 28px rgba(40,44,60,.13);
-  --sheet-shadow: 0 -6px 24px rgba(40,44,60,.12);
+  --shadow: none;
+  --sheet-shadow: none;
   /* 2026-11-13 末轮（用户）：五行色改用「阴盘 P2」那组作为**标准配色**（深色三套见 pan.css 的提亮覆盖） */
   --el-wood:#0a9a63; --el-fire:#dc2a18; --el-earth:#b9821a; --el-metal:#4f6a86; --el-water:#0f5cbf;
 }
@@ -1194,7 +1194,7 @@ html.bg-custom select { background: color-mix(in srgb, var(--bg-2) 76%, transpar
   margin: auto;                       /* 在剩余空间里居中（横竖都居中） */
   background: #05070b; touch-action: none;
   border-radius: 8px;
-  box-shadow: 0 0 0 1.5px rgba(216,180,95,.85), 0 0 0 4.5px rgba(216,180,95,.16), 0 14px 40px rgba(0,0,0,.6);
+  box-shadow: 0 0 0 1.5px rgba(216,180,95,.85), 0 0 0 4.5px rgba(216,180,95,.16);
 }
 /* 四角小标记（在框内） */
 .crop-stage::before {
@@ -1433,7 +1433,7 @@ html.bg-custom select { background: color-mix(in srgb, var(--bg-2) 76%, transpar
   position: fixed; left: 20px; right: 20px; top: 50%; z-index: 39;
   max-height: 78dvh; display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--accent-line); border-radius: 24px;
-  box-shadow: 0 20px 55px rgba(20,18,12,.2); padding: 22px 20px 14px;
+  padding: 22px 20px 14px;
   opacity: 0; pointer-events: none; transform: translateY(-48%) scale(.96); visibility: hidden;
   transition: opacity .2s, transform .2s, visibility 0s .2s;
 }

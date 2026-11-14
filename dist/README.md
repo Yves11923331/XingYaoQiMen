@@ -2,6 +2,7 @@
 
 | 版本 | versionCode | 文件 | 大小 | SHA-256 |
 |---|---|---|---|---|
+| 3.3.1 | 230 | `星曜奇门-3.3.1.apk` | 647665 bytes | `fd0218cb98ab82e26169c0e5eb89a1e490e0048ecd7d4ef97d341406ad6cf6b9` |
 | 3.3.0 | 229 | `星曜奇门-3.3.0.apk` | 647665 bytes | `bfcfc0509a1ae088df46507b6a83e1c635e2d76f9aeb9ebe4a9ebe9fd55083df` |
 | 3.2.10 | 228 | `星曜奇门-3.2.10.apk` | 647665 bytes | `a878eb55674507eaad3d8066841df3d3b58b286f8e7ccab18e129037311802b8` |
 | 3.2.9 | 227 | `星曜奇门-3.2.9.apk` | 643487 bytes | `ac8f969c779475d66c12f1c87320056ad2a410aae3195e8d83c4f62479e89085` |
@@ -13,7 +14,14 @@
 - 包名 `com.momen.xingyaoqimen`，minSdk 29（Android 10 及以上），已用 v1/v2/v3 签名。
 - 由 `app/build_xingyao.py` 构建，构建前跑过内置质量门禁（CSS / 串星 / 真太阳时 / 墓星 / 紫微）。
 - 覆盖安装：与正式版同包名，直接安装即可升级。
-- 校验：`apksigner verify --min-sdk-version 29 星曜奇门-3.3.0.apk`。
+- 校验：`apksigner verify --min-sdk-version 29 星曜奇门-3.3.1.apk`。
+
+## 3.3.1 主要变化
+
+- **全局去阴影**：`--shadow` / `--sheet-shadow` 四套主题一律 `none`（卡片、关于弹层、读法弹层、Toast
+  都跟着变干净）；串星课弹层的 `0 20px 55px`、裁剪台的 `0 14px 40px` 投影也去掉（裁剪台保留 1.5px 金框）。
+  界面层次改由描边 / 分隔线 / 底色承担，不再用投影。
+- 其余与 3.3.0 相同。
 
 ## 3.3.0 主要变化
 
