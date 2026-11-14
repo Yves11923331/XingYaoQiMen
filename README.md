@@ -185,16 +185,23 @@ python3 build_xingyao.py
 ## 质量校验
 
 ```bash
-# 排盘回归（Node 环境）
-node 校验/_check_chuanxing.js   # 串星集成：88 过
-node 校验/_check_css.js         # 样式门禁
-node 校验/_check_truesolar.js   # 真太阳时：14 过
-node 校验/_check_mu.js          # 墓星判定：38 过
+# 七道构建门禁（python3 app/build_xingyao.py 第 0 步自动跑，任何一道红就中止）
+NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_css.js        # 类名/版本锚点
+NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_chuanxing.js  # 串星页面层：375 过
+NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_cx_engine.js  # 串星引擎：253 过
+NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_cxhelp.js     # 读法正文
+NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_license.js    # 开源声明 + 许可随包：56 过
+NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_truesolar.js  # 真太阳时：14 过
+NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_mu.js         # 墓星判定：38 过
 
-# 无头浏览器真点一遍（加载 → 起盘 → 下一时辰 → 串星课弹窗）
-python3 校验/_probe_runtime.py          # 测 web/ 源码
-python3 校验/_probe_runtime.py apk      # 测 app/out 最新包
+# 无头浏览器真点一遍（加载 → 起盘 → 下一时辰 → 串星课弹层）
+NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules \
+  node 校验/_probe_runtime.js          # 测 web/ 源码
+NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules \
+  node 校验/_probe_runtime.js apk      # 测 app/out 最新包
 ```
+
+脚本清单、当前基线与复核组见 [`校验/README.md`](校验/README.md)。
 
 ## 目录结构
 
@@ -204,12 +211,13 @@ python3 校验/_probe_runtime.py apk      # 测 app/out 最新包
 │   ├── index.html
 │   ├── css/        # 四套主题令牌 + 外壳/组件 + 九宫盘
 │   ├── js/         # astro / lunar / qimen / patterns / store / snapshot / ui
+│   │               # ＋ 串星课（cx / cxhelp / rng）与 marks（马星掩膜）
 │   ├── fonts/      # 字体子集
 │   └── plugins/    # 插件
 ├── app/            # Android WebView 壳（最小化）与构建脚本
 │   ├── android/    # MainActivity + 清单 + 资源
 │   └── build_xingyao.py
-├── 校验/           # 285 条回归自测 + 无头浏览器探针
+├── 校验/           # 七道门禁 + 复核脚本 + 无头浏览器探针（见其 README）
 └── docs/           # 文档与配图（screenshots/ 为 README 截图）
 ```
 
@@ -222,7 +230,9 @@ python3 校验/_probe_runtime.py apk      # 测 app/out 最新包
 | `web/js/qimen.js` | 定局（拆补法）、地盘、天盘、八门、八神、空亡、驿马、伏吟反吟 |
 | `web/js/patterns.js` | 格局判读 |
 | `web/js/store.js` | 本地存储（设置 + 盘面记录），带内存兜底 |
-| `web/js/snapshot.js` | Canvas 2D 盘面截图（PNG） |
+| `web/js/snapshot.js` | Canvas 2D 盘面截图（PNG；盘面同显的中宫课也在这里画） |
+| `web/js/cx.js` / `cxhelp.js` | 串星课引擎（小六壬·加干，六神 / 九星双译法）与读法正文 |
+| `web/js/rng.js` | 共享随机源（Web Crypto + 拒绝采样，唯一 `Math.random` 降级出口） |
 | `web/js/ui.js` | 界面与交互 |
 
 ## 许可证
