@@ -2,6 +2,7 @@
 
 | 版本 | versionCode | 文件 | 大小 | SHA-256 |
 |---|---|---|---|---|
+| 3.2.10 | 228 | `星曜奇门-3.2.10.apk` | 647665 bytes | `a878eb55674507eaad3d8066841df3d3b58b286f8e7ccab18e129037311802b8` |
 | 3.2.9 | 227 | `星曜奇门-3.2.9.apk` | 643487 bytes | `ac8f969c779475d66c12f1c87320056ad2a410aae3195e8d83c4f62479e89085` |
 | 3.2.8 | 226 | `星曜奇门-3.2.8.apk` | 643487 bytes | `217f04541dbd29a87f055b54e3a3447cdd44d886cac889d906a2d73e7cdebd20` |
 | 3.2.7 | 225 | `星曜奇门-3.2.7.apk` | 655905 bytes | `0aa89756d6f2173eb18a4328d25cdc5f662f5a76c33be6d9f6043542f2ee73f6` |
@@ -11,7 +12,15 @@
 - 包名 `com.momen.xingyaoqimen`，minSdk 29（Android 10 及以上），已用 v1/v2/v3 签名。
 - 由 `app/build_xingyao.py` 构建，构建前跑过内置质量门禁（CSS / 串星 / 真太阳时 / 墓星 / 紫微）。
 - 覆盖安装：与正式版同包名，直接安装即可升级。
-- 校验：`apksigner verify --min-sdk-version 29 星曜奇门-3.2.9.apk`。
+- 校验：`apksigner verify --min-sdk-version 29 星曜奇门-3.2.10.apk`。
+
+## 3.2.10 主要变化
+
+- **许可随包补全**：阴盘引擎（`yinpan.js`）是 wrz1911/daojiayinpan 的**代码移植**，
+  按 MIT 要求把 `MIT-daojiayinpan.txt` 随包；NOTICE / THIRD-PARTY 同步（删掉已移除的 iztro 条目）。
+- README 校准：技术架构补 `yinpan / keying / stars` 三行、目录补 `dist/` 与 `licenses/`、
+  返回栈措辞按「逐层退」改、云端构建补「推 v* 标签自动跑」。
+- 其余与 3.2.9 相同。
 
 ## 3.2.9 主要变化
 

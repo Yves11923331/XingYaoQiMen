@@ -15,9 +15,9 @@
 |---|---|---|---|
 | `web/js/cities.js` | mQimen（同作者项目）城市经纬度库 | — | 同作者作品，整份整理自 mQimen |
 | `web/js/keying.js` | qimen-dunjia（开源奇门遁甲排盘项目） | MIT | 数据经其整理，文件头已致谢 |
-| `web/js/ziwei.js` | iztro（SylarLong/iztro 紫微斗数引擎） | MIT | 按 iztro 安星法自实现，文件头已声明 |
 | `web/js/qimen.js` | bigfishmarquis-qimen（perfhelf） | MIT | 年/月/日/时四层规则对齐 |
 | `web/js/lunar.js` | mQimen 黄道/历法口径 | — | 同作者项目，算法口径对拍基准 |
+| `web/js/yinpan.js` | wrz1911/daojiayinpan（道家阴盘排盘） | MIT | 阴盘起局算法**移植**（文件头已声明）；许可证全文见 `web/licenses/MIT-daojiayinpan.txt` |
 
 ## 构建工具链（不随仓库分发，由 CI / 本地环境装配）
 

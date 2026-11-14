@@ -6,16 +6,16 @@
 
 [![Build APK](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml/badge.svg)](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-3.2.9-orange)
+![Version](https://img.shields.io/badge/version-3.2.10-orange)
 ![Android](https://img.shields.io/badge/Android-10%2B%20(minSdk%2029)-blue)
 
 ## 下载
 
-最新版 **3.2.9（227）**，已签名、可直接覆盖安装：
+最新版 **3.2.10（228）**，已签名、可直接覆盖安装：
 
 | 文件 | 大小 | SHA-256 |
 |---|---|---|
-| [`dist/星曜奇门-3.2.9.apk`](dist/星曜奇门-3.2.9.apk) | 629 KB | `ac8f969c…`（见 `dist/README.md`） |
+| [`dist/星曜奇门-3.2.10.apk`](dist/星曜奇门-3.2.10.apk) | 633 KB | `a878eb55…`（见 `dist/README.md`） |
 
 > 包名 `com.momen.xingyaoqimen`，minSdk 29（Android 10+）。
 > 自行构建见文末「构建」；签名密钥不入库，按说明自备即可。
@@ -141,7 +141,7 @@
 - **时间状态**：选过具体时刻后，那排分段的「此时刻」会自动变成「返回时」，
   点它即回到当前时刻；不在时间模式下自动复原。串星页的「时间」档同一套逻辑
   （选过大时刻后变成「返回时」，点它回到此刻）。
-- **返回栈**：裁剪层 → 弹层 → 串星课 → 当前页，一次返回只退一层；
+- **返回栈**：裁剪层、通用弹层、串星课课页、当前页逐层退，一次返回只退一层；
   通用弹层带对话框语义、焦点进入与恢复，关闭后移出读屏与键盘范围。
 - **设置页**：四个分类分别记忆滚动位置，切分类、从底栏离开再回来都停在原处。
 - **输入校验**：经纬度整串校验（`123abc`、超范围都会就地提示），
@@ -172,7 +172,7 @@ python3 build_xingyao.py
 # 产物：app/out/星曜奇门-<版本>.apk
 ```
 
-构建脚本内置七道质量门禁（CSS / 串星页面层 375 条 / 串星引擎 253 条 / 读法 / 开源声明 56 条 /
+构建脚本内置七道质量门禁（CSS / 串星页面层 375 条 / 串星引擎 253 条 / 读法 / 开源声明 57 条 /
 真太阳时 14 条 / 墓星 38 条），
 任一失败即中止，不会产出坏包。
 
@@ -199,7 +199,7 @@ python3 build_xingyao.py
 
 ### 云端构建（GitHub Actions）
 
-本仓库带 `.github/workflows/build.yml`：在 GitHub 网页「Actions → Build APK」手动触发，
+本仓库带 `.github/workflows/build.yml`：在 GitHub 网页「Actions → Build APK」手动触发，或推 `v*` 标签自动跑；
 自动装配上述工具链、生成临时调试签名、执行同一套门禁并产出 APK artifact。
 
 ## 质量校验
@@ -210,7 +210,7 @@ NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_css.js        # 类名/�
 NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_chuanxing.js  # 串星页面层：375 过
 NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_cx_engine.js  # 串星引擎：253 过
 NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_cxhelp.js     # 读法正文
-NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_license.js    # 开源声明 + 许可随包：56 过
+NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_license.js    # 开源声明 + 许可随包：57 过
 NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_truesolar.js  # 真太阳时：14 过
 NODE_PATH=/root/dsh-dom/node_modules node 校验/_check_mu.js         # 墓星判定：38 过
 
@@ -232,11 +232,13 @@ NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules \
 │   ├── css/        # 四套主题令牌 + 外壳/组件 + 九宫盘
 │   ├── js/         # astro / lunar / qimen / patterns / store / snapshot / ui
 │   │               # ＋ 串星课（cx / cxhelp / rng）与 marks（马星掩膜）
-│   ├── fonts/      # 字体子集
+│   ├── fonts/      # 字体子集（OFL 1.1）
+│   ├── licenses/   # 许可全文（随包）
 │   └── plugins/    # 插件
 ├── app/            # Android WebView 壳（最小化）与构建脚本
 │   ├── android/    # MainActivity + 清单 + 资源
 │   └── build_xingyao.py
+├── dist/           # 对外发布：安装包 + 版本 / SHA-256 台账
 ├── 校验/           # 七道门禁 + 复核脚本 + 无头浏览器探针（见其 README）
 └── docs/           # 文档与配图（screenshots/ 为 README 截图）
 ```
@@ -247,8 +249,11 @@ NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules \
 |---|---|
 | `web/js/astro.js` | 儒略日、太阳视黄经（VSOP87）、月亮黄经、节气交节时刻、朔、ΔT |
 | `web/js/lunar.js` | 干支纪日、四柱、农历（无中气置闰） |
-| `web/js/qimen.js` | 定局（拆补法）、地盘、天盘、八门、八神、空亡、驿马、伏吟反吟 |
-| `web/js/patterns.js` | 格局判读 |
+| `web/js/qimen.js` | 定局（拆补 / 置闰）、地盘、天盘、八门、八神、空亡、驿马、伏吟反吟 |
+| `web/js/yinpan.js` | 道家阴盘起局（数字定局、暗干；移植自 wrz1911/daojiayinpan） |
+| `web/js/patterns.js` | 格局判读（门迫门制、三奇得使、三遁、伏吟反吟等） |
+| `web/js/keying.js` | 十干克应 81 格（格名 / 断语；数据经 qimen-dunjia 整理） |
+| `web/js/stars.js` | 星曜（日月五星四余：VSOP87 / Meeus 轨道根数 + 四余交点） |
 | `web/js/store.js` | 本地存储（设置 + 盘面记录），带内存兜底 |
 | `web/js/snapshot.js` | Canvas 2D 盘面截图（PNG；盘面同显的中宫课也在这里画） |
 | `web/js/cx.js` / `cxhelp.js` | 串星课引擎（小六壬·加干，六神 / 九星双译法）与读法正文 |
@@ -257,7 +262,9 @@ NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules \
 
 ## 许可证
 
-[MIT](LICENSE) © 2026 魔门 (Momen)
+[MIT](LICENSE) © 2026 魔门 (Momen)。第三方内容与致谢见 [`NOTICE`](NOTICE)：
+字体 QM Serif（SIL OFL 1.1）、阴盘引擎 wrz1911/daojiayinpan（MIT，代码移植）、
+以及 mQimen / qimen-dunjia / bigfishmarquis-qimen 的口径参照。
 
 ## 免责声明
 

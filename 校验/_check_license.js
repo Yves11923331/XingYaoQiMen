@@ -6,7 +6,7 @@
  *
  * 口径（**2026-11-13 用户新指示：「开源声明，仅保留必要的即可」**）：
  *   · UI（「关于」弹层）**只声明字体一条**：QM Serif（Noto Serif CJK SC 子集）· SIL OFL 1.1，
- *     并给「许可全文」入口。iztro / qimen-dunjia / bigfishmarquis-qimen 三行、
+ *     并给「许可全文」入口。qimen-dunjia / bigfishmarquis-qimen 两行、
  *     「数据与规则参照」整段、mQimen、「其余全部自研」那些行都已删除，且**不许再搬回来**（L1 反向守护）。
  *     为什么只留这一条：字体文件是我们**随包分发**的，OFL 要求随附许可证；其余三份是
  *     事实性数据 / 规则口径对齐，没复制代码 —— 判定说明见 web/licenses/THIRD-PARTY.md。
@@ -123,20 +123,25 @@ setTimeout(() => {
   const oflDisk = fs.existsSync(path.join(DIR, 'OFL-1.1.txt'))
     ? fs.readFileSync(path.join(DIR, 'OFL-1.1.txt'), 'utf8') : '';
   eq(oflDisk, L ? L.ofl : '', 'licenses.js 内联的 OFL 应与 OFL-1.1.txt 逐字相同（改正文请重跑 校验/_gen-license-js.js）');
-  /* 三份 MIT 全文文件是用户裁定删掉的 —— 不许以"文件又回来了"的方式复活 */
+  /* 三份 MIT 全文文件是用户裁定删掉的 —— 不许以"文件又回来了"的方式复活。
+     ⚠ 阴盘的 MIT 全文是另一回事：yinpan.js 是**代码移植**，MIT 要求随副本附带，
+     所以 MIT-daojiayinpan.txt 必须在包内（2026-11-14 补）。 */
   ['iztro-MIT.txt', 'qimen-dunjia-MIT.txt', 'bigfishmarquis-qimen-MIT.txt'].forEach(f => {
     ok(!fs.existsSync(path.join(DIR, f)), f + ' 应已删除（用户裁定只声明字体，MIT 不再随包）');
   });
+  ok(fs.existsSync(path.join(DIR, 'MIT-daojiayinpan.txt')) &&
+     fs.readFileSync(path.join(DIR, 'MIT-daojiayinpan.txt')).length > 500,
+     'MIT-daojiayinpan.txt 应随包（阴盘引擎是代码移植，MIT 要求附带版权与许可声明）');
 
   /* ============================================================ L5 */
   console.log('\n== L5 THIRD-PARTY.md 仍是判定说明（书面凭据，不进 UI） ==');
   const mdPath = path.join(DIR, 'THIRD-PARTY.md');
   const md = fs.existsSync(mdPath) ? fs.readFileSync(mdPath, 'utf8') : '';
   ok(md.length > 500, 'THIRD-PARTY.md 应存在且够长（实得 ' + md.length + ' 字节）');
-  ['必须声明', 'iztro', 'qimen-dunjia', 'bigfishmarquis-qimen', 'SIL OFL 1.1'].forEach(k => {
+  ['必须声明', 'daojiayinpan', 'qimen-dunjia', 'bigfishmarquis-qimen', 'SIL OFL 1.1'].forEach(k => {
     has(md, k, 'THIRD-PARTY.md 应含「' + k + '」（四条判定仍在）');
   });
-  ['思想', '事实', '公有领域'].forEach(k => {
+  ['思想', '公有领域', 'MIT'].forEach(k => {
     has(md, k, 'THIRD-PARTY.md 应写明法律依据关键词「' + k + '」');
   });
 

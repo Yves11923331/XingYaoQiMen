@@ -2,8 +2,8 @@
 <!-- 星曜奇门 · 正式壳（方案A 半原生壳转正）：包名与原正版一致，凭同一把钥匙 + 更高 versionCode 覆盖安装 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.momen.xingyaoqimen"
-    android:versionCode="227"
-    android:versionName="3.2.9">
+    android:versionCode="228"
+    android:versionName="3.2.10">
 
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34" />
 
