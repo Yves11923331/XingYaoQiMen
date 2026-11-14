@@ -6,16 +6,16 @@
 
 [![Build APK](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml/badge.svg)](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-3.2.10-orange)
+![Version](https://img.shields.io/badge/version-3.3.0-orange)
 ![Android](https://img.shields.io/badge/Android-10%2B%20(minSdk%2029)-blue)
 
 ## 下载
 
-最新版 **3.2.10（228）**，已签名、可直接覆盖安装：
+最新版 **3.3.0（229）**，已签名、可直接覆盖安装：
 
 | 文件 | 大小 | SHA-256 |
 |---|---|---|
-| [`dist/星曜奇门-3.2.10.apk`](dist/星曜奇门-3.2.10.apk) | 633 KB | `a878eb55…`（见 `dist/README.md`） |
+| [`dist/星曜奇门-3.3.0.apk`](dist/星曜奇门-3.3.0.apk) | 633 KB | `bfcfc050…`（见 `dist/README.md`） |
 
 > 包名 `com.momen.xingyaoqimen`，minSdk 29（Android 10+）。
 > 自行构建见文末「构建」；签名密钥不入库，按说明自备即可。
