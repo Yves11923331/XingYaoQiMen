@@ -239,6 +239,7 @@ NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules \
 │   ├── android/    # MainActivity + 清单 + 资源
 │   └── build_xingyao.py
 ├── dist/           # 对外发布：安装包 + 版本 / SHA-256 台账
+├── 小六壬·加干（2026.8.31）.txt   # 串星课底本（作者本人），门禁逐字对照基准
 ├── 校验/           # 七道门禁 + 复核脚本 + 无头浏览器探针（见其 README）
 └── docs/           # 文档与配图（screenshots/ 为 README 截图）
 ```
