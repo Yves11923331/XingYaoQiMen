@@ -22,7 +22,7 @@
 
 ## 项目简介
 
-星曜奇门是一套**从零自研**的奇门遁甲排盘工具。核心排盘引擎完全用浏览器原生 API 实现：
+星曜奇门是一套纯前端的奇门遁甲排盘工具。排盘引擎用浏览器原生 API 实现：
 
 - 天文层手写 VSOP87 太阳视黄经、月亮黄经、节气交节时刻（不是正午采样）、朔望与 ΔT 修正；
 - 历法层自实现干支纪日、四柱、农历（冬至在十一月 + 无中气置闰）；
@@ -262,9 +262,7 @@ NODE_PATH=/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules \
 
 ## 许可证
 
-[MIT](LICENSE) © 2026 魔门 (Momen)。第三方内容与致谢见 [`NOTICE`](NOTICE)：
-字体 QM Serif（SIL OFL 1.1）、阴盘引擎 wrz1911/daojiayinpan（MIT，代码移植）、
-以及 mQimen / qimen-dunjia / bigfishmarquis-qimen 的口径参照。
+[MIT](LICENSE) © 2026 魔门 (Momen)。第三方内容与致谢见 [`NOTICE`](NOTICE)。
 
 ## 免责声明
 
