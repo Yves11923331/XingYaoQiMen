@@ -724,12 +724,9 @@ html.booting { background: var(--bg, #fff); }
            一个插件一张卡（标题 + 开关 + 说明）；开关即时生效（重排盘面 + 导出图同步）。
            插件本体在 web/plugins/*.js，契约见 web/plugins/README.md。 -->
       <div class="setgroup" data-g="plugin">
-        <div class="sline"><b>插件</b><small>按需开 · 不动基础盘面 · 默认适配全部盘</small></div>
+        <div class="sline"><b>插件</b><small>按需开 · 不动基础盘面</small></div>
         <div id="pluginList"></div>
 
-        <div class="fhint">插件<b>默认适配所有盘</b>（含阴盘）。只有确实不适配的<b>特殊插件</b>
-          才排除：目前只有<b>长生尺</b>——它按标准盘几何排，阴盘里不渲染（硬规矩，不是开关）。
-          阴盘盘面照常显示星门干＋暗干；空亡·马星与串星课同显不是插件，也不受影响。</div>
       </div>
 
     </section>
