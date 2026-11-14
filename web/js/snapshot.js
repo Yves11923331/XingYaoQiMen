@@ -546,18 +546,72 @@
       return;
     }
 
-    var z = Q.PAL_ZHI[p.pal] || [];
-    var guaF = 2.1 * E, zhiF = 1.05 * E, gap = 2 * k;
-    var total = guaF + gap + zhiF * 1.45;
-    var top = y + SH / 2 - total / 2;
-    ctx.textAlign = 'center';
-    /* 卦符（.qm-gua：2.1em、accent、.88 透明） */
+    /* 卦符：右上角小标记（对应屏幕 .qm-fgua：1.35em、右 8px、上 5px） */
+    var guaF = 1.35 * E;
+    ctx.textAlign = 'right';
     ctx.font = Math.round(guaF) + 'px ' + SERIF;
-    ctx.fillStyle = rgba(P.accent, .88);
-    ctx.fillText(Q.PAL_TRIGRAM[p.pal], x + S / 2, top + guaF * 0.88);
-    /* 所纳地支（.qm-zhi：1.05em 宋体、.16em 字距） */
-    spaced(ctx, z.join(''), x + S / 2, top + guaF + gap + zhiF * 1.16,
-      '700 ' + Math.round(zhiF) + 'px ' + SERIF, P.ink, zhiF * 0.16);
+    ctx.fillStyle = rgba(P.accent, .82);
+    ctx.fillText(Q.PAL_TRIGRAM[p.pal], x + S - 8 * k, y + 5 * k + guaF * 0.8);
+
+    /* 长生表（对应 .qm-cs4）：行＝支、列＝干（天盘干 → 地盘干 → 寄干，寄干同规格不加标记）。
+       字号/列宽全按屏幕的 em 值：表头 .64E、支 .7E、阶段 .82E（--qm-ink-soft）、行距 .5E。 */
+    var zs = Q.PAL_ZHI[p.pal] || [];
+    var stems = [p.heaven, p.earth, p.mid].filter(function (v) { return v; });
+    var headF = .64 * E, zF = .7 * E, sF = .82 * E;
+    var labelW = 1.0 * E, stageW = 1.66 * E, colGap = .4 * E;
+    var tableW = labelW + stems.length * stageW + stems.length * colGap;
+    var tableX = x + (S - tableW) / 2;
+    var headH = headF * 1.2 + .15 * E;
+    var rowH = sF * 1.45, rowGap = .5 * E;
+    var blockH = headH + zs.length * (rowH + rowGap);
+    var areaH = SH - 22 * k;                       /* 屏幕 .qm-fx padding-bottom:22px */
+    var top = y + Math.max(6 * k, (areaH - blockH) / 2);
+    function colCenter(i) { return tableX + labelW + colGap + i * (stageW + colGap) + stageW / 2; }
+
+    ctx.textAlign = 'center';
+    ctx.font = Math.round(headF) + 'px ' + SERIF;
+    ctx.fillStyle = P.dim;
+    stems.forEach(function (st, i) { ctx.fillText(Q.STEM[st], colCenter(i), top + headF * 0.95); });
+    zs.forEach(function (z, r) {
+      var by = top + headH + rowGap * (r + 1) + rowH * r + sF * 1.0;
+      ctx.font = Math.round(zF) + 'px ' + SERIF;
+      ctx.fillStyle = P.dim;
+      ctx.fillText(z, tableX + labelW / 2, by);
+      var zi = Q.CS_ZHI.indexOf(z);
+      ctx.font = Math.round(sF) + 'px ' + SERIF;
+      ctx.fillStyle = P.ink;
+      stems.forEach(function (st, i) { ctx.fillText(Q.changSheng(st, zi), colCenter(i), by); });
+    });
+    /* 宫底一行：先天 ☷坤　后天 ☱兑（对应 .qm-fxn2，底 5px、.64em） */
+    var ff = .64 * E;
+    var fy = y + SH - 5 * k - .1 * ff;
+    var parts = [{ k: '先天', n: Q.PAL_XIANTIAN[p.pal] }, { k: '后天', n: Q.PAL_HOUTIAN[p.pal] }];
+    var gapF = 1.3 * ff;
+    var widths = parts.map(function (it) {
+      ctx.font = Math.round(ff * .86) + 'px ' + SANS;
+      var wk = ctx.measureText(it.k).width;
+      ctx.font = Math.round(ff) + 'px ' + SERIF;
+      var ws = ctx.measureText(Q.TRIGRAM_SYM[it.n] || '').width;
+      var wn = ctx.measureText(it.n).width;
+      return { wk: wk, ws: ws, wn: wn, w: wk + ff * .35 + ws + ff * .18 + wn };
+    });
+    var totalW = widths[0].w + gapF + widths[1].w;
+    var cx0 = x + (S - totalW) / 2;
+    parts.forEach(function (it, i) {
+      var left = cx0 + (i ? widths[0].w + gapF : 0);
+      ctx.textAlign = 'left';
+      ctx.font = Math.round(ff * .86) + 'px ' + SANS;
+      ctx.fillStyle = P.ink3;
+      ctx.fillText(it.k, left, fy);
+      var l2 = left + widths[i].wk + ff * .35;
+      ctx.font = Math.round(ff) + 'px ' + SERIF;
+      ctx.fillStyle = P.accent;
+      ctx.fillText(Q.TRIGRAM_SYM[it.n] || '', l2, fy);
+      var l3 = l2 + widths[i].ws + ff * .18;
+      ctx.font = '700 ' + Math.round(ff) + 'px ' + SERIF;
+      ctx.fillStyle = P.ink;
+      ctx.fillText(it.n, l3, fy);
+    });
     ctx.textAlign = 'left';
   }
 

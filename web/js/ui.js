@@ -480,8 +480,18 @@
     return h;
   }
 
-  /* 卦象·地支面：点中宫切过来。每宫中央一枚大卦符 + 该宫所纳的地支。
-     纳支按后天八卦方位分属（坎子 / 艮丑寅 / 震卯 / 巽辰巳 / 离午 / 坤未申 / 兑酉 / 乾戌亥）。 */
+  /* 卦象·地支面：点中宫切过来（2026-11-14 第六版版式，按用户 2026-11-14 口径重排）。
+     ------------------------------------------------------------------
+     主信息＝**长生状态**：表格里最重、最亮的字就是阶段名。
+     支 / 干只是行列标签，压小、压暗 —— 不写「天/地」，列序即天盘干 → 地盘干 →（寄干）。
+         （空）   辛     乙
+          戌     冠带   墓
+          亥     沐浴   死
+     卦符退到右上角当宫位标记；先天/后天压成宫底一行小字。中五宫不配卦、不纳支，只留说明。
+     ------------------------------------------------------------------
+     列宽定死（阶段列 1.85em），「长生/沐浴」两字与「衰/病」一字都居中，上下行严格对齐。
+     寄干作第三列（列数按需 2/3），表头带一个小「寄」记，不再另起一行。
+     先后天宫见 qimen.js 的 PAL_XIANTIAN / PAL_HOUTIAN：离 → 先天宫震、后天宫乾。 */
   function faceHTML(p) {
     if (p.pal === 5) {
       return '<div class="qm-pal">中5</div>' +
@@ -490,11 +500,32 @@
         '<div class="qm-fhint">点中宫回九宫盘</div>' +
         '</div>';
     }
-    var z = Q.PAL_ZHI[p.pal] || [];
+    var zs = Q.PAL_ZHI[p.pal] || [];
+    var xt = Q.PAL_XIANTIAN[p.pal], ht = Q.PAL_HOUTIAN[p.pal];
+    /* 干列：天盘干 → 地盘干 → 寄干（有才出） */
+    /* 干列：天盘干 → 地盘干 → 寄干（有才出），三者**同一规格**，寄干不加任何标记（用户 2026-11-14） */
+    var stems = [];
+    if (p.heaven) stems.push({ stem: p.heaven, mid: false });
+    if (p.earth) stems.push({ stem: p.earth, mid: false });
+    if (p.mid) stems.push({ stem: p.mid, mid: true });
+    var cols = '1em repeat(' + stems.length + ', 1.66em)';
+    var head = '<span></span>' + stems.map(function (it) {
+      return '<span class="qm-cs4-h">' + Q.STEM[it.stem] + '</span>';
+    }).join('');
+    var body = zs.map(function (z) {
+      var zi = Q.CS_ZHI.indexOf(z);
+      return '<span class="qm-cs4-z">' + z + '</span>' + stems.map(function (it) {
+        return '<span class="qm-cs4-s">' + Q.changSheng(it.stem, zi) + '</span>';
+      }).join('');
+    }).join('');
     return '<div class="qm-pal">' + Q.PAL_NAME[p.pal] + p.pal + '</div>' +
+      '<div class="qm-fgua" title="本宫卦象">' + Q.PAL_TRIGRAM[p.pal] + '</div>' +
       '<div class="qm-fx">' +
-      '<div class="qm-gua">' + Q.PAL_TRIGRAM[p.pal] + '</div>' +
-      '<div class="qm-zhi">' + z.join('') + '</div>' +
+      '<div class="qm-cs4" style="grid-template-columns:' + cols + '">' + head + body + '</div>' +
+      '<div class="qm-fxn2">' +
+      '<span><i>先天</i><b>' + Q.TRIGRAM_SYM[xt] + '</b>' + xt + '</span>' +
+      '<span><i>后天</i><b>' + Q.TRIGRAM_SYM[ht] + '</b>' + ht + '</span>' +
+      '</div>' +
       '</div>';
   }
   function cycleFace() {

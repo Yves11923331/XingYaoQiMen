@@ -35,6 +35,18 @@
      别按十二支表顺序改成"丑寅"，用户已明确说过那是错的。 */
   var PAL_ZHI = [null, ['子'], ['未', '申'], ['卯'], ['辰', '巳'], [],
                  ['戌', '亥'], ['酉'], ['寅', '丑'], ['午']];
+  /* 先天宫 / 后天宫（2026-11-14 用户口径，只给「卦象·地支面」标用）：
+     以本宫（后天卦名）为基准 ——
+       · 先天宫 = 本宫在**先天八卦**里的那个方位，落到**后天九宫**上的宫；
+       · 后天宫 = 本宫在**后天八卦**里的那个方位，落到**先天八卦**上的卦。
+     例：离 → 先天宫 震（离先天在东，后天东为震）、后天宫 乾（离后天在南，先天南为乾）。
+     后天的对照是两条 4-循环（用户原话）：乾→艮→震→离→乾、坎→坤→巽→兑→坎。
+     ⚠ 中五宫不配卦，两表第 5 位留空。 */
+  var PAL_XIANTIAN = ['', '兑', '坎', '艮', '坤', '', '离', '巽', '乾', '震'];
+  var PAL_HOUTIAN = ['', '坤', '巽', '离', '兑', '', '艮', '坎', '震', '乾'];
+  /* 卦名 → 卦符（先天/后天宫那行要连符号一起标；按**卦名**查，和按宫位排的 PAL_TRIGRAM 不同） */
+  var TRIGRAM_SYM = { '乾': '☰', '兑': '☱', '离': '☲', '震': '☳',
+                      '巽': '☴', '坎': '☵', '艮': '☶', '坤': '☷' };
   /* 星/门/神 均按「本宫号」编号，便于比对伏吟反吟 */
   var STAR = ['', '天蓬', '天芮', '天冲', '天辅', '天禽', '天心', '天柱', '天任', '天英'];
   var STAR_WX = ['', '水', '土', '木', '木', '土', '金', '金', '土', '火'];
@@ -499,6 +511,7 @@ var DEITY_WX = ['', '木', '火', '金', '木', '金', '水', '土', '金', '土
       },
       tables: {
         PAL_NAME: PAL_NAME, PAL_WX: PAL_WX, PAL_DIR: PAL_DIR, PAL_TRIGRAM: PAL_TRIGRAM, PAL_ZHI: PAL_ZHI,
+        PAL_XIANTIAN: PAL_XIANTIAN, PAL_HOUTIAN: PAL_HOUTIAN,
         STAR: STAR, STAR_WX: STAR_WX, GATE: GATE, GATE_WX: GATE_WX,
         DEITY: DEITY, STEM: STEM, STEM_WX: STEM_WX, YUAN_NAME: YUAN_NAME
       }
@@ -655,7 +668,8 @@ var DEITY_WX = ['', '木', '火', '金', '木', '金', '水', '土', '金', '土
         fuYin: built.fuYin, fanYin: built.fanYin,
         hourLeadEb: built.hourLeadEb
       },
-      tables: { PAL_NAME: PAL_NAME, PAL_WX: PAL_WX, PAL_DIR: PAL_DIR, PAL_TRIGRAM: PAL_TRIGRAM, PAL_ZHI: PAL_ZHI }
+      tables: { PAL_NAME: PAL_NAME, PAL_WX: PAL_WX, PAL_DIR: PAL_DIR, PAL_TRIGRAM: PAL_TRIGRAM, PAL_ZHI: PAL_ZHI,
+                 PAL_XIANTIAN: PAL_XIANTIAN, PAL_HOUTIAN: PAL_HOUTIAN }
     };
   }
 
@@ -729,6 +743,17 @@ var DEITY_WX = ['', '木', '火', '金', '木', '金', '水', '土', '金', '土
     return CS_STAGE[mod(d, 12)];
   }
 
+  /* 单干 × 一宫 → [{zhi, zhiName, stage}]。
+     天盘干 / 寄干 / 地盘干都用这一支函数（changShengAt 只给天盘与寄干，
+     地盘干原来是在界面里现算的 —— 卦象·地支面也要标，所以抽出来）。 */
+  function changShengPal(stem, pal) {
+    var zhis = PAL_ZHI[pal] || [];
+    return zhis.map(function (z) {
+      var zi = Lunar.ZHI.indexOf(z) + 1;
+      return { zhi: zi, zhiName: z, stage: changSheng(stem, zi) };
+    });
+  }
+
   /* 一宫的长生表。按「天盘干 → 寄干」的顺序，每条摊开该干在本宫各个纳支上的阶段：
        [{ via:'heaven'|'mid', stem:5, items:[{zhi:8,zhiName:'未',stage:'衰'}, …] }]
      ⚠ 单支宫 items 只有一条；四隅宫两条（用户要两个阶段都显示）。
@@ -743,10 +768,7 @@ var DEITY_WX = ['', '木', '火', '金', '木', '金', '水', '土', '金', '土
       return {
         via: it.via,
         stem: it.stem,
-        items: zhis.map(function (z) {
-          var zi = Lunar.ZHI.indexOf(z) + 1;
-          return { zhi: zi, zhiName: z, stage: changSheng(it.stem, zi) };
-        })
+        items: changShengPal(it.stem, pal)
       };
     });
   }
@@ -784,6 +806,7 @@ var DEITY_WX = ['', '木', '火', '金', '木', '金', '水', '土', '金', '土
 
   var API = {
     PAL_NAME: PAL_NAME, PAL_WX: PAL_WX, PAL_DIR: PAL_DIR, PAL_TRIGRAM: PAL_TRIGRAM, PAL_ZHI: PAL_ZHI,
+    PAL_XIANTIAN: PAL_XIANTIAN, PAL_HOUTIAN: PAL_HOUTIAN, TRIGRAM_SYM: TRIGRAM_SYM,
     STAR: STAR, STAR_WX: STAR_WX, GATE: GATE, GATE_WX: GATE_WX, DEITY: DEITY,
     STEM: STEM, STEM_WX: STEM_WX, JU_TABLE: JU_TABLE, YUAN_NAME: YUAN_NAME,
     DEITY_KEY: DEITY_KEY, DEITY_WX: DEITY_WX,
@@ -792,7 +815,8 @@ var DEITY_WX = ['', '木', '火', '金', '木', '金', '水', '土', '金', '土
     starLabel: starLabel, STAR_HEQIN: STAR_HEQIN,
     nianJiaJu: nianJiaJu, yueJiaJu: yueJiaJu, riJiaJu: riJiaJu, monthPillar: monthPillar, buildPlate: buildPlate, cast: cast, castManual: castManual,
     xunShouName: xunShouName,
-    changSheng: changSheng, changShengAt: changShengAt, CS_STAGE: CS_STAGE, CS_ZHI: CS_ZHI,
+    changSheng: changSheng, changShengAt: changShengAt, changShengPal: changShengPal,
+    CS_STAGE: CS_STAGE, CS_ZHI: CS_ZHI,
     MU_ZHI: MU_ZHI, muAt: muAt
   };
   root.Qimen = API;

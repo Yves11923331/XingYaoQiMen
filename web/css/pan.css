@@ -726,22 +726,13 @@ html[data-theme="brown"] .qm-cell.qm-mid::after {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
     pointer-events: none;
 }
 .qm-gua {
-    font-size: 2.1em;
+    font-size: 2.05em;
     line-height: 1;
     color: var(--qm-accent);
     opacity: .88;
-}
-.qm-zhi {
-    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
-    font-size: 1.05em;
-    font-weight: 700;
-    letter-spacing: .16em;
-    text-indent: .16em;
-    color: var(--qm-ink);
 }
 .qm-fglb {
     font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
@@ -755,6 +746,112 @@ html[data-theme="brown"] .qm-cell.qm-mid::after {
     font-size: .62em;
     letter-spacing: .06em;
     color: var(--qm-dim);
+}
+/* ---- 宫内长生表（2026-11-14 第六版）
+   主信息＝长生阶段：.**84–.9em、墨色**；支/干只是行列标签，压到 .68–.72em、浅色。
+   行＝地支（1–2 行）、列＝天干（2–3 列，天盘干 → 地盘干 → 寄干），列宽定死 1.85em。
+   「长生/沐浴」两字与「衰/病」一字同宽居中 —— 四正一列、四隅两列、禽芮三列都齐。
+   卦符退到右上角当宫位标记；先天/后天压成宫底一行。 */
+.qm-fgua {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    font-size: 1.35em;
+    line-height: 1;
+    color: var(--qm-accent);
+    opacity: .82;
+    pointer-events: none;
+}
+.qm-cs4 {
+    display: grid;
+    justify-content: center;
+    align-items: baseline;
+    column-gap: .4em;
+    row-gap: .5em;
+}
+/* 寄干：不进主表（三列在 98px 内容宽里必挤），只在表下一行小字 */
+.qm-cs4-m {
+    margin-top: .5em;
+    font-size: .62em;
+    line-height: 1.3;
+    letter-spacing: .02em;
+    color: var(--qm-dim);
+}
+.qm-cs4-m i {
+    font-style: normal;
+    font-size: .85em;
+    margin-right: 2px;
+    color: var(--qm-dim);
+}
+.qm-cs4-m em {
+    font-style: normal;
+    margin-left: .4em;
+    letter-spacing: .08em;
+    color: var(--qm-ink-soft);
+}
+.qm-cs4-h {
+    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    font-weight: 400;
+    font-size: .64em;
+    line-height: 1.2;
+    text-align: center;
+    letter-spacing: .02em;
+    color: var(--qm-dim);
+    padding-bottom: .15em;
+}
+.qm-cs4-h i {
+    font-style: normal;
+    font-size: .86em;
+    margin-right: 1px;
+    color: var(--qm-dim);
+}
+.qm-cs4-z {
+    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    font-weight: 400;
+    font-size: .7em;
+    line-height: 1.4;
+    text-align: center;
+    letter-spacing: .02em;
+    color: var(--qm-dim);
+}
+.qm-cs4-s {
+    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    font-weight: 400;
+    font-size: .82em;
+    line-height: 1.45;
+    text-align: center;
+    letter-spacing: .02em;
+    white-space: nowrap;
+    color: var(--qm-ink);
+}
+/* 宫底：先天 / 后天，一行小字（不抢表） */
+.qm-fxn2 {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 5px;
+    display: flex;
+    justify-content: center;
+    gap: 1.3em;
+    font-size: .64em;
+    line-height: 1.25;
+    color: var(--qm-ink-soft);
+    font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    pointer-events: none;
+}
+.qm-fxn2 span { white-space: nowrap; }
+.qm-fxn2 i {
+    font-style: normal;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: .86em;
+    letter-spacing: .06em;
+    color: var(--qm-dim);
+    margin-right: .35em;
+}
+.qm-fxn2 b {
+    font-weight: 400;
+    color: var(--qm-accent);
+    margin-right: .18em;
 }
 /* 面模式下中宫那两圈同心环让位给标签 */
 .qm-text-pan[data-face="both"] .qm-cell.qm-mid::before,

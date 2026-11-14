@@ -27,7 +27,7 @@ ZIPALIGN = '/usr/bin/zipalign'
 APKSIGNER_JAR = '/usr/share/java/apksigner.jar'
 AT = '/root/at'
 
-NAME, VER, CODE = '星曜奇门', '3.3.2', 231
+NAME, VER, CODE = '星曜奇门', '3.3.4', 233
 PKG, ALIAS = 'com.momen.xingyaoqimen', 'xingyao'
 MIN_SDK, TARGET_SDK = 29, 34
 
