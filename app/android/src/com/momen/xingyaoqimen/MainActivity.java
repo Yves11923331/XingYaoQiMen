@@ -465,6 +465,25 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** 只改状态栏底色与图标明暗（不改 edge-to-edge / 透明度策略）。
+        切主题时由 setShellBg 调用 —— 状态栏在 onCreate 末尾是**不透明**的底色。 */
+    private void applyStatusBarColor(int bg) {
+        try {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            getWindow().setStatusBarColor(bg);
+            View dv = getWindow().getDecorView();
+            int flags = dv.getSystemUiVisibility();
+            int lum = (int) (0.299 * Color.red(bg) + 0.587 * Color.green(bg) + 0.114 * Color.blue(bg));
+            if (Build.VERSION.SDK_INT >= 23) {
+                if (lum > 140) flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                else flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            }
+            dv.setSystemUiVisibility(flags);
+        } catch (Throwable t) {
+            Log.w(TAG, "状态栏换色失败", t);
+        }
+    }
+
     /** 返回键：先让网页关浮层 / 退回主页；网页没处理时，双击才退出（防误触） */
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -533,6 +552,20 @@ public class MainActivity extends Activity {
             try {
                 if (color == null || color.length() != 7 || color.charAt(0) != '#') return;
                 getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString("shellBg", color).apply();
+                /* ★ 2026-11-17 用户报：切主题时手机顶部的信息栏（状态栏）底色不跟着变 ——
+                   原来这里只存偏好、下次启动才用，运行时状态栏还停在上次启动时那个色。
+                   现在就地刷新：窗口底、WebView 底、状态栏底色与图标明暗一起换。
+                   （状态栏是**不透明**的：onCreate 里 statusBar() 之后又 setStatusBarColor(bg)，
+                     所以这里只改颜色与图标，不要再把它设回透明。） */
+                final int c = Color.parseColor(color);
+                runOnUiThread(new Runnable() {
+                    @Override public void run() {
+                        try { getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(c)); }
+                        catch (Throwable ignored) {}
+                        try { if (web != null) web.setBackgroundColor(c); } catch (Throwable ignored) {}
+                        applyStatusBarColor(c);
+                    }
+                });
             } catch (Throwable ignored) {}
         }
 
