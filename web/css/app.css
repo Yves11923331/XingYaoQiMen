@@ -42,44 +42,46 @@ html[data-theme="blue"] {
   --sheet-shadow: none;
   --el-wood:#63d6a0; --el-fire:#ff8574; --el-earth:#e8c877; --el-metal:#c7d0dc; --el-water:#6fb4f5;
 }
-/* 墨玉 */
+/* 墨玉：深林石基 × 玉髓釉面，青绿作主色，浅矿金绿作次级刻度。 */
 html[data-theme="slate"] {
-  --bg: #080f0d;
-  --bg-2: #0c1512;
-  --surface: #101a17;
-  --surface-2: #16221e47;
-  --line: rgba(196,222,212,.13);
-  --line-2: rgba(196,222,212,.07);
-  --ink: #e8f2ee;
-  --ink-2: #a3bcb3;
-  --ink-3: #6c867d;
-  --accent: #69b79b;
-  --accent-2: #a7e0c9;
-  --accent-bg: rgba(105,183,155,.12);
-  --accent-line: rgba(105,183,155,.40);
-  --ji: #7fd6a4; --xiong: #ff8a7a; --ping: #a3bcb3;
-  --shadow: none;
-  --sheet-shadow: none;
+  --bg: #07120f;
+  --bg-2: #0b1915;
+  --surface: #10211b;
+  --surface-2: rgba(35,66,51,.50);
+  --line: rgba(164,211,183,.19);
+  --line-2: rgba(164,211,183,.09);
+  --ink: #edf7f1;
+  --ink-2: #bad1c2;
+  --ink-3: #8eaa98;
+  --accent: #78c9a6;
+  --accent-2: #d1dda0;
+  --accent-secondary: #c1d88a;
+  --accent-bg: rgba(76,174,126,.17);
+  --accent-line: rgba(122,218,166,.58);
+  --ji: #89d9ac; --xiong: #f28d7c; --ping: #b4cbbd;
+  --shadow: 0 8px 26px rgba(0,14,8,.24);
+  --sheet-shadow: 0 -12px 38px rgba(0,10,6,.34);
   --el-wood:#63d6a0; --el-fire:#ff8574; --el-earth:#e8c877; --el-metal:#c7d0dc; --el-water:#6fb4f5;
 }
-/* 铜仪 */
+/* 铜仪：冷煤黑 × 烟青金属，旧铜只作刻度，避开整屏橙棕滤色。 */
 html[data-theme="brown"] {
-  --bg: #120c08;
-  --bg-2: #1a120c;
-  --surface: #1e150e;
-  --surface-2: #2a1e1447;
-  --line: rgba(226,206,182,.13);
-  --line-2: rgba(226,206,182,.07);
-  --ink: #f3ece2;
-  --ink-2: #c0ad97;
-  --ink-3: #86735f;
-  --accent: #cf8f4e;
-  --accent-2: #f0c48c;
-  --accent-bg: rgba(207,143,78,.13);
-  --accent-line: rgba(207,143,78,.42);
-  --ji: #8fd6a0; --xiong: #ff8a70; --ping: #c0ad97;
-  --shadow: none;
-  --sheet-shadow: none;
+  --bg: #101719;
+  --bg-2: #151f21;
+  --surface: #1c292a;
+  --surface-2: rgba(53,78,77,.40);
+  --line: rgba(190,207,194,.20);
+  --line-2: rgba(190,207,194,.095);
+  --ink: #f0f1e9;
+  --ink-2: #c6cdc1;
+  --ink-3: #98a69f;
+  --accent: #d0a27c;
+  --accent-2: #f0d8ba;
+  --accent-secondary: #88c2b3;
+  --accent-bg: rgba(198,145,108,.15);
+  --accent-line: rgba(219,174,133,.56);
+  --ji: #89d3ab; --xiong: #f18d7e; --ping: #bdc8bc;
+  --shadow: 0 8px 26px rgba(1,10,12,.30);
+  --sheet-shadow: 0 -12px 38px rgba(2,9,10,.40);
   --el-wood:#63d6a0; --el-fire:#ff8574; --el-earth:#e8c877; --el-metal:#c7d0dc; --el-water:#6fb4f5;
 }
 /* 素白 */
@@ -534,20 +536,6 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .btnrow { display: flex; gap: 8px; margin-top: 10px; }
 .btnrow .btn { flex: 1; }
 
-.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.swatch {
-  border-radius: 11px; border: 1px solid var(--line); padding: 9px 4px 8px;
-  text-align: center; font-size: 12px; font-weight: 600; color: var(--ink-2);
-  background: var(--surface-2);
-}
-.swatch:active { transform: scale(.96); }
-.swatch.on { border-color: var(--accent-line); color: var(--accent); background: var(--accent-bg); }
-.swatch i { display: block; height: 22px; border-radius: 7px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,.12); }
-.sw-blue i { background: linear-gradient(135deg, #0a0f1c 0 55%, #d8b45f 55% 100%); }
-.sw-slate i { background: linear-gradient(135deg, #0b1310 0 55%, #69b79b 55% 100%); }
-.sw-brown i { background: linear-gradient(135deg, #150f0a 0 55%, #cf8f4e 55% 100%); }
-.sw-white i { background: linear-gradient(135deg, #ffffff 0 55%, #b08b3a 55% 100%); }
-
 /* 分段控件 */
 .seg { display: flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
 .seg button {
@@ -959,13 +947,6 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .k4 .xcell.qin .nm { font-size: 16px; color: var(--accent); }
 
 /* 设置行里的小示意框：三种用途三种形状（满屏竖 / 盘竖 / 课横），都按真实出图比例画 */
-.shapehint { display: flex; align-items: flex-end; gap: 16px; margin: 8px 0 2px; }
-.shapehint .sh { display: flex; flex-direction: column; align-items: center; gap: 5px;
-  font-size: 10px; letter-spacing: .04em; color: var(--ink-3); }
-.shapehint .sh em { display: block; border: 1px solid var(--accent-line);
-  background: var(--accent-bg); border-radius: 3px; }
-.shapehint .sh.pan em { width: 18px; height: 25px; }      /* 1000 ÷ 1370 ≈ 0.73 */
-.shapehint .sh.lesson em { width: 36px; height: 17px; }   /* 1000 ÷ 460 ≈ 2.17 */
 
 /* 截图渲染背景 · 选图弹层：每种用途配一个**对应形状的示意框**（按出图比例画） */
 .rendpick { display: flex; gap: 10px; }
@@ -1182,16 +1163,6 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
 
 /* ---------------------------------------------------------------- 背景图与截图渲染背景 */
-/* 缩略条：看得见当前用的是哪张 */
-.bgstrip {
-  height: 44px; margin-top: 9px; border-radius: 10px; overflow: hidden;
-  border: 1px dashed var(--line); background: var(--surface-2) center/cover no-repeat;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11.5px; color: var(--ink-3);
-}
-.bgstrip.has { border-style: solid; }
-.bgstrip.has span { display: none; }
-
 /* 设了 App 背景图之后，把各层实底换成半透 —— 否则底图永远被盖住。
    不透明度那一档管的是**盘面**，这里管的是 App 的外壳。 */
 /* 背景图交给 ::before 铺满。background-attachment: fixed 在移动 WebView 里是 bug 源
@@ -1217,7 +1188,6 @@ html.bg-custom .tabbar { background: color-mix(in srgb, var(--bg-2) 84%, transpa
 html.bg-custom .card,
 html.bg-custom .timecard,
 html.bg-custom .sheet { background: color-mix(in srgb, var(--surface) 90%, transparent); }
-html.bg-custom .swatch,
 html.bg-custom .seg,
 html.bg-custom .btn,
 html.bg-custom .locbtn,
@@ -1337,80 +1307,367 @@ html.bg-custom select { background: color-mix(in srgb, var(--bg-2) 76%, transpar
 }
 
 
-/* ------------------------------------------------- 设置页 · 顶部分段（方案 B） */
-/* 一屏只看一类：外观 / 排法 / 星曜 / 关于。切组只切 display —— 控件与事件都不重建。 */
-.setchips {
-  display: flex; gap: 6px; padding: 10px 14px 6px;
-  position: sticky; top: 0; z-index: 3; background: var(--bg);
+/* ---------------------------------------------------------------- 设置页
+ * 宋体标题和主题色沿用外壳；底板、选中层与内容卡统一为一套轻层级。
+ * 设置组件限定在 #view-set 内，不改变起盘、底栏或弹层的表单件。
+ */
+#view-set {
+  --set-gutter: clamp(12px, 4vw, 20px);
+  --set-limit: 680px;
+  --set-radius: 16px;
+  --set-well: var(--bg);
+  --set-selected: var(--surface);
+  --set-well: color-mix(in srgb, var(--bg) 96%, var(--ink));
+  --set-selected: color-mix(in srgb, var(--surface) 91%, var(--ink));
+  --set-track: var(--ink-3);
+  --set-track: color-mix(in srgb, var(--ink-3) 65%, var(--surface));
 }
-.setchips button {
-  flex: 1; padding: 8px 0; border-radius: 10px; font-size: 12.5px; font-weight: 600;
-  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-3);
+#view-set .setnav {
+  position: sticky; inset-block-start: 0; z-index: 3;
+  padding: 10px max(var(--set-gutter), env(safe-area-inset-right)) 9px
+    max(var(--set-gutter), env(safe-area-inset-left));
+  background: var(--bg); border-bottom: 1px solid var(--line-2);
 }
-.setchips button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
-.setgroup { display: none; padding-bottom: 24px; }
-.setgroup.on { display: block; }
+#view-set .setchips {
+  max-width: var(--set-limit); margin: auto; padding: 3px;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--set-well);
+}
+#view-set .setchips button,
+#view-set .seg button {
+  min-width: 0; position: relative; border: 1px solid transparent; border-radius: 8px;
+  color: var(--ink-2); font-size: 12px; font-weight: 600; line-height: 1.3;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
+}
+#view-set .setchips button {
+  min-height: 44px; display: flex; align-items: center; justify-content: center;
+  gap: 5px; padding: 4px 2px; font-size: 13px; white-space: nowrap;
+  border-color: transparent;
+}
+#view-set svg {
+  width: 16px; height: 16px; flex: 0 0 auto; fill: none; stroke: currentColor;
+  stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round;
+}
+#view-set .setchips button.on, #view-set .seg button.on {
+  border-color: var(--ink-2); color: var(--ink); background: transparent;
+  font-weight: 650;
+}
+#view-set .setchips button:active, #view-set .seg button:active {
+  background: transparent;
+}
 
-/* 小节标题：小字宽距 + 发丝线 + 右侧状态摘要（视觉顺序：标题 | 线 | 摘要） */
-.sline { display: flex; align-items: baseline; gap: 8px; margin: 16px 14px 2px; }
-.sline > b { flex: 0 0 auto; font-size: 11px; letter-spacing: .2em; font-weight: 700; color: var(--ink-3); }
-.sline::after { content: ""; order: 1; flex: 1 1 auto; height: 1px; background: var(--line); align-self: center; }
-.sline > small {
-  order: 2; flex: 0 1 auto; max-width: 64%; font-size: 10.5px; color: var(--ink-3);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+#view-set .setgroup {
+  display: none; max-width: calc(var(--set-limit) + 2 * var(--set-gutter));
+  margin-inline: auto;
+  padding: 16px max(var(--set-gutter), env(safe-area-inset-right)) 28px
+    max(var(--set-gutter), env(safe-area-inset-left));
 }
-.sbody { margin: 0 14px; }
-.sbody .field { padding: 9px 0; border-bottom: 1px solid var(--line-2); }
-.sbody .field:last-child { border-bottom: 0; }
-.sbody .fhint { margin-top: 2px; }
-.rk { font-size: 13px; font-weight: 600; min-width: 46px; text-align: right; color: var(--ink); }
-.rk2 { font-size: 11.5px; font-weight: 600; min-width: 104px; text-align: right; color: var(--ink-3); }
+#view-set .setgroup.on { display: block; }
+#view-set .sline {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 6px 12px;
+  flex-wrap: wrap; margin: 20px 0 8px; padding-inline: 2px;
+}
+#view-set .sline:first-child { margin-top: 0; }
+#view-set .sline h2 {
+  margin: 0; color: var(--ink); font: 700 18px/1.4 "QM Serif", "Songti SC", serif;
+  letter-spacing: .055em;
+}
+#view-set .sline small { color: var(--ink-2); font-size: 12px; }
+#view-set .sbody, #view-set .set-guide, #view-set .pk-card, #view-set .grid2 > .g {
+  border: 1px solid var(--line); border-radius: var(--set-radius); background: var(--surface);
+}
+#view-set .sbody { padding: 0 13px; }
+#view-set .set-row {
+  gap: 8px 12px; flex-wrap: wrap; padding: 11px 0; min-width: 0;
+}
+#view-set .set-label { flex: 1 1 112px; min-width: 0; color: var(--ink); font-size: 14px; }
+#view-set .set-label > b { font-weight: 650; }
+#view-set .set-label > small {
+  display: block; margin-top: 3px; color: var(--ink-2); font-size: 12px; line-height: 1.55;
+}
+#view-set .seg {
+  display: flex; gap: 2px; padding: 3px; min-width: 0;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--set-well);
+}
+#view-set .seg button { min-height: 40px; padding: 5px 2px; overflow-wrap: anywhere; }
+#view-set .set-row > .seg { flex: 1 0 124px; max-width: 160px; }
+#view-set .set-row > .seg.set-wide { flex-basis: 154px; max-width: 190px; }
+#view-set .infobtn {
+  position: relative; width: 36px; height: 36px; margin-left: 1px;
+  color: var(--accent); border: 0; background: none; vertical-align: middle;
+}
+#view-set .infobtn::before {
+  content: ""; position: absolute; inset: 8px; border: 1px solid var(--accent-line); border-radius: 50%;
+}
+#view-set .infobtn:active { background: var(--accent-bg); }
 
-/* 排法 · 二列网格（用户挑的方案 3）：一项一格，标签在上、分段在下。
-   ⚠ 定局法与晚子时不进网格 —— 它们在下面单独一节用通栏行。 */
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 14px 0; }
-/* 卡片边框：双层发丝框 —— 外 1px + 3px 空隙 + 内 1px，圆角内外递进（14 → 11）。
-   内框只画线、不吃点击（pointer-events:none），四套主题共用 --line / --line-2。 */
-.grid2 > .g {
-  position: relative; border: 1px solid var(--line); border-radius: 14px;
-  padding: 11px 12px 11px; background: var(--surface);
+/* 色板像一个小小的主题预览，而不只是一截渐变色。 */
+#view-set .swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+#view-set .swatch {
+  --sw-bg: var(--bg); --sw-card: var(--surface); --sw-edge: var(--line); --sw-accent: var(--accent);
 }
-.grid2 > .g::before {
-  content: ""; position: absolute; inset: 3px; pointer-events: none;
-  border: 1px solid color-mix(in srgb, var(--accent-line) 27%, transparent); border-radius: 11px;
+#view-set .swatch {
+  display: grid; justify-items: stretch; align-content: start; gap: 5px; min-width: 0;
+  padding: 5px 5px 7px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); color: var(--ink-2); font-size: 12px; font-weight: 600;
 }
-.grid2 > .g > i { display: block; font-style: normal; font-size: 11.5px; color: var(--ink-2); margin-bottom: 7px; }
-.grid2 > .g .seg { display: flex; }
-.grid2 > .g .seg button {
-  flex: 1; min-width: 0; padding: 7px 2px; border-radius: 8px; font-size: 11.5px; font-weight: 600;
-  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-3);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+#view-set .swatch-name { display: block; line-height: 1.25; }
+#view-set .swatch-desc {
+  display: block; min-height: 2.5em; color: var(--ink-3); font-size: 9.5px; font-weight: 500;
+  line-height: 1.35; overflow-wrap: anywhere;
 }
-.grid2 > .g .seg button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
-.grid2 + .fhint { margin-top: 8px; }
+#view-set .swatch.on .swatch-desc { color: var(--ink-2); }
+#view-set .swatch.on { border-color: var(--ink-3); background: var(--set-selected); color: var(--ink); }
+#view-set .swatch i {
+  display: block; position: relative; height: clamp(32px, 10vw, 54px);
+  border: 1px solid var(--sw-edge); border-radius: 8px; background: var(--sw-bg);
+}
+#view-set .swatch i::before {
+  content: ""; position: absolute; inset: 21% 15%; border: 1px solid var(--sw-edge); border-radius: 4px;
+  background: linear-gradient(var(--sw-accent), var(--sw-accent)) 23% 35% / 35% 2px no-repeat,
+    linear-gradient(var(--sw-edge), var(--sw-edge)) 26% 66% / 50% 2px no-repeat, var(--sw-card);
+}
+#view-set .sw-blue { --sw-bg: #080c16; --sw-card: #101827; --sw-edge: #3c4659; --sw-accent: #d8b45f; }
+#view-set .sw-slate { --sw-bg: #07120f; --sw-card: #10211b; --sw-edge: #456554; --sw-accent: #78c9a6; }
+#view-set .sw-brown { --sw-bg: #101719; --sw-card: #1c292a; --sw-edge: #556764; --sw-accent: #d0a27c; }
+#view-set .sw-white { --sw-bg: #fff; --sw-card: #f7f7f8; --sw-edge: #c9cdd5; --sw-accent: #8a6a20; }
+#view-set .swatch.on i::after {
+  content: ""; position: absolute; right: 4px; bottom: 4px; width: 8px; height: 4px;
+  border: solid var(--sw-accent); border-width: 0 0 2px 2px; transform: rotate(-45deg);
+}
+#view-set .sw-slate i,
+#view-set .sw-brown i {
+  background-image: radial-gradient(ellipse at 50% 0, color-mix(in srgb, var(--sw-accent) 25%, transparent), transparent 67%);
+}
+#view-set .sw-slate i::before,
+#view-set .sw-brown i::before { inset: 18% 14%; }
+#view-set .sw-slate i::before {
+  border-radius: 9px 3px 9px 3px;
+  background: linear-gradient(135deg, transparent 42%, #78c9a680 47%, #c1d88a90 48%, transparent 52%), var(--sw-card);
+}
+#view-set .sw-brown i::before {
+  inset: 4px auto 4px 22%; width: auto; aspect-ratio: 1; border-radius: 50%;
+  border-color: var(--sw-accent);
+  background: radial-gradient(circle, #88c2b3 0 9%, transparent 12% 48%, #d0a27c90 52% 56%, transparent 59%),
+    repeating-conic-gradient(from 0deg, #d0a27c80 0deg 2deg, transparent 2deg 30deg), var(--sw-card);
+}
 
-/* 插件页（2026-10-21）：一个插件一张卡 —— 标题 + 开关 + 说明。
-   卡片形制沿用排法里 .g 的双层发丝框（外 1px + 3px 空隙 + 内 1px），视觉与设置页其余部分一致。 */
-.pk-card {
-  position: relative; margin: 8px 14px 0; padding: 12px 13px 13px;
-  border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
+#view-set .set-image { padding-bottom: 12px; }
+#view-set .set-image + .set-image, #view-set .set-range + .set-range { border-top: 1px solid var(--line-2); }
+#view-set .set-image .set-row, #view-set .set-range .set-row { border: 0; }
+#view-set .set-actions { display: flex; gap: 5px; }
+#view-set .set-actions .btn, #view-set #btnGeo { min-height: 44px; padding: 6px 10px; font-size: 12px; }
+#view-set .set-actions .btn { min-width: 48px; }
+#view-set .set-actions .btn, #view-set #btnGeo {
+  border-radius: 9px; background: transparent; color: var(--ink-2);
 }
-.pk-card::before {
-  content: ""; position: absolute; inset: 3px; pointer-events: none;
-  border: 1px solid color-mix(in srgb, var(--accent-line) 27%, transparent); border-radius: 11px;
+#view-set .set-actions .btn.primary, #view-set #btnGeo {
+  background: var(--set-selected); border-color: var(--line); color: var(--ink);
 }
-.pk-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
-.pk-head > b { font-size: 13.5px; letter-spacing: .08em; color: var(--ink); }
-.pk-head .seg { display: flex; width: 122px; }
-.pk-head .seg button {
-  flex: 1; min-width: 0; padding: 6px 2px; border-radius: 8px;
-  font-size: 11.5px; font-weight: 600; white-space: nowrap;
-  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-3);
+#view-set .set-actions .btn:not(.primary) { border-color: transparent; }
+#view-set .btn:disabled { opacity: .53; cursor: default; transform: none; }
+#view-set .bgstrip {
+  min-width: 0; height: 42px; display: grid; place-items: center; overflow: hidden;
+  border: 1px dashed var(--line); border-radius: 9px;
+  background: var(--set-well) center / cover no-repeat; color: var(--ink-2); font-size: 11px;
 }
-.pk-head .seg button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
-.pk-body { font-size: 12.5px; line-height: 1.85; color: var(--ink-2); }
-.pk-note { margin-top: 8px; font-size: 11px; line-height: 1.75; color: var(--ink-3); }
-.pk-note b { color: var(--ink-2); font-weight: 700; }
+#view-set .bgstrip.has { border-style: solid; }
+#view-set .bgstrip.has span {
+  border-radius: 5px; padding: 1px 5px; background: var(--surface); color: var(--ink);
+}
+#view-set .set-previews { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+#view-set .set-preview { display: grid; grid-template-columns: minmax(38px, .55fr) minmax(0, 1fr); align-items: center; gap: 6px; }
+#view-set .set-preview b, #view-set .set-preview small { display: block; }
+#view-set .set-preview b { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+#view-set .shapehint .sh em {
+  flex: 0 0 auto; display: inline-block; border: 1px solid var(--accent-line);
+  border-radius: 3px; background: var(--accent-bg); transform: scale(.58); transform-origin: left center;
+}
+#view-set .sh.pan em { width: 18px; height: 25px; margin-right: -7px; }
+#view-set .sh.lesson em { width: 36px; height: 17px; margin-right: -15px; }
+#view-set .set-preview small { font-size: 10.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+#view-set .set-range .set-row { padding-bottom: 0; }
+#view-set .rk {
+  flex: 0 0 auto; padding-inline: 2px;
+  color: var(--ink-2); font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums;
+}
+/* 保留原生 range 的拖动与键盘交互；只重绘轨道和滑块。 */
+#view-set input[type="range"] {
+  display: block; height: 44px; margin: 0 0 2px; background: transparent; accent-color: var(--ink-2);
+}
+@media (forced-colors: none) {
+  #view-set input[type="range"] { appearance: none; -webkit-appearance: none; }
+  #view-set input[type="range"]::-webkit-slider-runnable-track {
+    height: 3px; border-radius: 2px; background: var(--set-track);
+  }
+  #view-set input[type="range"]::-webkit-slider-thumb {
+    appearance: none; -webkit-appearance: none; width: 15px; height: 15px; margin-top: -6px;
+    border-radius: 50%; background: var(--ink-2); border: 1px solid var(--surface);
+  }
+  #view-set input[type="range"]::-moz-range-track {
+    height: 3px; border-radius: 2px; background: var(--set-track);
+  }
+  #view-set input[type="range"]::-moz-range-thumb {
+    box-sizing: border-box; width: 15px; height: 15px; border-radius: 50%;
+    background: var(--ink-2); border: 1px solid var(--surface);
+  }
+}
+
+#view-set .grid2, #view-set #pluginList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+#view-set .grid2 > .g { padding: 9px 8px 8px; min-width: 0; }
+#view-set .grid2 > .g > b { display: block; margin: 0 2px 6px; font-size: 13px; font-weight: 650; }
+#view-set .set-status {
+  margin-top: 9px; padding: 7px 11px; border-radius: 0 9px 9px 0;
+  border-inline-start: 2px solid var(--accent-line); background: var(--surface);
+}
+#view-set .set-status .fhint { margin: 0; }
+#view-set .set-status .fhint:empty { display: none; }
+#view-set #panMixHint { color: var(--accent); font-weight: 650; }
+#view-set .fhint { font-size: 12px; color: var(--ink-2); }
+#view-set .set-status { transition: border-color .16s, background-color .16s; }
+#view-set .set-status .fhint:not(:empty) { padding-block: 2px; }
+#view-set .set-status .fhint + .fhint:not(:empty) { margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--line-2); }
+html[data-theme="slate"] #view-set .set-status { background: color-mix(in srgb, var(--surface) 82%, #214533); }
+html[data-theme="brown"] #view-set .set-status { background: color-mix(in srgb, var(--surface) 88%, #314747); }
+#view-set .set-guide { margin-top: 10px; }
+#view-set .set-guide > summary {
+  min-height: 44px; padding: 11px 13px; display: flex; justify-content: space-between; align-items: center;
+  border-radius: inherit; list-style: none; cursor: pointer; font-size: 13px; font-weight: 650;
+}
+#view-set .set-guide > summary::-webkit-details-marker { display: none; }
+#view-set .set-guide > summary::after {
+  content: ""; width: 7px; height: 7px; margin-right: 3px; border: solid var(--ink-2);
+  border-width: 0 1px 1px 0; transform: rotate(45deg);
+}
+#view-set .set-guide[open] > summary::after { transform: rotate(225deg); }
+#view-set .set-guide-body { padding: 0 13px 12px; }
+#view-set .set-guide-body .fhint { margin: 7px 0 0; }
+
+#view-set .set-location { padding-block: 12px; }
+#view-set .locbtn { min-height: 46px; background: var(--set-well); }
+#view-set .locbtn svg { color: var(--accent); }
+#view-set .set-coords { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; align-items: end; gap: 7px; margin-top: 10px; }
+#view-set .set-coords label { display: grid; gap: 3px; color: var(--ink-2); font-size: 12px; min-width: 0; }
+#view-set .set-coords input { width: 100%; min-height: 44px; padding-inline: 7px; font-variant-numeric: tabular-nums; background: var(--set-well); }
+#view-set .set-coords input[aria-invalid="true"] { border-color: var(--xiong); }
+#view-set .set-coords input::placeholder { color: var(--ink-2); opacity: 1; }
+
+#view-set .pk-card { padding: 11px 13px; min-width: 0; }
+#view-set .pk-head { display: flex; align-items: center; flex-wrap: wrap; gap: 7px 12px; }
+#view-set .pk-head h3 { flex: 1 1 104px; margin: 0; font-size: 14px; font-weight: 650; }
+#view-set .pk-head .seg { flex: 1 0 122px; max-width: 150px; }
+#view-set .pk-body, #view-set .pk-note { margin: 6px 0 0; color: var(--ink-2); font-size: 12px; line-height: 1.65; }
+#view-set .pk-note { margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--line-2); }
+#view-set .pk-note b { color: var(--ink); }
+
+#view-set :is(button, summary, input):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 墨玉的矿物夹层与铜仪的刻度金属感，只铺在外壳装饰层；不染排盘五行色。 */
+html[data-theme="slate"] .app,
+html[data-theme="brown"] .app { position: relative; isolation: isolate; }
+html[data-theme="slate"]:not(.bg-custom) .app::before,
+html[data-theme="brown"]:not(.bg-custom) .app::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+}
+html[data-theme="slate"] .app::before {
+  background:
+    radial-gradient(ellipse 100% 42% at 50% -7%, rgba(77,151,111,.13), transparent 76%),
+    radial-gradient(ellipse 66% 35% at 100% 76%, rgba(105,168,119,.065), transparent 70%),
+    repeating-linear-gradient(138deg, transparent 0 31px, rgba(178,215,179,.035) 31.5px, transparent 32.5px),
+    linear-gradient(160deg, rgba(23,55,40,.30), transparent 44%);
+}
+html[data-theme="brown"] .app::before {
+  background:
+    radial-gradient(ellipse 82% 46% at 50% -8%, rgba(74,129,126,.13), transparent 76%),
+    repeating-linear-gradient(0deg, transparent 0 8px, rgba(194,211,196,.027) 8.5px, transparent 9px),
+    linear-gradient(132deg, transparent 43%, rgba(166,135,110,.022) 43.2%, transparent 43.8%),
+    linear-gradient(312deg, transparent 43%, rgba(166,135,110,.018) 43.2%, transparent 43.8%);
+}
+html[data-theme="slate"] .topbar,
+html[data-theme="slate"] .tabbar,
+html[data-theme="slate"] .sheet { background-color: color-mix(in srgb, var(--bg-2) 92%, #214d39); }
+html[data-theme="brown"] .topbar,
+html[data-theme="brown"] .tabbar,
+html[data-theme="brown"] .sheet { background-color: color-mix(in srgb, var(--bg-2) 92%, #334c4b); }
+/* 起局区的 .modewrap / .mpanel 只负责占位；装饰只给真正的卡片。 */
+html[data-theme="slate"] .card {
+  border-color: rgba(133,191,153,.25);
+  background-image: linear-gradient(145deg, rgba(83,148,105,.075), transparent 45%, rgba(162,202,151,.025));
+  box-shadow: inset 0 1px 0 rgba(219,243,215,.035), 0 8px 24px rgba(0,14,8,.20);
+}
+html[data-theme="slate"] .timecard {
+  border-color: rgba(133,191,153,.25);
+  background-image: linear-gradient(145deg, rgba(83,148,105,.075), transparent 45%, rgba(162,202,151,.025));
+}
+html[data-theme="slate"] .card > h3,
+html[data-theme="slate"] .sline h2 { color: var(--accent-2); }
+html[data-theme="slate"] .tabbar::before { border-radius: 7px; box-shadow: inset 0 0 0 1px rgba(193,216,138,.12); }
+html[data-theme="brown"] .card {
+  border-color: rgba(152,190,180,.24);
+  background-image: linear-gradient(145deg, rgba(94,143,139,.085), transparent 50%, rgba(203,164,127,.025));
+  box-shadow: inset 0 1px 0 rgba(224,235,215,.045), 0 8px 24px rgba(1,10,12,.24);
+}
+html[data-theme="brown"] .timecard {
+  border-color: rgba(152,190,180,.24);
+  background-image: linear-gradient(145deg, rgba(94,143,139,.085), transparent 50%, rgba(203,164,127,.025));
+}
+html[data-theme="brown"] .card > h3 { color: var(--accent-2); }
+html[data-theme="brown"] .tabbar::before { border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(136,194,179,.18); }
+html[data-theme="brown"] .tabbar button.on { color: var(--accent-secondary); }
+html[data-theme="slate"] .pillars .p,
+html[data-theme="brown"] .pillars .p { box-shadow: inset 0 1px 0 rgba(255,255,255,.035); }
+html[data-theme="slate"] .pillars .p.day { border-left: 2px solid var(--accent); }
+html[data-theme="brown"] .pillars .p.day { border-bottom: 2px solid var(--accent-secondary); }
+html[data-theme="slate"] :is(.sheet, .card, .timecard) { --line: rgba(164,211,183,.20); }
+html[data-theme="brown"] :is(.sheet, .card, .timecard) { --line: rgba(190,207,194,.21); }
+
+/* 两套主题的标志分别取玉片切面与罗盘刻度，局限在已有面板内部。 */
+html[data-theme="slate"] :is(.timecard, #view-set .sbody, #view-set .pk-card) {
+  background-image: linear-gradient(136deg, #30715442, transparent 43%),
+    linear-gradient(136deg, transparent 82%, #83ba8e26 82.4%, #83ba8e0d 87%, transparent 87.4%);
+}
+html[data-theme="brown"] :is(.timecard, #view-set .sbody, #view-set .pk-card) {
+  border-radius: 8px;
+  background-image: radial-gradient(circle at 100% 0, transparent 23px, #d0a27c55 24px, transparent 25px 31px, #88c2b333 32px, transparent 33px),
+    repeating-linear-gradient(0deg, transparent 0 3px, #b5c9bd08 3px 4px);
+}
+html[data-theme="slate"] #view-set .setchips button.on { border-radius: 10px 4px; }
+html[data-theme="brown"] #view-set .setchips button.on { border-radius: 5px; }
+
+/* 设置项切换：按钮状态明确；提示使用短句描述结果，不堆叠实现细节。 */
+#toast {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: max-content; min-width: 88px; max-width: min(84vw, 420px);
+  padding: 10px 14px; border-radius: 12px; border-color: var(--accent-line);
+  background: color-mix(in srgb, var(--surface) 94%, var(--accent));
+  box-shadow: 0 5px 20px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.035);
+  line-height: 1.45;
+}
+#toast::before {
+  content: ""; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg);
+}
+html[data-theme="slate"] #toast { background-color: color-mix(in srgb, var(--surface) 86%, #26513c); }
+html[data-theme="brown"] #toast { border-color: rgba(136,194,179,.38); background-color: color-mix(in srgb, var(--surface) 90%, #35504c); }
+
+/* 设置反馈用低调的反色文字条，不改变其他页面的提示。 */
+html body:has(#view-set.on) #toast {
+  display: block; min-width: 0; max-width: min(calc(100% - 32px), 360px);
+  bottom: calc(70px + env(safe-area-inset-bottom)); padding: 8px 13px;
+  border: 0; border-radius: 9px; box-shadow: none;
+  background: var(--ink); color: var(--bg); font-size: 12px; font-weight: 550;
+}
+html body:has(#view-set.on) #toast::before { content: none; }
+
+@media (max-width: 559px) { #view-set #pluginList { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 340px) {
+  #view-set .setchips button { gap: 3px; font-size: 12px; }
+  #view-set .setchips svg { width: 14px; height: 14px; }
+  #view-set .set-row > .seg.set-wide { max-width: none; }
+  #view-set .set-preview { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #view-set .setchips button, #view-set .seg button { transition: none; }
+}
 
 /* 设置里的小提示符号：点开弹一段说明（"显示星曜"那一栏用） */
 .infobtn {
@@ -1458,13 +1715,6 @@ html.bg-custom select { background: color-mix(in srgb, var(--bg-2) 76%, transpar
 .docp { margin: 0 0 7px; font-size: 12px; line-height: 1.7; color: var(--ink-2); }
 .docp:last-child { margin-bottom: 0; }
 .docp b { color: var(--ink); }
-
-/* ⚠ 用户报的 bug：「排法」那一组下面的小字贴到屏幕左边缘了（被切）。
-   原因：那几行 `.fhint` 直接挂在 `.setgroup` 上，而 `.fhint` 只有 margin-top，
-   左右内缩原本是靠 `.card` / `.sbody` 给的 —— 这里没有，于是文字从 x=0 开始。
-   统一按 14px 对齐（与 .sline / .sbody / .grid2 同一档）。 */
-.setgroup > .fhint { margin-left: 14px; margin-right: 14px; }
-.setgroup > .fhint + .fhint { margin-top: 3px; }
 
 /* ============================================================================
  * 随机类型选择 + 串星课弹层（2026-10-21）

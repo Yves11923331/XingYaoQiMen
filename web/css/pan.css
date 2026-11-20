@@ -136,7 +136,7 @@ html[data-theme="blue"] .qm-text-pan, .qm-text-pan {
 
 /* ---- 墨玉（深青灰：玉青描边，去金） ---- */
 html[data-theme="slate"] .qm-text-pan {
-    --qm-accent: #69b79b;
+    --qm-accent: var(--accent);
     --qm-frame: rgba(230,244,238,.45);
     --qm-frame-in: rgba(105,183,155,.15);
     --qm-line: rgba(196,222,212,.13);
@@ -144,7 +144,7 @@ html[data-theme="slate"] .qm-text-pan {
     --qm-ink: #e8f2ee;
     --qm-ink-soft: #a3bcb3;
     --qm-dim: #78958b;
-    --qm-pan-c: #0b1310;
+    --qm-pan-c: #0b1813;
     --qm-halo: radial-gradient(46% 40% at 50% 50%, rgba(105,183,155,.20), rgba(0,0,0,0) 72%);
     --qm-shadow: 0 14px 40px rgba(0,0,0,.58), 0 2px 10px rgba(0,0,0,.45);
     --qm-glow2: rgba(105,183,155,.40);
@@ -154,7 +154,7 @@ html[data-theme="slate"] .qm-text-pan {
 
 /* ---- 铜仪（深棕：古铜色） ---- */
 html[data-theme="brown"] .qm-text-pan {
-    --qm-accent: #cf8f4e;
+    --qm-accent: var(--accent);
     --qm-frame: rgba(244,232,218,.45);
     --qm-frame-in: rgba(207,143,78,.17);
     --qm-line: rgba(226,206,182,.13);
@@ -162,7 +162,7 @@ html[data-theme="brown"] .qm-text-pan {
     --qm-ink: #f3ece2;
     --qm-ink-soft: #c0ad97;
     --qm-dim: #93816d;
-    --qm-pan-c: #150f0a;
+    --qm-pan-c: #121d1e;
     --qm-halo: radial-gradient(46% 40% at 50% 50%, rgba(207,143,78,.20), rgba(0,0,0,0) 72%);
     --qm-shadow: 0 14px 40px rgba(0,0,0,.58), 0 2px 10px rgba(0,0,0,.45);
     --qm-glow2: rgba(207,143,78,.40);

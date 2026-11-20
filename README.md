@@ -6,19 +6,25 @@
 
 [![Build APK](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml/badge.svg)](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-3.3.5-orange)
+![Version](https://img.shields.io/badge/version-3.3.6-orange)
 ![Android](https://img.shields.io/badge/Android-10%2B%20(minSdk%2029)-blue)
 
 ## 下载
 
-最新版 **3.3.5（234）**，已签名、可直接覆盖安装：
+最新版 **3.3.6（235）**，已签名、可直接覆盖安装：
 
 | 文件 | 大小 | SHA-256 |
 |---|---|---|
-| [`dist/星曜奇门-3.3.5.apk`](dist/星曜奇门-3.3.5.apk) | 637 KB | `ccd2dbfb…`（见 `dist/README.md`） |
+| [`dist/星曜奇门-3.3.6.apk`](dist/星曜奇门-3.3.6.apk) | 655,857 bytes | `e7fa420d781d6d4b23ded3c19f4297e84619d4c04909e22b4e41f0b2d7036555` |
 
 > 包名 `com.momen.xingyaoqimen`，minSdk 29（Android 10+）。
 > 自行构建见文末「构建」；签名密钥不入库，按说明自备即可。
+
+## 3.3.6 主要变化
+
+- **墨玉 / 铜仪主题重做**：深林石与玉髓的墨玉质感、烟青金属与旧铜刻度的铜仪配色；九宫与外壳主题协调，排盘五行字色口径保持不变。
+- **设置页精修**：分段按钮改为中性底的 C 描边选中态，滑条改用中性细轨，切换提示改为简短状态反馈。
+- **修复起盘页浅色方块**：墨玉、铜仪主题装饰不再绘制到用于保留切换高度的起局占位容器；模式占位高度、切换动画和自定义壁纸功能保持不变。
 
 ## 项目简介
 
