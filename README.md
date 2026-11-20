@@ -6,21 +6,21 @@
 
 [![Build APK](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml/badge.svg)](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-3.3.3-orange)
+![Version](https://img.shields.io/badge/version-3.4.0-orange)
 ![Android](https://img.shields.io/badge/Android-10%2B%20(minSdk%2029)-blue)
 
 ## 下载
 
-最新版 **3.3.3（244）**，已签名、可直接覆盖安装：
+最新版 **3.4.0（245）**，已签名、可直接覆盖安装：
 
 | 文件 | 大小 | SHA-256 |
 |---|---|---|
-| [`dist/星曜奇门-3.3.3.apk`](dist/星曜奇门-3.3.3.apk) | 651,761 bytes | `fa51f68e097db7675de5bd5d4adf63c76492af6f37bdf59493237ade846ac4ec` |
+| [`dist/星曜奇门-3.4.0.apk`](dist/星曜奇门-3.4.0.apk) | 651,761 bytes | `e10c19f80f7d9112eea5f4b37d3a81440c178f3ef889070dc0686d855e791044` |
 
 > 包名 `com.momen.xingyaoqimen`，minSdk 29（Android 10+）。
 > 自行构建见文末「构建」；签名密钥不入库，按说明自备即可。
 
-## 3.3.3 主要变化
+## 3.4.0 主要变化
 
 - **基于 3.3.5（234）基线重新出包**：界面回到更早的克制版本，不再带 3.3.6 的墨玉 / 铜仪主题重做与设置页精修。
 - **四柱透明度**：四柱单柱底 78%、整块底 42%，设了背景图时会隐约透出底图，字色可读性不变。
