@@ -552,186 +552,169 @@ html.booting { background: var(--bg, #fff); }
     </section>
 
     <!-- ==================== 设置 ==================== -->
-    <!-- 保留所有设置控件 ID；切换分类只改显隐，不重建内容。 -->
-    <section class="view" id="view-set" aria-label="设置">
-      <div class="setnav">
-        <div class="setchips" id="setChips" role="group" aria-label="设置分类">
-          <button type="button" data-g="look" class="on" aria-pressed="true" aria-controls="setLook">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16Z" fill="currentColor" stroke="none"/></svg>外观
-          </button>
-          <button type="button" data-g="rule" aria-pressed="false" aria-controls="setRule">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h7m4 0h5M4 12h3m4 0h9M4 18h10m4 0h2"/><circle cx="13" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></svg>排法
-          </button>
-          <button type="button" data-g="star" aria-pressed="false" aria-controls="setStar">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3c1 5 2 6 7 7-5 1-6 2-7 7-1-5-2-6-7-7 5-1 6-2 7-7Z M18 14v6m-3-3h6"/></svg>星曜
-          </button>
-          <button type="button" data-g="plugin" aria-pressed="false" aria-controls="setPlugin">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M17 14v6m-3-3h6"/></svg>插件
-          </button>
-        </div>
+    <!-- 方案 B：顶部分段 —— 一屏只看一类（外观 / 排法 / 星曜）。
+         同屏只挂一组，页面短、不用长滚；切组只切显示，控件与事件都不重建。
+         ⚠ 各控件的 id 一个都不能动 —— ui.js 里所有事件都挂在 id 上。 -->
+    <section class="view" id="view-set">
+      <div class="setchips" id="setChips">
+        <button data-g="look" class="on">外观</button>
+        <button data-g="rule">排法</button>
+        <button data-g="star">星曜</button>
+        <button data-g="plugin">插件</button>
       </div>
 
-      <div class="setgroup on" data-g="look" id="setLook">
-        <div class="sline"><h2 id="setThemeHeading">主题</h2><small>即时预览</small></div>
-        <div class="swatches" id="swatches" role="group" aria-labelledby="setThemeHeading"></div>
-
-        <div class="sline"><h2>背景</h2><small id="bgSum"></small></div>
-        <div class="sbody" id="cardBg">
-          <div class="set-image">
-            <div class="field set-row">
-              <div class="set-label"><b>应用背景</b><small>显示在应用界面底层</small></div>
-              <div class="set-actions" role="group" aria-label="应用背景操作">
-                <button class="btn primary" id="btnBgPick" type="button">选图</button>
-                <button class="btn" id="btnBgClear" type="button">清除</button>
-              </div>
-            </div>
-            <div class="bgstrip" id="bgStrip"><span>未设置</span></div>
-          </div>
-          <div class="set-image">
-            <div class="field set-row">
-              <div class="set-label"><b>截图渲染背景</b><small>仅用于导出 PNG，奇门盘和串星课可分别设图</small></div>
-              <div class="set-actions" role="group" aria-label="截图渲染背景操作">
-                <button class="btn primary" id="btnRendPick" type="button">选图</button>
-                <button class="btn" id="btnRendClear" type="button" aria-label="清除两张截图背景">清除</button>
-              </div>
-            </div>
-            <div class="set-previews shapehint">
-              <div class="set-preview sh pan"><div class="bgstrip" id="rendStrip"><span>未设置</span></div><div><b><em aria-hidden="true"></em>奇门盘</b><small>1000 × 1370</small></div></div>
-              <div class="set-preview sh lesson"><div class="bgstrip" id="rendStrip2"><span>未设置</span></div><div><b><em aria-hidden="true"></em>串星课</b><small>1000 × 460</small></div></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="sline"><h2>盘面观感</h2><small>调整可读性与位置</small></div>
+      <!-- ---------------- 外观 ---------------- -->
+      <div class="setgroup on" data-g="look">
+        <div class="sline"><b>主题</b><small>点一下即换</small></div>
         <div class="sbody">
-          <div class="set-range">
-            <div class="field set-row">
-              <label class="set-label" for="rngScrim"><b id="setScrimLabel">背景遮罩</b><small id="setScrimHelp">提高遮罩可让底图上的文字更清楚</small></label>
-              <output for="rngScrim" id="scrimVal" class="rk" aria-live="off">70%</output>
+          <div class="swatches" id="swatches"></div>
+        </div>
+
+        <div class="sline"><b>背景</b><small id="bgSum"></small></div>
+        <div class="sbody" id="cardBg">
+          <div class="field">
+            <label>背景图<small>App 的底图。设了它，下面的"不透明度"才看得出效果</small></label>
+            <div class="seg" style="flex:0 0 140px">
+              <button id="btnBgPick" type="button">选图</button>
+              <button id="btnBgClear" type="button">清除</button>
             </div>
-            <input type="range" id="rngScrim" aria-labelledby="setScrimLabel" aria-describedby="setScrimHelp" min="0" max="90" step="5" value="70">
           </div>
-          <div class="set-range">
-            <div class="field set-row">
-              <label class="set-label" for="rngOp"><b id="setOpLabel">盘面不透明度</b><small id="setOpHelp">调低可透出底图；导出截图也用此值</small></label>
-              <output for="rngOp" id="opVal" class="rk" aria-live="off">100%</output>
+          <div class="bgstrip" id="bgStrip"><span>未设背景</span></div>
+          <div class="field">
+            <label>截图渲染背景<small>导出 PNG 时垫在下面；<b>奇门盘与串星课各一张</b>，按各自出图比例裁</small></label>
+            <div class="seg" style="flex:0 0 140px">
+              <button id="btnRendPick" type="button">选图</button>
+              <button id="btnRendClear" type="button">清除</button>
             </div>
-            <input type="range" id="rngOp" aria-labelledby="setOpLabel" aria-describedby="setOpHelp" min="5" max="100" step="5" value="100">
           </div>
-          <div class="set-range">
-            <div class="field set-row">
-              <label class="set-label" for="rngLift"><b id="setLiftLabel">盘面上移</b><small id="setLiftHelp">利用竖屏剩余空间调整盘面高度位置</small></label>
-              <output for="rngLift" id="liftVal" class="rk" aria-live="off">0%</output>
-            </div>
-            <input type="range" id="rngLift" aria-labelledby="setLiftLabel" aria-describedby="setLiftHelp" min="0" max="100" step="5" value="0">
+          <div class="bgstrip" id="rendStrip"><span>奇门盘：未设</span></div>
+          <div class="bgstrip" id="rendStrip2"><span>串星课：未设</span></div>
+          <div class="shapehint">
+            <span class="sh pan"><em></em>奇门盘底图 · 竖 1000×1370</span>
+            <span class="sh lesson"><em></em>串星课底图 · 横 1000×460</span>
           </div>
+        </div>
+
+        <div class="sline"><b>盘面观感</b><small>遮罩 · 透明度 · 位置</small></div>
+        <div class="sbody">
+          <div class="field">
+            <label>背景遮罩<small>压住底图，保证字看得清；底图越花越要往上调</small></label>
+            <span id="scrimVal" class="rk">70%</span>
+          </div>
+          <input type="range" id="rngScrim" min="0" max="90" step="5" value="70">
+          <div class="field">
+            <label>盘面不透明度<small>调低让底图透出来，<b>截图同样按这一档渲染</b></small></label>
+            <span id="opVal" class="rk">100%</span>
+          </div>
+          <input type="range" id="rngOp" min="5" max="100" step="5" value="75">
+          <div class="field">
+            <label>盘面上移<small>盘是长方形（约 370×509），竖屏下通常还有高度富余；这里把富余往上挪</small></label>
+            <span id="liftVal" class="rk2">上移 90%</span>
+          </div>
+          <input type="range" id="rngLift" min="0" max="100" step="5" value="0">
         </div>
       </div>
 
-      <!-- 排法保留二列网格，定局与换日单列。 -->
-      <div class="setgroup" data-g="rule" id="setRule">
-        <div class="sline"><h2>排法</h2><small>时间、盘式与排布</small></div>
+      <!-- ---------------- 排法 ---------------- -->
+      <!-- 方案 3（用户挑的）：二列网格 —— 每个"点一下改一个值"的项占一格；
+           定局法与晚子时**单独一节**（用通栏行，不塞进格子）。 -->
+      <div class="setgroup" data-g="rule">
+        <div class="sline"><b>排法</b><small>点一下即改</small></div>
         <div class="grid2">
-          <div class="g"><b id="labelSegTrueSolar">真太阳时</b>
+          <div class="g"><i>真太阳时</i>
             <!-- 2026-10-21：默认关。开了以后四层与串星都按「观测点经度 + 均时差」换算 -->
-            <div class="seg" role="group" aria-labelledby="labelSegTrueSolar" id="segTrueSolar"><button data-v="0" class="on">关闭</button><button data-v="1">开启</button></div>
+            <div class="seg" id="segTrueSolar"><button data-v="0" class="on">关闭</button><button data-v="1">开启</button></div>
           </div>
-          <div class="g"><b id="labelSegSizhu">四柱样式</b>
+          <div class="g"><i>四柱样式</i>
             <!-- 2026-11-02 用户：四柱从插件收进设置（顺序在「盘面同显」前）。
                  默认＝方块四柱；简洁＝五行色字（原「四柱ui」插件那套）。寄干形制设置已撤。 -->
-            <div class="seg" role="group" aria-labelledby="labelSegSizhu" id="segSizhu"><button data-v="0" class="on">默认</button><button data-v="1">简洁</button></div>
+            <div class="seg" id="segSizhu"><button data-v="0" class="on">默认</button><button data-v="1">简洁</button></div>
           </div>
-          <div class="g"><b id="labelSegPanLesson">盘面同显</b>
-            <div class="seg" role="group" aria-labelledby="labelSegPanLesson" id="segPanLesson"><button data-v="0" class="on">只盘</button><button data-v="1">加串星课</button></div>
+          <div class="g"><i>盘面同显</i>
+            <div class="seg" id="segPanLesson"><button data-v="0" class="on">只盘</button><button data-v="1">加串星课</button></div>
           </div>
-          <div class="g"><b id="labelSegPanMode">盘式</b>
-            <div class="seg" role="group" aria-labelledby="labelSegPanMode" id="segPanMode"><button data-v="zhuan" class="on">转盘</button><button data-v="fei">飞盘</button></div>
+          <div class="g"><i>盘式</i>
+            <div class="seg" id="segPanMode"><button data-v="zhuan" class="on">转盘</button><button data-v="fei">飞盘</button></div>
           </div>
-          <div class="g"><b id="labelSegGouChen">八神名</b>
+          <div class="g"><i>八神名</i>
             <!-- ★ 两派各自主流：转盘阳遁用白虎·玄武，飞盘阳遁用勾陈·朱雀 —— 默认「自动」按盘式走 -->
-            <div class="seg" role="group" aria-labelledby="labelSegGouChen" id="segGouChen"><button data-v="auto" class="on">自动</button><button data-v="off">白虎</button><button data-v="on">勾陈</button></div>
+            <div class="seg" id="segGouChen"><button data-v="auto" class="on">自动</button><button data-v="off">白虎</button><button data-v="on">勾陈</button></div>
           </div>
-          <div class="g"><b id="labelSegGodDir">八神飞法</b>
-            <div class="seg" role="group" aria-labelledby="labelSegGodDir" id="segGodDir"><button data-v="yinyang" class="on">阳顺阴逆</button><button data-v="yang">永远顺</button></div>
+          <div class="g"><i>八神飞法</i>
+            <div class="seg" id="segGodDir"><button data-v="yinyang" class="on">阳顺阴逆</button><button data-v="yang">永远顺</button></div>
           </div>
-          <div class="g"><b id="labelSegSgDir">星门飞法</b>
-            <div class="seg" role="group" aria-labelledby="labelSegSgDir" id="segSgDir"><button data-v="shun" class="on">顺飞</button><button data-v="yinyang">阳顺阴逆</button></div>
+          <div class="g"><i>星门飞法</i>
+            <div class="seg" id="segSgDir"><button data-v="shun" class="on">顺飞</button><button data-v="yinyang">阳顺阴逆</button></div>
           </div>
-          <div class="g"><b id="labelSegFlyStar">九星</b>
-            <div class="seg" role="group" aria-labelledby="labelSegFlyStar" id="segFlyStar"><button data-v="0" class="on">转盘</button><button data-v="1">飞盘</button></div>
+          <div class="g"><i>九星</i>
+            <div class="seg" id="segFlyStar"><button data-v="0" class="on">转盘</button><button data-v="1">飞盘</button></div>
           </div>
-          <div class="g"><b id="labelSegFlyGate">八门</b>
-            <div class="seg" role="group" aria-labelledby="labelSegFlyGate" id="segFlyGate"><button data-v="0" class="on">转盘</button><button data-v="1">飞盘</button></div>
+          <div class="g"><i>八门</i>
+            <div class="seg" id="segFlyGate"><button data-v="0" class="on">转盘</button><button data-v="1">飞盘</button></div>
           </div>
-          <div class="g"><b id="labelSegFlyGod">八神</b>
-            <div class="seg" role="group" aria-labelledby="labelSegFlyGod" id="segFlyGod"><button data-v="0" class="on">转盘</button><button data-v="1">飞盘</button></div>
+          <div class="g"><i>八神</i>
+            <div class="seg" id="segFlyGod"><button data-v="0" class="on">转盘</button><button data-v="1">飞盘</button></div>
           </div>
         </div>
-        <div class="set-status" aria-live="polite">
-          <p class="fhint" id="panMixHint"></p>
-          <p class="fhint" id="sgDirHint"></p>
-          <p class="fhint" id="godDirHint"></p>
-        </div>
+        <!-- 提示行：混盘 / 顺逆实际按哪个方向布（⚠ `.field` 是 flex 行，这些必须放外面） -->
+        <div class="fhint" id="panMixHint"></div>
+        <div class="fhint" id="sgDirHint"></div>
+        <div class="fhint" id="godDirHint"></div>
+        <div class="fhint">真太阳时：<b>关闭</b>＝用标准时；<b>开启</b>＝按观测点经度（经度时差）＋均时差换算，
+          四层与串星共用同一套换算。时间样件里填的仍是<b>标准时</b>，副行显示换算后的真太阳时；
+          节气/立春是天文瞬间，仍按标准时判定。默认关，想对照标准时的盘随时切回来。</div>
+        <div class="fhint">八神名：<b>自动</b>＝转盘阳遁用白虎·玄武、飞盘阳遁用勾陈·朱雀（两派各自的主流口径）；
+          要固定一派就选「白虎」或「勾陈」。</div>
+        <div class="fhint">九星 · 八门 · 八神：默认跟着「盘式」走；要配「星转门飞」这类混盘，各自改一格就行。</div>
 
-        <div class="sline"><h2>定局与换日</h2></div>
+        <div class="sline"><b>定局</b><small>定局法 · 换日</small></div>
         <div class="sbody">
-          <div class="field set-row">
-            <div class="set-label"><b id="labelSegJu">定局法</b><button class="infobtn" id="btnJuNote" type="button" aria-label="三种定局法说明">i</button><small>节气定元 · 符头链 · 数字定局</small></div>
+          <div class="field">
+            <label>定局法<button class="infobtn" id="btnJuNote" type="button" aria-label="三种定局法说明">i</button><small>节气定元 · 符头链 · 数字定局</small></label>
             <!-- 2026-11-02 用户：阴盘从起盘页的「起局方式」升级成这里的第三档（定局法）。
                  选了它，时家的「此时刻 / 随机时刻」就按阴盘起；自选局、随机一局是手动指定局数，定局法管不着。
                  2026-11-02 晚：三档统一去掉「法」字（拆补 / 置闰 / 阴盘），小字跟着收成三词。 -->
-            <div class="seg set-wide" role="group" aria-labelledby="labelSegJu" id="segJu">
+            <div class="seg" style="flex:0 0 168px" id="segJu">
               <button data-v="chaibu" class="on">拆补</button>
               <button data-v="zhirun">置闰</button>
               <button data-v="yin">阴盘</button>
             </div>
           </div>
-          <div class="field set-row">
-            <div class="set-label"><b id="labelSegLate">晚子时换日</b><small>23:00 后算次日（多数奇门盘口径）</small></div>
-            <div class="seg" role="group" aria-labelledby="labelSegLate" id="segLate">
+          <div class="field">
+            <label>晚子时换日<small>23:00 后算次日（多数奇门盘口径）</small></label>
+            <div class="seg" style="flex:0 0 128px" id="segLate">
               <button data-v="1" class="on">换日</button>
               <button data-v="0">不换</button>
             </div>
           </div>
         </div>
-        <details class="set-guide">
-          <summary>排法说明</summary>
-          <div class="set-guide-body">
-            <div class="fhint">真太阳时：<b>关闭</b>＝用标准时；<b>开启</b>＝按观测点经度（经度时差）＋均时差换算，
-            四层与串星共用同一套换算。时间样件里填的仍是<b>标准时</b>，副行显示换算后的真太阳时；
-            节气/立春是天文瞬间，仍按标准时判定。默认关，想对照标准时的盘随时切回来。</div>
-            <div class="fhint">八神名：<b>自动</b>＝转盘阳遁用白虎·玄武、飞盘阳遁用勾陈·朱雀（两派各自的主流口径）；
-            要固定一派就选「白虎」或「勾陈」。</div>
-            <div class="fhint">九星 · 八门 · 八神：默认跟着「盘式」走；要配「星转门飞」这类混盘，各自改一格就行。</div>
-          </div>
-        </details>
       </div>
 
       <!-- ---------------- 星曜 ---------------- -->
-      <div class="setgroup" data-g="star" id="setStar">
-        <div class="sline"><h2>星曜显示</h2></div>
+      <div class="setgroup" data-g="star">
+        <div class="sline"><b>星曜</b><small>显示与观测位置</small></div>
         <div class="sbody">
-          <div class="field set-row">
-            <div class="set-label"><b id="labelSegStars">显示星曜</b><button class="infobtn" id="btnStarNote" type="button" aria-label="四余（余奴星）是什么">i</button><small>日月五星四余，按地平方位入九宫</small></div>
-            <div class="seg" role="group" aria-labelledby="labelSegStars" id="segStars">
+          <div class="field">
+            <label>显示星曜<button class="infobtn" id="btnStarNote" type="button" aria-label="四余（余奴星）是什么">i</button><small>日月五星四余，按地平方位入九宫</small></label>
+            <div class="seg" style="flex:0 0 124px" id="segStars">
               <button data-v="1" class="on">显示</button>
               <button data-v="0">隐藏</button>
             </div>
           </div>
-        </div>
-        <div class="sline"><h2>观测位置</h2><small>经纬度决定星曜入宫</small></div>
-        <div class="sbody set-location">
-          <button type="button" class="locbtn" id="btnCity" aria-label="选择观测城市" aria-describedby="locName">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 10c0 5-7 10-7 10S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-            <span id="locName">北京市</span><em aria-hidden="true">›</em>
+          <div class="field">
+            <label>观测位置<small>经纬度决定星曜落哪一宫</small></label>
+          </div>
+          <button class="locbtn" id="btnCity">
+            <i>◎</i><span id="locName">北京市</span><em>›</em>
           </button>
-          <div class="set-coords">
-            <label>纬度<input type="text" id="inpLat" inputmode="decimal" placeholder="−89.9 至 89.9" aria-label="纬度（-89.9 至 89.9）" aria-describedby="locErr"></label>
-            <label>经度<input type="text" id="inpLon" inputmode="decimal" placeholder="−180 至 180" aria-label="经度（-180 至 180）" aria-describedby="locErr"></label>
-            <button type="button" class="btn" id="btnGeo">定位</button>
+          <div class="btnrow" style="margin-top:8px">
+            <input type="text" id="inpLat" inputmode="decimal" placeholder="纬度" aria-label="纬度（-89.9 至 89.9）" style="flex:1;text-align:center">
+            <input type="text" id="inpLon" inputmode="decimal" placeholder="经度" aria-label="经度（-180 至 180）" style="flex:1;text-align:center">
+            <button class="btn" id="btnGeo" style="flex:0 0 62px">定位</button>
           </div>
           <div class="locerr" id="locErr" role="alert" hidden></div>
-          <div class="fhint" id="locHint">内置 <b id="locCount">0</b> 个城市区县可离线选择；定位会匹配最近的区县。</div>
+          <div class="fhint" id="locHint">内置 <b id="locCount">0</b> 个城市区县可选，不联网也能用；定位只是帮你找到最近的那个</div>
+
         </div>
       </div>
 
@@ -740,9 +723,10 @@ html.booting { background: var(--bg, #fff); }
            2026-10-25 起插件改成真插件：卡片由 ui.js 遍历 Plugins.list() 动态生成，
            一个插件一张卡（标题 + 开关 + 说明）；开关即时生效（重排盘面 + 导出图同步）。
            插件本体在 web/plugins/*.js，契约见 web/plugins/README.md。 -->
-      <div class="setgroup" data-g="plugin" id="setPlugin">
-        <div class="sline"><h2>插件</h2><small>按需启用，即时生效</small></div>
+      <div class="setgroup" data-g="plugin">
+        <div class="sline"><b>插件</b><small>按需开 · 不动基础盘面</small></div>
         <div id="pluginList"></div>
+
       </div>
 
     </section>

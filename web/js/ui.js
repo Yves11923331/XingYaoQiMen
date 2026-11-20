@@ -570,13 +570,13 @@
     var a = Math.max(0, Math.min(100, S.settings.opacity)) / 100;
     /* 盘面整体那层（星野/光晕/暗角）跟着一起淡 —— 底图才透得匀 */
     pan.style.setProperty('--qm-cell-a', a);
-    var rgb = { blue: '10,15,28', slate: '11,24,19', brown: '18,29,30', white: '255,255,255' }[S.settings.theme] || '255,255,255';
+    var rgb = { blue: '10,15,28', slate: '11,19,16', brown: '21,15,10', white: '255,255,255' }[S.settings.theme] || '255,255,255';
     /* ★ 寄干角注的描边色：必须与每宫底色**完全同色同透明度**，
        这样小字压在天盘干章的右上角时，章边框在字轮廓处被"咬开"一圈却不留色差。
        （pan.css 的 .qm-gan-mid 用 --qm-cell-mask 做 8 向 text-shadow） */
     pan.style.setProperty('--qm-cell-mask', 'rgba(' + rgb + ',' + a + ')');
     /* 素白下中宫原来是 250,250,252 的偏蓝假白 —— 比旁边格子显脏，改成纯白 255,255,255 */
-    var midRgb = { blue: '7,11,22', slate: '9,20,16', brown: '15,24,25', white: '255,255,255' }[S.settings.theme] || rgb;
+    var midRgb = { blue: '7,11,22', slate: '9,15,13', brown: '17,12,9', white: '255,255,255' }[S.settings.theme] || rgb;
     var cells = pan.getElementsByClassName('qm-cell');
     for (var i = 0; i < cells.length; i++) cells[i].style.backgroundColor = 'rgba(' + rgb + ',' + a + ')';
     var mid = $('qm_mid');
@@ -1736,20 +1736,37 @@
     root.style.setProperty('--app-scrim', (sc / 100).toFixed(2));
     var sv = $('scrimVal'); if (sv) sv.textContent = sc + '%';
     var rs = $('rngScrim'); if (rs) rs.value = sc;
-    syncBgPreview('bgStrip', S.settings.bgImage);
-    syncBgPreview('rendStrip', S.settings.rendImage);
-    syncBgPreview('rendStrip2', S.settings.rendImageLesson);
-    var n = [S.settings.bgImage, S.settings.rendImage, S.settings.rendImageLesson].filter(Boolean).length;
-    $('bgSum').textContent = n ? '已设 ' + n + ' / 3 张' : '未设置';
-    $('btnBgClear').disabled = !S.settings.bgImage;
-    $('btnRendClear').disabled = !(S.settings.rendImage || S.settings.rendImageLesson);
+    syncBgFold();
+    var st = $('bgStrip');
+    if (st) {
+      st.style.backgroundImage = S.settings.bgImage ? "url('" + S.settings.bgImage + "')" : '';
+      st.classList.toggle('has', !!S.settings.bgImage);
+    }
+    var rt = $('rendStrip');
+    if (rt) {
+      rt.style.backgroundImage = S.settings.rendImage ? "url('" + S.settings.rendImage + "')" : '';
+      rt.classList.toggle('has', !!S.settings.rendImage);
+    }
+    var r2 = $('rendStrip2');          /* 串星课那张 */
+    if (r2) {
+      r2.style.backgroundImage = S.settings.rendImageLesson ? "url('" + S.settings.rendImageLesson + "')" : '';
+      r2.classList.toggle('has', !!S.settings.rendImageLesson);
+    }
   }
 
-  function syncBgPreview(id, url) {
-    var el = $(id);
-    el.style.backgroundImage = url ? "url('" + url + "')" : '';
-    el.classList.toggle('has', !!url);
-    el.firstElementChild.textContent = url ? '已设置' : '未设置';
+  /* 「盘面外观」卡：默认收起，标题右侧给一句当前状态，点标题展开/收起 */
+  function syncBgFold() {
+    var card = $('cardBg'); if (!card) return;
+    card.classList.toggle('closed', !S.settings.uiBgOpen);
+    var n = (S.settings.bgImage ? 1 : 0) + (S.settings.rendImage ? 1 : 0)
+      + (S.settings.rendImageLesson ? 1 : 0);
+    var sum = $('bgSum');
+    if (sum) {
+      sum.textContent = (n ? '背景 ' + n + ' 张' : '未设背景') +
+        ' · 遮罩 ' + (S.settings.bgScrim == null ? 70 : S.settings.bgScrim) + '%' +
+        ' · 透明度 ' + S.settings.opacity + '%' +
+        ' · 上移 ' + (S.settings.liftPct || 0) + '%';
+    }
   }
 
   /* 当前屏幕的宽高比（App 背景要铺满竖屏，按它裁）。WebView 里 innerWidth/Height 就是屏；
@@ -1934,7 +1951,7 @@
   /* ---------------------------------------------------------------- 主题 */
   function applyTheme() {
     document.documentElement.setAttribute('data-theme', S.settings.theme);
-    var colors = { blue: '#080c16', slate: '#07120f', brown: '#101719', white: '#ffffff' };
+    var colors = { blue: '#080c16', slate: '#080f0d', brown: '#120c08', white: '#ffffff' };
     var col = colors[S.settings.theme] || '#ffffff';
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', col);
@@ -1943,38 +1960,18 @@
     try { if (window.Xyqimen && window.Xyqimen.setShellBg) window.Xyqimen.setShellBg(col); } catch (e) {}
   }
   function renderSwatches() {
-    var host = $('swatches');
-    var themeMeta = {
-      white: { desc: '清朗留白 · 冷中性墨色' },
-      blue: { desc: '玄夜星图 · 描金刻度' },
-      slate: { desc: '玉髓矿脉 · 深林石底' },
-      brown: { desc: '烟青金属 · 旧铜刻度' }
-    };
-    if (!host.firstElementChild) {
-      host.innerHTML = S.THEMES.map(function (t) {
-        var meta = themeMeta[t.key] || { desc: '' };
-        return '<button type="button" class="swatch sw-' + t.key + '" data-t="' + t.key + '" aria-label="' + t.name + (meta.desc ? '，' + meta.desc : '') + '">' +
-          '<i aria-hidden="true"></i><span class="swatch-name">' + t.name + '</span>' +
-          '<small class="swatch-desc">' + meta.desc + '</small></button>';
-      }).join('');
-      host.addEventListener('click', function (e) {
-        var b = e.target.closest('button[data-t]'); if (!b) return;
-        if (S.settings.theme === b.dataset.t) return;
+    $('swatches').innerHTML = S.THEMES.map(function (t) {
+      return '<button class="swatch sw-' + t.key + (S.settings.theme === t.key ? ' on' : '') + '" data-t="' + t.key + '">' +
+        '<i></i>' + t.name + '</button>';
+    }).join('');
+    Array.prototype.forEach.call($('swatches').querySelectorAll('.swatch'), function (b) {
+      b.addEventListener('click', function () {
         S.settings.theme = b.dataset.t;
         S.saveSettings();
         applyTheme(); renderSwatches();
         if (state.chart) renderPan();
-        var names = { white: '素白', blue: '玄夜', slate: '墨玉', brown: '铜仪' };
-        toast('已切换到' + (names[b.dataset.t] || b.dataset.t));
       });
-    }
-    Array.prototype.forEach.call(host.children, function (b) {
-      setSettingButton(b, b.dataset.t === S.settings.theme);
     });
-  }
-  function setSettingButton(button, selected) {
-    button.classList.toggle('on', selected);
-    button.setAttribute('aria-pressed', String(selected));
   }
   function cycleTheme() {
     var keys = S.THEMES.map(function (t) { return t.key; });
@@ -1984,7 +1981,7 @@
     S.saveSettings();
     applyTheme(); renderSwatches();
     if (state.chart) renderPan();
-    toast('已切换到' + S.THEMES[(i + 1) % keys.length].name);
+    toast('主题：' + S.THEMES[(i + 1) % keys.length].name);
   }
 
   /* ================================================================ 串星（小六壬·加干 / 加星）
@@ -3005,11 +3002,13 @@
   function initSet() {
 
     /* 设置：晚子时 / 透明度 / 星曜 */
-    setSeg($('segLate'), S.settings.lateZi ? '1' : '0');
+    Array.prototype.forEach.call($('segLate').children, function (b) {
+      b.classList.toggle('on', (b.dataset.v === '1') === !!S.settings.lateZi);
+    });
     $('segLate').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       S.settings.lateZi = b.dataset.v === '1'; S.saveSettings();
-      setSeg(this, b.dataset.v);
+      Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
       renderHome();
       /* 悄悄重排，别切页 —— 切页会把设置页的滚动位置清零（见 recastQuiet 注释） */
       if (state.chart && !state.chart.manual) recastQuiet();
@@ -3071,12 +3070,26 @@
     $('rngScrim').addEventListener('input', function () {
       S.settings.bgScrim = +this.value; S.saveSettings(); applyBackground();
     });
+    /* 「背景」那一组现在是常显的（折叠交给顶部分段去做了），这里只留摘要同步。
+       ⚠ 原来是 `card.querySelector('h3').addEventListener` —— 新排版里 `#cardBg` 已经没有 h3 了，
+         不加判断会直接抛错、把后面所有设置项的事件都带崩。 */
+    (function () {
+      var card = $('cardBg'); if (!card) return;
+      var h = card.querySelector('h3');
+      if (h) h.addEventListener('click', function () {
+        S.settings.uiBgOpen = !S.settings.uiBgOpen;
+        S.saveSettings();
+        syncBgFold();
+      });
+      syncBgFold();
+    })();
+
     /* ---- 设置页顶部分段（方案 B）：一屏只看一类 ---- */
     var SET_TABS = ['look', 'rule', 'star', 'plugin'];
     function applySetTab() {
       var t = SET_TABS.indexOf(S.settings.setTab) >= 0 ? S.settings.setTab : 'look';
       Array.prototype.forEach.call($('setChips').children, function (b) {
-        setSettingButton(b, b.dataset.g === t);
+        b.classList.toggle('on', b.dataset.g === t);
       });
       Array.prototype.forEach.call($('view-set').querySelectorAll('.setgroup'), function (g) {
         g.classList.toggle('on', g.dataset.g === t);
@@ -3152,7 +3165,7 @@
     }
     function setSeg(box, val) {
       if (!box) return;
-      Array.prototype.forEach.call(box.children, function (b) { setSettingButton(b, b.dataset.v === val); });
+      Array.prototype.forEach.call(box.children, function (b) { b.classList.toggle('on', b.dataset.v === val); });
     }
     function syncPanOpts() {
       var mode = panMode();
@@ -3186,11 +3199,7 @@
         if (state.chart) renderMiniLesson(state.chart);
       }
       var lp = $('segPanLesson');
-      if (lp) {
-        var lock = flyMode();
-        lp.querySelector('[data-v="1"]').classList.toggle('lock', lock);
-        lp.querySelector('[data-v="1"]').setAttribute('aria-disabled', String(lock));
-      }
+      if (lp) Array.prototype.forEach.call(lp.children, function (b) { b.classList.toggle('lock', flyMode()); });
       setSeg($('segPanLesson'), S.settings.panLesson ? '1' : '0');
       setSeg($('segSizhu'), (+S.settings.sizhu === 1) ? '1' : '0');
       setSeg($('segGodDir'), S.settings.godDir === 'yang' ? 'yang' : 'yinyang');
@@ -3207,8 +3216,8 @@
       S.saveSettings();
       syncPanOpts();
       afterPanOpt(fei
-        ? (hadLesson && !S.settings.panLesson ? '已切换到飞盘 · 已关闭盘面同显' : '已切换到飞盘')
-        : '已切换到转盘');
+        ? (hadLesson && !S.settings.panLesson ? '已切到飞盘 · 盘面同显已关（仅限转盘）' : '已切到飞盘')
+        : '已切到转盘');
     });
     /* 分项微调：星 / 门 / 神 各自转↔飞 */
     [['segFlyStar', 'flyStar'], ['segFlyGate', 'flyGate'], ['segFlyGod', 'flyGod']].forEach(function (pair) {
@@ -3217,16 +3226,16 @@
         var hadLesson = !!S.settings.panLesson;
         S.settings[pair[1]] = b.dataset.v === '1'; S.saveSettings();
         syncPanOpts();
-        afterPanOpt(hadLesson && !S.settings.panLesson ? '盘式已更新 · 已关闭盘面同显' : '当前盘式：' + ({ zhuan: '转盘', fei: '飞盘', mix: '混盘' }[panMode()]));
+        afterPanOpt(hadLesson && !S.settings.panLesson ? '盘式已改 · 盘面同显已关（仅限转盘）' : '盘式已改');
       });
     });
     /* 排法 · 盘面同显串星课（仅限转盘：飞盘下这一格置灰，点了给提示、不改设置） */
     $('segPanLesson').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
-      if (b.dataset.v === '1' && flyMode()) { toast('盘面同显需使用转盘'); return; }
+      if (b.dataset.v === '1' && flyMode()) { toast('盘面同显仅限转盘：先把盘式切回转盘'); return; }
       S.settings.panLesson = b.dataset.v === '1'; S.saveSettings();
       syncPanOpts();
-      afterPanOpt(S.settings.panLesson ? '盘面同显已开启' : '盘面同显已关闭');
+      afterPanOpt(S.settings.panLesson ? '盘面同显串星课：已开启（课放进中宫）' : '盘面同显串星课：已关闭');
     });
     /* 排法 · 四柱形制（2026-11-02：从插件收进设置；默认＝方块四柱，简洁＝五行色字） */
     $('segSizhu').addEventListener('click', function (e) {
@@ -3234,7 +3243,7 @@
       S.settings.sizhu = b.dataset.v === '1' ? 1 : 0; S.saveSettings();
       syncPanOpts();
       if (state.chart) renderChart();
-      toast(S.settings.sizhu ? '四柱样式已切换为简洁' : '四柱样式已切换为默认');
+      toast('四柱：' + (S.settings.sizhu ? '简洁（五行色字）' : '默认'));
     });
     /* 插件列表：遍历 Plugins.list() 动态生成卡片 + 开关（2026-10-25 起真插件）。
        一个插件一张卡（标题 + 开关 + 说明 + 小注）；开关即时生效并重排盘面/导出图。
@@ -3246,8 +3255,8 @@
       var list = Plugins.list();
       host.innerHTML = list.map(function (m) {
         return '<div class="pk-card">' +
-          '<div class="pk-head"><h3 id="labelPlugin_' + m.id + '">' + esc(m.name) + '</h3>' +
-          '<div class="seg" role="group" aria-labelledby="labelPlugin_' + m.id + '" id="segPlugin_' + m.id + '"><button type="button" data-v="1">开启</button><button type="button" data-v="0">关闭</button></div></div>' +
+          '<div class="pk-head"><b>' + esc(m.name) + '</b>' +
+          '<div class="seg" id="segPlugin_' + m.id + '"><button data-v="1">开启</button><button data-v="0">关闭</button></div></div>' +
           (m.desc ? '<p class="pk-body">' + m.desc + '</p>' : '') +
           (m.note ? '<p class="pk-note">' + m.note + '</p>' : '') +
           '</div>';
@@ -3266,20 +3275,22 @@
              再走一遍 applyLayers —— 「日月年家」这类带能力标志的插件靠它把四层切换放出来 / 收回去。 */
           if (state.chart) { placeStars(); renderPan(); renderChart(); }
           applyLayers();
-          toast(Plugins.enabled(m.id) ? '已开启' + m.name : '已关闭' + m.name);
+          toast(m.name + '：' + (Plugins.enabled(m.id) ? '已开启' : '已关闭'));
         });
       });
     }
     renderPluginList();
     /* 真太阳时（2026-10-21）：默认关；开了四层与串星都按观测点经度 + 均时差换算 */
-    setSeg($('segTrueSolar'), S.settings.trueSolar ? '1' : '0');
+    Array.prototype.forEach.call($('segTrueSolar').children, function (b) {
+      b.classList.toggle('on', (b.dataset.v === '1') === !!S.settings.trueSolar);
+    });
     $('segTrueSolar').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       S.settings.trueSolar = b.dataset.v === '1'; S.saveSettings();
-      setSeg(this, b.dataset.v);
+      Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
       renderHome();
       if (state.chart) recastQuiet();
-      toast(S.settings.trueSolar ? '真太阳时已开启' : '真太阳时已关闭');
+      toast(S.settings.trueSolar ? '真太阳时：开启（按观测点经度 + 均时差）' : '真太阳时：关闭（标准时）');
     });
     /* 星门飞法 / 八神飞法 */
     [['segSgDir', 'sgDir'], ['segGodDir', 'godDir']].forEach(function (pair) {
@@ -3287,14 +3298,14 @@
         var b = e.target.closest('button'); if (!b) return;
         S.settings[pair[1]] = b.dataset.v; S.saveSettings();
         syncPanOpts();
-        afterPanOpt((pair[1] === 'sgDir' ? '星门飞法已设为' : '八神飞法已设为') + (b.dataset.v === 'shun' || b.dataset.v === 'yang' ? '顺飞' : '阳顺阴逆'));
+        afterPanOpt('盘式已改');
       });
     });
     $('segGouChen').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       S.settings.gouChen = b.dataset.v; S.saveSettings();
       syncPanOpts();
-      afterPanOpt('八神名称已切换为' + (b.dataset.v === 'on' ? '勾陈·朱雀' : b.dataset.v === 'off' ? '白虎·玄武' : '自动'));
+      afterPanOpt('八神名：' + (b.dataset.v === 'on' ? '勾陈·朱雀' : b.dataset.v === 'off' ? '白虎·玄武' : '自动（转盘白虎·飞盘勾陈）'));
     });
     /* 分项微调那一折：点标题开合（不落盘，一次会话里记住就行） */
     (function () {
@@ -3318,12 +3329,15 @@
     }
 
     /* 定局法：拆补 / 置闰 / 阴盘（2026-11-02 用户把阴盘从起盘页升级到这里） */
-    setSeg($('segJu'), S.settings.juMethod);
+    var JU_NAME = { chaibu: '拆补法', zhirun: '置闰法', yin: '阴盘（数字定局）' };
+    Array.prototype.forEach.call($('segJu').children, function (b) {
+      b.classList.toggle('on', b.dataset.v === S.settings.juMethod);
+    });
     $('segJu').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       S.settings.juMethod = b.dataset.v; S.saveSettings();
-      setSeg(this, b.dataset.v);
-      toast('定局方式已切换为' + ({ chaibu: '拆补', zhirun: '置闰', yin: '阴盘' }[b.dataset.v] || b.dataset.v));
+      Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+      toast('定局法：' + (JU_NAME[b.dataset.v] || b.dataset.v));
       renderHome();
       /* 悄悄重排，别切页 —— 切页会把设置页的滚动位置清零（见 recastQuiet 注释）。
          ⚠ 不能只重排「非手动盘」：阴盘本身就是合成盘（manual:true），
@@ -3374,6 +3388,7 @@
         if (lessonOn()) S.settings.liftPctLesson = +this.value; else S.settings.liftPct = +this.value;
         S.saveSettings();
         updateLiftLabel();
+        syncBgFold();
         fitPan();
       });
       updateLiftLabel();
@@ -3383,6 +3398,7 @@
       $('opVal').textContent = this.value + '%';
       S.saveSettings();
       applyOpacity();
+      syncBgFold();
     });
 
     function afterStarChange() {
@@ -3390,7 +3406,9 @@
       placeStars();
       if (state.chart) renderPan();
     }
-    setSeg($('segStars'), S.settings.starsOn ? '1' : '0');
+    Array.prototype.forEach.call($('segStars').children, function (b) {
+      b.classList.toggle('on', (b.dataset.v === '1') === !!S.settings.starsOn);
+    });
     /* ------------------------------------------------------ 观测位置（选城） */
     /* 经纬度只影响星曜落哪一宫。定位在手机上经常拿不到结果（WebView 要额外授权、
        系统地理编码又常常不可用），所以主路径改成**内置城市库三级联动**：
@@ -3509,7 +3527,7 @@
     $('segStars').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       S.settings.starsOn = b.dataset.v === '1';
-      setSeg(this, b.dataset.v);
+      Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
       afterStarChange();
     });
     /* 经纬度手填（2026-11-10 审查项）：

@@ -29,7 +29,7 @@
     juMethod: 'chaibu',       // 定局法：chaibu=拆补法（默认，同 mQimen） | zhirun=置闰法（符头链·超神接气）| yin=道家阴盘（数字定局＋暗干；2026-11-02 从起盘页的「起局方式」升级到这一档）
     /* 日月年家（年家/月家/日家三层）：2026-11-02 起交给插件（web/plugins/layers.js 的 flags.layers），
        不再占设置键。旧存档里的 layersOn 不再读取 —— 开关在 设置 → 插件 → 日月年家。 */
-    opacity: 100,
+    opacity: 75,
     /* 两个背景各自独立：
        bgImage   —— App 背景（"透明背景"功能用它；设了之后调低不透明度才看得出效果）
        rendImage —— **截图渲染背景**（导出 PNG 时垫在下面的那张图）
