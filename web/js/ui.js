@@ -1335,8 +1335,16 @@
     modalStack.push({ el: el, prev: prev });
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
     el.setAttribute('aria-hidden', 'false');
-    var f = focusablesIn(el);
-    try { (f[0] || el).focus({ preventScroll: true }); } catch (e) { try { (f[0] || el).focus(); } catch (e2) {} }
+    /* 弹层打开时的焦点落点：**跳过输入类元素**（2026-11-23 用户：象义一打开就弹键盘）。
+       input/textarea/select 自动聚焦会把手机键盘顶出来，而弹层打开时用户通常还没打算输入。
+       优先聚焦第一个非输入的按钮/链接；没有就聚焦弹层容器本身（读屏照常能念标题）。 */
+    var f = focusablesIn(el), target = el;
+    for (var fi = 0; fi < f.length; fi++) {
+      var tag = f[fi].tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') continue;
+      target = f[fi]; break;
+    }
+    try { target.focus({ preventScroll: true }); } catch (e) { try { target.focus(); } catch (e2) {} }
   }
   function popModal(el) {
     var i = -1;
