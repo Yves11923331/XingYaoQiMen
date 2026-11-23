@@ -524,8 +524,8 @@
     ]
   };
   var ORDER = [
-    { k: 'xing', t: '九星' }, { k: 'men', t: '八门' }, { k: 'shen', t: '八神' },
-    { k: 'bagua', t: '八卦' }, { k: 'gan', t: '十干' }, { k: 'zhi', t: '十二支' },
+    { k: 'men', t: '八门' }, { k: 'xing', t: '九星' }, { k: 'shen', t: '八神' },
+    { k: 'bagua', t: '八卦' }, { k: 'gan', t: '十干' }, { k: 'zhi', t: '地支' },
     { k: 'gong', t: '宫位' }
   ];
 

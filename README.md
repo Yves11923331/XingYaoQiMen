@@ -6,19 +6,24 @@
 
 [![Build APK](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml/badge.svg)](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-3.4.0-orange)
+![Version](https://img.shields.io/badge/version-3.4.1-orange)
 ![Android](https://img.shields.io/badge/Android-10%2B%20(minSdk%2029)-blue)
 
 ## 下载
 
-最新版 **3.4.0（245）**，已签名、可直接覆盖安装：
+最新版 **3.4.1（246）**，已签名、可直接覆盖安装：
 
 | 文件 | 大小 | SHA-256 |
 |---|---|---|
-| [`dist/星曜奇门-3.4.0.apk`](dist/星曜奇门-3.4.0.apk) | 651,761 bytes | `e10c19f80f7d9112eea5f4b37d3a81440c178f3ef889070dc0686d855e791044` |
+| [`dist/星曜奇门-3.4.1.apk`](dist/星曜奇门-3.4.1.apk) | 807,409 bytes | `e964ec1b0618e234898cf898327d42253877ef3ab036d02991153710a7a9abd2` |
 
 > 包名 `com.momen.xingyaoqimen`，minSdk 29（Android 10+）。
 > 自行构建见文末「构建」；签名密钥不入库，按说明自备即可。
+
+## 3.4.1 主要变化
+
+- **星曜释义改版**：十一曜（七政四余）改成只讲「这颗星代表什么」——取课程讲义第二课的星性，二次转述成性情／人物／事象；去掉「古／今／歧」三栏与折叠，改为平铺。
+- **字体子集补字**：象义词典与释义里用到的中文字补进 `qm-serif` 子集，避免与界面字混排。
 
 ## 3.4.0 主要变化
 

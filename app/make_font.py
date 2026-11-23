@@ -84,9 +84,16 @@ def pick_face(path, family):
 def main():
     old = TTFont(OUT)
     keep = set(chr(c) for c in old.getBestCmap())
-    chars = (keep | set(BUSS)) - {'\n', '\r', '\t'}
+    # 象义词典（web/js/xiangyi.js）里出现的全部中文：断语/类象字很多，
+    # 不补进来就会和界面字在同一行里交替两种字体（2026-11-23 修）。
+    xy_path = os.path.join(WEB, 'js', 'xiangyi.js')
+    xy_cn = set()
+    if os.path.exists(xy_path):
+        xy_txt = open(xy_path, encoding='utf-8').read()
+        xy_cn = {c for c in xy_txt if '\u4e00' <= c <= '\u9fff'}
+    chars = (keep | set(BUSS) | xy_cn) - {'\n', '\r', '\t'}
     text = ''.join(sorted(chars))
-    print('字表：旧子集 %d ∪ 业务表 %d → 去重后 %d 字' % (len(keep), len(set(BUSS)), len(chars)))
+    print('字表：旧子集 %d ∪ 业务表 %d ∪ 象义 %d → 去重后 %d 字' % (len(keep), len(set(BUSS)), len(xy_cn), len(chars)))
 
     idx, face = pick_face(SRC_TTC, WANT_FAMILY)
     print('源字体 %s 第 %d 面：%s' % (SRC_TTC, idx, face['name'].getDebugName(4)))

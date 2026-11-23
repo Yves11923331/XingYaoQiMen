@@ -1123,7 +1123,7 @@
     if (lkGe) lkGe.onclick = function (e) { e.stopPropagation(); openPatternSheet(); };
     if (lkCs) lkCs.onclick = function (e) { e.stopPropagation(); openChangshengSheet(); };
     var lkXy = $('lkXy');
-    if (lkXy) lkXy.onclick = function (e) { e.stopPropagation(); openXiangyiSheet('xing'); };
+    if (lkXy) lkXy.onclick = function (e) { e.stopPropagation(); openXiangyiSheet('men'); };
 
     var tb = $('tbTitle');
     var sub = c.layer ? (LAYER_CN[c.layer] + ' · ' + ju.yuanName)
@@ -1407,19 +1407,24 @@
     var total = Y.ORDER.reduce(function (n, o) { return n + Y.X[o.k].length; }, 0);
     var html = '<div class="bar"></div><h2>象<b>义</b></h2>' +
       '<div class="sub">七类共 ' + total + ' 象 · 断语一句话占断 · 类象可按事象反查</div>' +
-      '<div class="xysearch"><input type="text" id="xySearch" placeholder="搜符号名或事象，如「天蓬」「求财」" autocomplete="off"></div>' +
-      '<div class="xyshitags" id="xyShiTags">' +
-      Object.keys(Y.SHI_INDEX).map(function (shi) {
-        return '<button type="button" data-shi="' + shi + '">' + shi + '</button>';
-      }).join('') + '</div>' +
+      '<div class="xysearch"><div class="xy-box">' +
+      '<svg class="xy-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="M10.5 10.5 14 14" stroke-linecap="round"/></svg>' +
+      '<input type="text" id="xySearch" placeholder="搜符号名或事象，如「天蓬」「求财」" autocomplete="off"></div></div>' +
       '<div class="xytabs" id="xyTabs">' +
       Y.ORDER.map(function (o) {
         return '<button type="button" data-k="' + o.k + '">' + o.t + '</button>';
       }).join('') + '</div>' +
+      '<button class="xyshi-toggle" id="xyShiToggle" type="button" aria-expanded="false">' +
+        '<b>事类反查</b><span id="xyShiCur"></span><i>展开 ▾</i>' +
+      '</button>' +
+      '<div class="xyshitags" id="xyShiTags">' +
+      Object.keys(Y.SHI_INDEX).map(function (shi) {
+        return '<button type="button" data-shi="' + shi + '">' + shi + '</button>';
+      }).join('') + '</div>' +
       '<div class="xycards" id="xyCards"></div>';
     openSheet(html);
 
-    var curK = initK || 'xing', curShi = null, q = '';
+    var curK = initK || 'men', curShi = null, shiOpen = false, q = '';
     function relKey(name) { return name.replace(/[ ☰☱☲☳☴☵☶☷]/g, ''); }
     function matches(it, query) {
       if (!query) return true;
@@ -1450,6 +1455,20 @@
         it.rel.map(function (r) {
           return '<button type="button" class="xyrel" data-to="' + relKey(r) + '">' + esc(r) + '</button>';
         }).join('') + '</div></div>';
+    }
+    /* 事类折叠条：默认收起（只占一行），点开才铺开 12 个事类；
+       选中或搜索命中的事类，收起来后仍在这条上标出来。 */
+    function syncShi() {
+      var btn = $('xyShiToggle'), wrap = $('xyShiTags'), cur = $('xyShiCur');
+      if (!btn || !wrap || !cur) return;
+      var tagOn = curShi || (q && Y.SHI_INDEX[q] ? q : null);
+      btn.classList.toggle('on', !!tagOn);
+      btn.setAttribute('aria-expanded', shiOpen ? 'true' : 'false');
+      btn.querySelector('i').textContent = shiOpen ? '收起 ▴' : '展开 ▾';
+      cur.textContent = tagOn
+        ? (curShi ? '当前：' + curShi : '搜索命中：' + tagOn)
+        : '12 类 · 如求财、婚姻、官讼';
+      wrap.classList.toggle('on', shiOpen);
     }
     function render() {
       var items = [];
@@ -1490,6 +1509,7 @@
       $('xyShiTags').querySelectorAll('button').forEach(function (b) {
         b.classList.toggle('on', b.getAttribute('data-shi') === shiTagOn);
       });
+      syncShi();
       box.querySelectorAll('.xyrel').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var to = btn.getAttribute('data-to');
@@ -1513,14 +1533,24 @@
       curK = btn.getAttribute('data-k'); curShi = null;
       render(); $('sheet').scrollTop = 0;
     });
+    $('xyShiToggle').addEventListener('click', function () {
+      shiOpen = !shiOpen;
+      syncShi();
+    });
     $('xyShiTags').addEventListener('click', function (e) {
       var btn = e.target.closest('button[data-shi]');
       if (!btn) return;
       var shi = btn.getAttribute('data-shi');
       curShi = (curShi === shi) ? null : shi;
+      shiOpen = false;
       render();
     });
-    $('xySearch').addEventListener('input', function () { q = this.value.trim(); render(); });
+    $('xySearch').addEventListener('input', function () {
+      q = this.value.trim();
+      /* 一旦开始搜索，就先撤掉事类筛选，避免「搜索里还写着当前：求财」的错位 */
+      if (q) { curShi = null; shiOpen = false; }
+      render();
+    });
     render();
   }
   /* 十二长生一览（用户点名要的表）：上=本盘各宫，下=十天干 × 十二地支对照。
@@ -3436,12 +3466,13 @@
     }
 
     syncLoc();
-    /* 「显示星曜」那一栏的 ⓘ：星曜释义 —— 七政四余十一曜的古义／今义，
-       外加「罗计之误」与「本软件四余取的是什么点」。
-       ⚠ 正文都在下面的数据表里，改字前先看 校验/资料-*.md（三路调研交叉验证的产物，
-         孤证与互相矛盾的说法都记在那几份里，别凭印象改）。
+    /* 「显示星曜」那一栏的 ⓘ：星曜释义 —— 十一曜各自代表什么（符号含义）。
+       口径：取《木马七政四余课程（完整版）》第二课「七政四余」的星性，二次转述；
+       只留性情 / 人物 / 事象 / 吉凶倾向，不取行度、归垣升殿、择日、月相。
+       ⚠ 四余的归属（水余 / 火余 / 土余 / 木余）与「虚星代表偏的」是第二课原文口径；
+         别自造「偏水 / 偏火 / 偏土」这类标签，原文没有逐条这么写。
        ⚠ FOUR_AT 里那四行是**旧文案的原口径**（余奴星 / 黄白道南北交点 / 月球近远地点），
-         用户逐字给的，一个字都别自作主张改。 */
+         用户逐字给的，一个字都别自作主张改；只在四余条目下作「本软件取点」小字。 */
     var FOUR_AT = {
       '罗睺': '火星之余奴 · 黄白道北交点（升交点）',
       '计都': '土星之余奴 · 黄白道南交点（降交点）',
@@ -3449,20 +3480,19 @@
       '月孛': '水星之余奴 · 月球远地点'
     };
     var STAR_DOC = [
-      /* 名, 别称, 古义, 今义, 古已有异说(可选) —— 前七条七政，后四条四余。
-         ⚠ 文案是用户从四案里选定的「关键词」版（方案 B）：只给词，不写成句。
-         事实与出处见 校验/资料-七政古义今义.md 与 校验/资料-现代改写与西学影响.md。 */
-      ['太阳', '日', '人君 · 恩泽 · 光明', '自我 · 意志 · 生命力', ''],
-      ['太阴', '月', '后妃 · 刑杀 · 风雨', '情绪 · 安全感 · 潜意识', ''],
-      ['岁星', '木', '东方 · 仁 · 丰歉', '扩张 · 幸运 · 机会', ''],
-      ['荧惑', '火', '南方 · 礼 · 兵丧疾饥', '行动 · 欲望 · 竞争', '「察刚气」一作「察罚气」。'],
-      ['镇星', '土', '中央 · 信 · 福厚', '限制 · 责任 · 时间', '古义两路：作吉（《天官书》）／作忌曜、瘟星（《张果星宗》）。'],
-      ['太白', '金', '西方 · 义 · 兵刑 · 妻星', '爱与美 · 吸引力 · 关系', '古义两层（肃杀将军＋美色妻星），今只留后者并换上西方 love。'],
-      ['辰星', '水', '北方 · 知 · 刑名', '思维 · 沟通 · 信息', '宰相之象／偏将之象两说。'],
-      ['紫炁', '炁', '木余 · 贵 · 九流艺', '贵人 · 机遇 · 祥瑞', '周期 35 年／28 年两说，且无天文对应，清代已删。'],
-      ['罗睺', '罗', '火余 · 燥 · 蚀神', '北交点 · 欲望 · 业力', '逆行／顺行两说，同书自相矛盾。'],
-      ['计都', '计', '土余 · 沉 · 天尾', '南交点 · 宿命 · 解脱', '曾被误当月球远地点。'],
-      ['月孛', '孛', '水余 · 晦 · 妨克', '暗月 · 阴影', '余气说／月行最北度说并存。']
+      /* 名, 别称, 转述（2–4 句）—— 前七条七政，后四条四余。
+         转述是重写，不是摘抄；原始素材见 校验/资料-十一曜符号含义-二次转述-20261123.md。 */
+      ['太阳', '日', '君父之象：主地位、名望、贵人与父亲。性情正大，有威仪；照到的地方多主贵、能压灾。整盘太燥时（未申月生、火土重）它会加重燥气。'],
+      ['太阴', '月', '母亲之象：主母亲、妻子、身体与情绪。温柔聪慧、有文采，但随月相盈亏而时明时暗。怕土计遮光，满月时也怕火罗争光。'],
+      ['岁星', '木', '主仁厚、文教、学问与寿元；与太阳相会主文名。气量大、肯担事，也容易铺张。'],
+      ['荧惑', '火', '主礼、燥、勇：气盛、动作快、有头无尾，宜武职执法。遇水能收成温恭，不受制就是火气。'],
+      ['镇星', '土', '主沉稳、守成、信用与养育，是五星里走得最慢的一颗，自带沉滞之气。顺行有力，逆行多病灾；外表寡言，内里心思深。'],
+      ['太白', '金', '主义、刚、美：主容貌、才艺与婚姻（男命以金为妻星）。有大将之风，也自带煞气；带桃花则情欲重，带刃则讲义气。'],
+      ['辰星', '水', '主智、巧、变：聪明多才、圆滑应变，所谓就圆则圆、就方则方。缺点是无定，做事勤始怠终。'],
+      ['紫炁', '炁', '木之余气，又名景星。偏的一面：清高、慈善、宗教、艺术。四余里唯一的祥瑞星，主福寿好善；但主孤，不利六亲。'],
+      ['罗睺', '罗', '火之余气，又名天首。偏的一面：燥烈、争斗、灾伤、官非。性傲、胆大、受不得闲话；与太阳同道主日蚀之象，旺时伤妻，落迁移防火灾。'],
+      ['计都', '计', '土之余气，又名天尾。偏的一面：沉晦、孤寡、损失、旧事。机巧能言、内外不一；与太阴同道主月蚀，刑克六亲，与梦和灵感有关。'],
+      ['月孛', '孛', '水之余气。偏的一面：桃花、情欲、阴私、口舌。气势猛、心思深；遇吉星能被化掉，遇凶星则助虐。']
     ];
     var LUOJI_MIX = [
       '印度一侧：Rahu 是升交点、Ketu 是降交点（韩国学中央研究院《韩国民族文化大百科事典》「四餘纏度通軌」条：罗睺为升交点、计都为降交点，合称「罗计」、约 18.6 年逆行一周）。',
@@ -3476,39 +3506,33 @@
       '紫炁 ＝ 月球近地点（λ = 83.353° + 0.1114°·日）。',
       '四余一律当「点」算，不取传统那套虚星周期 —— 所以本软件的紫炁与古籍里那个约二十八年（或三十五年）一周天、且无天文对应的紫炁，并不是同一个东西。'
     ];
-    /* 出处。古义一律取原文可查的那几种；今义多是当代通俗说法，出处见 校验/资料-*.md */
+    /* 出处：本版释义只取课程口径，不再列古籍与西洋占星。 */
     var STAR_SRC = [
-      '七政古义：《史记·天官书》（含三家注）、《汉书·天文志》、《武经总要·五星占》、《御定月令辑要》引文。',
-      '四余古义：《张果星宗》卷十一〈性情论〉、卷十三〈气星〉〈罗计〉；清·陈雯《三才发秘・原四餘》。',
-      '天文对应：韩国学中央研究院《韩国民族文化大百科事典》「四餘纏度通軌」条（罗睺＝升交点、计都＝降交点、月孛周期 8.86 年、紫炁 28 年且无对应天体）。',
-      '今义：当代通俗占星与术数读物的通行说法，多与西洋占星关键词重合，属流行口径而非古代承袭；17 世纪《天步真原》是西式占星较早的中译。'
+      '释义底本：七政四余课程讲义第二课「七政四余」。',
+      '转述范围：只取星性（性情、人物、事象、吉凶倾向）；行度、归垣升殿、择日、月相未取。',
+      '四余归属（水余 / 火余 / 土余 / 木余）与「虚星代表偏的」为第二课原文口径。',
+      '天文取点（罗睺＝升交点等）另见下方「本软件取点」，与本页释义是两套口径。'
     ];
 
-    /* 折叠行：默认只露「名字 + 古义前半句」，点开才展开古今（用户选的是预览里的样本 3）。
-       s = [名, 别称, 古义, 今义, 古已有异说(可选)]。 */
-    function starFoldHTML(s, four, open) {
-      return '<div class="fold' + (open ? ' on' : '') + '">'
-        + '<b>' + s[0] + '<em>' + s[1] + '</em><i>' + s[2].slice(0, 13) + '…</i><u>⌄</u></b>'
-        + '<div class="bd">'
-        + '<div><i class="tg gu">古</i>' + s[2] + '</div>'
-        + '<div><i class="tg jin">今</i>' + s[3] + '</div>'
-        + (s[4] ? '<div><i class="tg qi">歧</i>' + s[4] + '</div>' : '')
-        + (four ? '<div class="soft">本软件取：' + FOUR_AT[s[0]] + '</div>' : '')
-        + '</div></div>';
+    /* 释义行：平铺直出，不折叠。s = [名, 别称, 转述]。 */
+    function starItemHTML(s) {
+      return '<div class="starl">'
+        + '<b>' + s[0] + '<em>' + s[1] + '</em></b>'
+        + '<div class="starl-bd">' + s[2] + '</div></div>';
     }
     function openStarDoc() {
       var html = '<div class="bar"></div><h2>星曜<b>释义</b></h2>'
-        + '<div class="sub">七政四余 · 十一曜 · 点开看古／今</div>'
-        + '<div class="fhint" style="margin:0 0 11px">「古」＝中国古代星占与七政四余的口径；'
-        + '「今」＝当代通行说法（多受西洋占星影响）；「歧」＝<b>古人自己就有异说</b>，与今义无关。</div>'
+        + '<div class="sub">七政四余 · 十一曜</div>'
         + '<div class="card" style="margin:0 0 12px"><h3>七政 · 日月五星</h3>'
-        + STAR_DOC.slice(0, 7).map(function (s, k) { return starFoldHTML(s, false, k === 0); }).join('') + '</div>'
+        + STAR_DOC.slice(0, 7).map(function (s) { return starItemHTML(s); }).join('') + '</div>'
         + '<div class="card" style="margin:0 0 12px"><h3>四余 · 炁 罗 计 孛</h3>'
-        + STAR_DOC.slice(7).map(function (s) { return starFoldHTML(s, true, false); }).join('') + '</div>'
+        + '<p class="four-lead">四余是虚星，取「偏」的一面：木为妻则气为妾，木为神则气为鬼，木为财则气为偏财。</p>'
+        + STAR_DOC.slice(7).map(function (s) { return starItemHTML(s); }).join('') + '</div>'
         + '<div class="card" style="margin:0 0 12px"><h3>罗睺 · 计都：传抄里被弄混的地方</h3>'
         + LUOJI_MIX.map(function (p) { return '<p class="docp">' + p + '</p>'; }).join('') + '</div>'
         + '<div class="card" style="margin:0 0 12px"><h3>本软件的四余取的是什么点</h3>'
         + IMPL_NOTE.map(function (p) { return '<p class="docp">' + p + '</p>'; }).join('')
+        + '<p class="docp">' + Object.keys(FOUR_AT).map(function (k) { return k + '：' + FOUR_AT[k]; }).join('；') + '。</p>'
         + '<p class="docp" style="color:var(--ink-3)">ps：四颗余奴星排法存在较大争议。</p></div>';
       if (STAR_SRC.length) {
         html += '<div class="card" style="margin:0"><h3>出处</h3>'
@@ -3517,9 +3541,6 @@
       }
       html += '<button class="btn" style="width:100%;margin-top:12px" id="btnStarDocOk">知道了</button>';
       openSheet(html);
-      Array.prototype.forEach.call($('sheet').querySelectorAll('.fold > b'), function (b) {
-        b.addEventListener('click', function () { b.parentNode.classList.toggle('on'); });
-      });
       $('btnStarDocOk').addEventListener('click', closeSheet);
     }
     $('btnStarNote').addEventListener('click', openStarDoc);

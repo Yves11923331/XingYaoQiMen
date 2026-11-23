@@ -422,33 +422,67 @@ html[data-theme="white"] {
 /* ---------------- 象义卡片词典（卖点） ----------------
    搜索 + 事象反查 + 分类浏览 + 关联符号跳转；卡片极简素净 + 现代扁平。
    断语是「占断要诀」放大突出，类象做小标签，关联符号可点跳转。 */
+/* 类型：栏目标签（2026-11-23 V1）——无框无底，选中金字 + 金下划线。
+   7 个在 390 宽下刚好一行；窄屏横滚兜底。 */
 .xytabs {
-  display: flex; flex-wrap: wrap; gap: 6px;
-  padding: 10px 0 8px;
+  display: flex; flex-wrap: nowrap; gap: 0; align-items: flex-end;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 0 0;
 }
+.xytabs::-webkit-scrollbar { display: none; }
 .xytabs button {
-  flex: 0 0 auto; padding: 7px 11px; border-radius: 9px; font-size: 12.5px; font-weight: 600;
-  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-3);
+  flex: 0 0 auto; border: none; background: none; border-radius: 0;
+  font-family: "QM Serif", "Songti SC", serif; font-size: 13px; font-weight: 400;
+  letter-spacing: .02em; color: var(--ink-2);
+  padding: 5px 8px 10px; position: relative; white-space: nowrap;
 }
-.xytabs button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
+.xytabs button.on { color: var(--accent); font-weight: 700; }
+.xytabs button.on::after {
+  content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px;
+  height: 2px; border-radius: 1px; background: var(--accent);
+}
 
 /* 搜索框（符号名 / 事象关键字都能搜） */
 .xysearch { padding: 8px 0 6px; }
-.xysearch input {
-  width: 100%; box-sizing: border-box; padding: 10px 13px; border-radius: 12px;
+.xysearch .xy-box { position: relative; }
+.xysearch .xy-ic {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%); z-index: 1;
+  width: 15px; height: 15px; color: var(--ink-3); pointer-events: none;
+}
+.xysearch .xy-box input {
+  width: 100%; box-sizing: border-box; padding: 10px 13px 10px 36px; border-radius: 12px;
   border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
   font-size: 13px;
 }
-.xysearch input::placeholder { color: var(--ink-3); }
-.xysearch input:focus { outline: none; border-color: var(--accent-line); }
+.xysearch .xy-box input::placeholder { color: var(--ink-3); }
+.xysearch .xy-box input:focus { outline: none; border-color: var(--accent-line); }
 
-/* 事象反查标签（横向滚动） */
-.xyshitags {
-  display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto;
-  padding: 2px 0 4px; scrollbar-width: none; -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
+/* 事类反查：与 V1 同一套「无框行」语言——不套灰底块，只靠发丝线分行。
+   收起态一行；点开铺开 12 个标签；选中/搜索命中在行上标出来。 */
+.xyshi-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box;
+  margin: 0; padding: 12px 2px;
+  border: none; border-bottom: 1px solid var(--line-2);
+  border-radius: 0; background: none; color: var(--ink-2);
+  font-family: inherit; text-align: left; cursor: pointer;
 }
-.xyshitags::-webkit-scrollbar { display: none; }
+.xyshi-toggle b { flex: 0 0 auto; font-size: 12px; font-weight: 700; letter-spacing: .06em; }
+.xyshi-toggle span {
+  flex: 1 1 auto; min-width: 0; font-size: 11px; color: var(--ink-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.xyshi-toggle i { flex: 0 0 auto; font-style: normal; font-size: 11px; color: var(--ink-3); }
+.xyshi-toggle.on b, .xyshi-toggle.on span { color: var(--accent); }
+.xyshi-toggle:active { opacity: .7; }
+
+/* 事象反查标签：默认收起；展开后换行铺开 */
+.xyshitags {
+  display: none; flex-wrap: wrap; gap: 6px;
+  padding: 12px 0 4px;
+}
+.xyshitags.on { display: flex; }
 .xyshitags button {
   flex: 0 0 auto; padding: 6px 11px; border-radius: 999px; font-size: 12px; font-weight: 600;
   background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2);
@@ -456,10 +490,10 @@ html[data-theme="white"] {
 .xyshitags button.on { background: var(--accent-bg); border-color: var(--accent-line); color: var(--accent); }
 
 /* 卡片列表 + 单张卡片 */
-.xycards { padding-bottom: 16px; }
+.xycards { padding-top: 14px; padding-bottom: 18px; }
 .xycard {
   border: 1px solid var(--line); border-radius: 14px;
-  background: var(--surface); padding: 13px 14px 12px; margin-bottom: 10px;
+  background: var(--surface); padding: 14px 14px 13px; margin-bottom: 12px;
   box-shadow: var(--shadow);
 }
 .xycard.flash { animation: xyflash 1.3s ease-out; }
@@ -475,9 +509,9 @@ html[data-theme="white"] {
 }
 .xyc-wx { font-size: 11px; color: var(--ink-3); }
 .xyc-duan {
-  font-size: 13.5px; line-height: 1.65; font-weight: 600; color: var(--ink);
-  padding: 9px 11px; border-radius: 10px; background: var(--accent-bg);
-  border: 1px solid var(--accent-line); margin-bottom: 10px;
+  font-size: 13.5px; line-height: 1.7; font-weight: 600; color: var(--ink);
+  padding: 10px 12px; border-radius: 10px; background: var(--accent-bg);
+  border: 1px solid var(--accent-line); margin-bottom: 12px;
 }
 .xyc-fields { display: flex; flex-direction: column; gap: 6px; }
 .xyf { display: flex; gap: 8px; align-items: baseline; }
@@ -1454,6 +1488,33 @@ html.bg-custom select { background: color-mix(in srgb, var(--bg-2) 76%, transpar
 .fold .bd .soft { color: var(--ink-3); }
 .fold.on .bd { display: block; }
 .fold.on > b u { display: inline-block; transform: rotate(180deg); }
+/* 星曜释义：平铺条目（不折叠） */
+.starl {
+  position: relative; padding: 14px 0 15px 15px;
+  border-bottom: 1px solid var(--line-2);
+}
+.starl:last-child { border-bottom: 0; }
+.starl::before {
+  content: ""; position: absolute; left: 0; top: 17px; bottom: 17px; width: 2px;
+  border-radius: 2px; background: linear-gradient(180deg, var(--accent-line), transparent);
+}
+.starl > b {
+  display: flex; align-items: baseline; gap: 8px;
+  font-family: "QM Serif", "Songti SC", serif; font-weight: 700;
+  font-size: 15px; letter-spacing: .08em; color: var(--ink);
+}
+.starl > b em {
+  font-style: normal; font-weight: 400; font-size: 10px; line-height: 1.5;
+  color: var(--ink-3); letter-spacing: .1em;
+  padding: 1px 5px 0; border: 1px solid var(--line); border-radius: 3px;
+}
+.starl-bd { margin-top: 7px; font-size: 13px; line-height: 1.78; color: var(--ink); }
+/* 四余卡片开头那句总纲：做成浅色引文块，跟条目区分开 */
+.four-lead {
+  margin: 0 0 4px; padding: 9px 11px; border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  font-size: 12px; line-height: 1.7; color: var(--ink-2);
+}
 
 .docp { margin: 0 0 7px; font-size: 12px; line-height: 1.7; color: var(--ink-2); }
 .docp:last-child { margin-bottom: 0; }
