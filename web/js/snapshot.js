@@ -166,15 +166,12 @@
       palFS: (OLD ? .70 : .81) * E,
       shenFS: shenFont,
       shenTop: shenTop,
-      sm: M.sm,                                 /* 与标准盘共享的八神行距 */
       shenH: shenH,
       rowH: rowH,
       lm: M.lm * k,                              /* ★ 必须带出来：menTop 要用它（漏了会算出 NaN，整行八门消失） */
-      tianTop: shenTop + shenH + M.lm * k,
       tianFS: (OLD ? 1.02 : 1.18) * E,
       menFS: (OLD ? .98 : 1.14) * E,
       starFS: .78 * E,                          /* 2026-11-13 用户定 B：.74 → .78 */
-      pb: M.pb * k,
       chipH: OLD ? rowH : 1.10 * E,             /* 新 UI：裸字行盒 = 1.10em */
       chipFS: (OLD ? .95 : 1.10) * E
     };
@@ -753,8 +750,8 @@
    * L 由 ui.js 的 cxMakeLesson() 算好传进来（同一份数据，省得两处口径打架），形状：
    *   { mode:'six'|'star', modeName:'六神'|'九星', nums:[4], stem, ganEl,
    *     from:'time'|'nums', zero, three:[{name, el, qin, color, void}] }
-   * ★ 2026-11-13：出图尺寸回到**横 1000×460**（与设置里 .sh.lesson 那枚 36×17 的示意框
-   *   同一比例；口径表与任务书都是 460）。课块外面仍是一张卡，卡下仍有一行注解，
+   * ★ 2026-11-23：出图尺寸改**横 1000×667（3:2）**（与设置里 .sh.lesson 那枚 36×24 的示意框
+   *   同一比例）。课块外面仍是一张卡，卡下仍有一行注解，
    *   四数副行插在卡上 —— 行位是写死的槽，结构上不可能重叠。
    * ★ 空亡在屏幕上是「次级灰、**不加任何线**」，出图同步：颜色换 ink3，一道线都不画。 */
   /* ---------------------------------------------------------------- 串星课
@@ -763,7 +760,7 @@
    * L 由 ui.js 的 cxMakeLesson() 算好传进来（同一份数据，省得两处口径打架），形状：
    *   { mode:'six'|'star', modeName:'六神'|'九星', nums:[4], stem, ganEl,
    *     from:'time'|'nums'|'rand', zero, three:[{name, el, qin, color, void}] }
-   * ★ 2026-11-13：出图尺寸**横 1000×460**（与设置里 .sh.lesson 那枚 36×17 的示意框同一比例）。
+   * ★ 2026-11-23：出图尺寸**横 1000×667（3:2）**（与设置里 .sh.lesson 那枚 36×24 的示意框同一比例）。
    * ★ 空亡在屏幕上是「只压灰、不加线」，出图同步：颜色换 ink3，一道线都不画。
    * ★ 卡片下面那行「三宫 = 天宫 · 地宫 · 人宫　第四格 主体 = 天干」**已整行删除**
    *   （用户：「下面那个解释的天地人三宫、还有第四格的小字，也没必要加」）—— 不许换位置再放回去。
@@ -781,7 +778,10 @@
   function renderLesson(L, chart, opts) {
     opts = opts || {};
     var P = palette();
-    var H = 460;          /* 横 1000×460（用户 2026-11-13 定；改这里要同步设置里的 .sh.lesson） */
+    /* 横 1000×667（3:2，2026-11-23 用户定）。
+       ⚠ 改这里必须同步三处：设置页 .sh.lesson 示意框、`.rendpick .rp.lesson em`、
+          ui.js 的 REND_ASP.lesson（背景裁剪比例）。 */
+    var H = 667;
     var cv = document.createElement('canvas');
     cv.width = W * SCALE; cv.height = H * SCALE;
     var ctx = cv.getContext('2d');
@@ -811,51 +811,63 @@
            卡片 68%→74% · 名字 42 · **天干降一档 34** · 六亲 22 并贴近名字（基线差 46）
            书口线回到六亲下方 12px（不再"迷路"）· 上下留白重排（顶 ~88 / 底 ~50）
        ⚠ opts.layout 那个试稿开关已删：定版只有一套，不留分叉。 */
-    var yTitle = 88, yTime = yTitle + 36, yPillars = yTime + 44,
-      yInfo = yPillars + 30, yNums = yInfo + 34, cardTop = yNums + 30;
-
-    ctx.font = '700 40px ' + SERIF; ctx.fillStyle = P.accent;
-    ctx.fillText('串星课', W / 2, yTitle);
-
+    /* ★ 2026-11-23 用户定的版式（3:2 横图）：
+       **课卡居中**（四格名 + 六亲 + 书口线），其余信息全部推到四角 ——
+       左上 标题 / 时刻，右上 四柱 / 局·农历，左下 四数，右下 天干·译法。
+       角落信息是上下文，字号压小、颜色压灰；中心是主体，字号最大。 */
+    var PADX = 56;
     var gz = (chart && chart.calendar && chart.calendar.ganzhi) ? chart.calendar.ganzhi : null;
-    ctx.font = '400 22px ' + SANS; ctx.fillStyle = P.ink2;
+
+    /* 2026-11-23 用户定的导出信息（就这四样，别再加）：
+       **公历时间 + 农历 + 四柱 + 起课方法**（起课方法里带译法；数字/随机档把四数一并写出来）。 */
+    ctx.textAlign = 'left';
+    ctx.font = '700 34px ' + SERIF; ctx.fillStyle = P.accent;
+    ctx.fillText('串星课', PADX, 88);
+    var srcTxt;
     if (chart && chart.input) {
       var inp = chart.input;
-      ctx.fillText(inp.y + '-' + p2(inp.m) + '-' + p2(inp.d) + ' ' + p2(inp.h) + ':' + p2(inp.mi), W / 2, yTime);
+      srcTxt = inp.y + '-' + p2(inp.m) + '-' + p2(inp.d) + ' ' + p2(inp.h) + ':' + p2(inp.mi);
     } else if (gz) {
-      /* 手动局 / 随机一局的课没有公历时刻（chart.input === null），写局与时辰 */
-      ctx.fillText('手动起局 · ' + (gz.hour || '—') + '时', W / 2, yTime);
+      srcTxt = '手动起局 · ' + (gz.hour || '—') + '时';
     } else {
-      ctx.fillText(L && L.from === 'nums' ? '数字起课' : (L && L.from === 'rand' ? '随机起课' : '—'), W / 2, yTime);
+      srcTxt = '—';
     }
-    ctx.font = '700 34px ' + SERIF; ctx.fillStyle = P.ink;
-    ctx.fillText(gz ? [gz.year, gz.month, gz.day, gz.hour].join(' ') : '—', W / 2, yPillars);
+    ctx.font = '400 17px ' + SANS; ctx.fillStyle = P.ink3;
+    ctx.fillText(srcTxt, PADX, 116);
 
-    ctx.font = '400 18px ' + SANS; ctx.fillStyle = P.ink3;
-    var infoTxt = '—';
-    if (chart && chart.ju) {
-      infoTxt = chart.ju.juText + ' · ' + (chart.calendar && chart.calendar.lunarText
-        ? '农历' + chart.calendar.lunarText : '')
-        + (chart.calendar && chart.calendar.lateZiAdvance ? ' · 晚子时换日' : '');
-    }
-    ctx.fillText(infoTxt, W / 2, yInfo);
+    /* 右上：四柱 + 农历 */
+    ctx.textAlign = 'right';
+    ctx.font = '700 28px ' + SERIF; ctx.fillStyle = P.ink;
+    ctx.fillText(gz ? [gz.year, gz.month, gz.day, gz.hour].join(' ') : '—', W - PADX, 88);
+    ctx.font = '400 16px ' + SANS; ctx.fillStyle = P.ink3;
+    ctx.fillText((chart && chart.calendar && chart.calendar.lunarText)
+      ? '农历' + chart.calendar.lunarText : '—', W - PADX, 116);
 
-    /* ── 四数副行：把四个数写出来（用户明确要），并标出这是哪套译法 ── */
+    /* 左下：起课方法 · 译法 */
+    var modeTxt = L ? (L.modeName || '六神') : '六神';
+    var methodTxt = '—';
     if (L) {
       var two = L.nums.some(function (n) { return n >= 10; });
-      var pre = L.from === 'nums' ? '数字 ' : (L.from === 'rand' ? '随机 ' : '四数 ');
-      var numsLine = pre + L.nums.join(two ? ' ' : '') + ' · 天干 ' + L.stem + ' · ' + (L.modeName || '六神');
-      if (L.zero) numsLine += ' · 零课：三宫皆退一位';
-      ctx.font = '400 19px ' + SANS; ctx.fillStyle = P.accent;
-      ctx.fillText(numsLine, W / 2, yNums);
+      var numTxt = L.nums.join(two ? ' ' : '');
+      if (L.from === 'nums') methodTxt = '数字起课 ' + numTxt;
+      else if (L.from === 'rand') methodTxt = '随机起课 ' + numTxt;
+      else methodTxt = '时间起课';
+      if (L.zero) methodTxt += ' · 零课';
+      methodTxt += ' · ' + modeTxt;
     }
+    ctx.textAlign = 'left';
+    ctx.font = '400 20px ' + SANS; ctx.fillStyle = P.accent;
+    ctx.fillText(methodTxt, PADX, H - 56);
+    ctx.textAlign = 'center';
 
-    /* 课块：**卡片**（surface 75% + 1px 细边 + 圆角 + 无投影、书口线贴着六亲那行），
+    /* 中心课卡：surface 75% + 1px 细边 + 圆角 + 无投影；书口线贴着六亲那行。
        四枚符号按「每列贴自己的字宽、余量均分到列间」排（与 .xgrid 的 space-between 同一算法）。
        天干只降字号、**位置仍站原位** —— 它是第四格（主体），不是第四个神。 */
-    var NAME = 42, STEM = 34, QIN = 22;
-    var cardW = W * 0.74, cardX = (W - cardW) / 2;   /* App 里卡片宽 = 视口 − 26% */
-    var padX = cardW * 0.062, padTop = cardW * 0.046;
+    var NAME = 68, STEM = 56, QIN = 26;
+    var cardW = W * 0.66, cardX = (W - cardW) / 2;
+    var padX = cardW * 0.06, padTop = 70;
+    var cardH = padTop + NAME * 0.94 + 96 + 18 + cardW * 0.022;
+    var cardTop = (H - cardH) / 2;
     var names = L ? [L.three[0].name, L.three[1].name, L.three[2].name, L.stem] : ['—', '—', '—', '—'];
     var voided = L ? [!!L.three[0].void, !!L.three[1].void, !!L.three[2].void, false] : [false, false, false, false];
     var cols = L ? [elColorOf(P, L.three[0]), elColorOf(P, L.three[1]), elColorOf(P, L.three[2]), P.ink]
@@ -866,10 +878,9 @@
     for (i = 0; i < 4; i++) { nw[i] = ctx.measureText(names[i] || '—').width; nsum += nw[i]; }
     var gap = Math.max(0, (cardW - padX * 2 - nsum) / 3), centers = [], cxp = cardX + padX;
     for (i = 0; i < 4; i++) { centers[i] = cxp + nw[i] / 2; cxp += nw[i] + gap; }
-    var namesY = cardTop + padTop + NAME * 0.94, qinY = namesY + 46, ruleY = qinY + 12;
-    var cardH = (ruleY - cardTop) + cardW * 0.022;
-    rrect(ctx, cardX, cardTop, cardW, cardH, cardW * 0.0599);   /* 圆角 16 / 267.3 */
-    ctx.fillStyle = rgba(P.surface, .75); ctx.fill();      /* 卡片 75% 不透明（用户定） */
+    var namesY = cardTop + padTop + NAME * 0.94, qinY = namesY + 96, ruleY = qinY + 18;
+    rrect(ctx, cardX, cardTop, cardW, cardH, cardW * 0.0599);
+    ctx.fillStyle = rgba(P.surface, .75); ctx.fill();
     ctx.strokeStyle = P.line; ctx.lineWidth = 1; ctx.stroke();
     for (i = 0; i < 4; i++) {
       ctx.font = '700 ' + (i === 3 ? STEM : NAME) + 'px ' + SERIF;
@@ -882,8 +893,14 @@
       ctx.fillStyle = P.ink3;
       ctx.fillText((L && L.three[j].qin) || '—', centers[j], qinY);
     }
-    /* 书口线＝课块的**下框线**（贴卡片下缘），两端对齐卡片内边距 */
-    ctx.strokeStyle = P.line; ctx.lineWidth = 1;
+    /* 书口线＝课块的下框线（贴卡片下缘）。2026-11-23 用户要求「线要美观」：
+       两端渐隐，不要一根硬切到底的实线。 */
+    var lg = ctx.createLinearGradient(cardX + padX, 0, cardX + cardW - padX, 0);
+    lg.addColorStop(0, 'transparent');
+    lg.addColorStop(0.18, P.line);
+    lg.addColorStop(0.82, P.line);
+    lg.addColorStop(1, 'transparent');
+    ctx.strokeStyle = lg; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(cardX + padX, ruleY); ctx.lineTo(cardX + cardW - padX, ruleY); ctx.stroke();
     return cv;
   }

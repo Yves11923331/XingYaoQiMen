@@ -64,7 +64,7 @@ try { sharp = require('sharp'); } catch (e) { console.log('no sharp: ' + e.messa
     const meta = await sharp(saved).metadata();
     const st = fs.statSync(saved);
     console.log(`  导出 PNG：${meta.width}×${meta.height}   ${st.size} 字节   ${saved}`);
-    eq(meta.width + 'x' + meta.height, '2000x920', 'PNG 实际像素应为 2000×920（=1000×460 @2x）');
+    eq(meta.width + 'x' + meta.height, '2000x1334', 'PNG 实际像素应为 2000×1334（=1000×667 @2x）');
     ok(Math.abs(meta.width / meta.height - 1000 / 460) < 0.005, '宽高比应是 1000:460（无拉长），实得 ' + (meta.width / meta.height).toFixed(4));
     ok(st.size > 20000, 'PNG 内容不该是空白（' + st.size + ' 字节）');
     /* 四数副行 y ≈ 44+48+38+38+30+26 = 224（逻辑坐标）→ 像素 448 */
@@ -125,7 +125,7 @@ try { sharp = require('sharp'); } catch (e) { console.log('no sharp: ' + e.messa
   await page.waitForTimeout(200);
   await page.click('#setChips button[data-g="rule"]');
   await page.waitForTimeout(150);
-  await page.evaluate(() => { const b = document.querySelector('#segPanLesson button[data-v="1"]'); if (b) b.click(); });
+  await page.evaluate(() => { const b = document.querySelector('#segPanLesson button[data-v="rand"]'); if (b) b.click(); });
   await page.waitForTimeout(200);
   /* 起一张时家盘 */
   await page.click('#tabbar button[data-view="home"]');

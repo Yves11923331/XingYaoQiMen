@@ -35,7 +35,6 @@
 (function (root) {
   'use strict';
 
-  var SPEC = '共享随机源 / Web Crypto 无偏 / 2026-11-13';
   var U32_LIM = 4294967296;              /* 2^32 */
   var buf1 = null;                       /* 复用 Uint32Array(1)：u32in 用 */
   var buf2 = null;                       /* 复用 Uint32Array(2)：dbl 用 */
@@ -118,7 +117,6 @@
   }
 
   var API = {
-    SPEC: SPEC,
     LIM: U32_LIM,
     u32in: u32in, dbl: dbl, pick: pick, shuffle: shuffle,
     source: source, last: last

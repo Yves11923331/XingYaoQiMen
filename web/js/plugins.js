@@ -39,10 +39,6 @@
     return !!(pl && pl[id]);
   }
 
-  function flagsOf(id) {
-    var m = _byId[id];
-    return (m && m.flags) || {};
-  }
 
   /* 有没有某个「独占」插件当前开着（返回它，没有则 null） */
   function anyExclusive() {
@@ -175,7 +171,6 @@
     list: list,
     byId: byId,
     enabled: enabled,
-    flagsOf: flagsOf,
     anyExclusive: anyExclusive,
     blockedInYin: blockedInYin,
     flagOn: flagOn,

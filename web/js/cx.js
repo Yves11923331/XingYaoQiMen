@@ -68,9 +68,7 @@
     root.Lunar = Lunar;
   }
 
-  var SPEC = '小六壬·加干+加星 / 2026-11-13 / 见 校验/串星课-规则口径-20261113.md';
   var DEFAULT_MODE = 'six';
-  var MODES = ['six', 'star'];
 
   /* ------------------------------------------------------------ 基本表 */
   /* 五行色：与 ui.js:1938 的 WX_COLOR **同值**（木#1a8f4a 火#d2362a 土#b8860b
@@ -114,13 +112,6 @@
                 /* 九星在本口径里不分阴阳（阳顺阴逆已被明确排除），不发明 */
                 yy: '', color: WX_COLOR[sel] });
   }
-
-  function byKey(list) {
-    var m = {};
-    for (var i = 0; i < list.length; i++) m[list[i].key] = list[i];
-    return m;
-  }
-  var SIX_BY_KEY = byKey(SIX), STAR_BY_KEY = byKey(STAR);
 
   var GAN10 = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
   var GAN_WX = { '甲': '木', '乙': '木', '丙': '火', '丁': '火', '戊': '土',
@@ -353,17 +344,9 @@
   }
 
   /* ------------------------------------------------------------ 导出 */
-  function indexIn(list, name) {
-    for (var i = 0; i < list.length; i++) if (list[i].name === name) return i;
-    return -1;
-  }
-
   var API = {
-    SPEC: SPEC,
-    MODES: MODES, DEFAULT_MODE: DEFAULT_MODE,
-    SIX: SIX, STAR: STAR, SIX_BY_KEY: SIX_BY_KEY, STAR_BY_KEY: STAR_BY_KEY,
-    indexOf: function (name) { return indexIn(SIX, name); },
-    indexOfStar: function (name) { return indexIn(STAR, name); },
+    DEFAULT_MODE: DEFAULT_MODE,
+    SIX: SIX, STAR: STAR,
     GAN10: GAN10, GAN_WX: GAN_WX, WX_COLOR: WX_COLOR,
     liuQin: liuQin,
     castByNumbers: castByNumbers,
@@ -373,9 +356,7 @@
     castFromChart: castFromChart,
     randomNums: randomNums,
     /* 随机全部委托共享模块 rng.js（正常加载顺序下它就是 window.RNG 本体） */
-    RNG: RNG_API,
-    /* 给校验脚本用的内部件（界面别用）：归一函数 */
-    _kd: kd
+    RNG: RNG_API
   };
 
   root.CX = API;

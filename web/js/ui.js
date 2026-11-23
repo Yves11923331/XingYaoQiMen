@@ -46,6 +46,14 @@
 
   /* 共享工具转一手：其余代码不用改（仍按原来的名字调用） */
   function esc(s) { return App.esc(s); }
+
+  /* 滑动条：把当前值换算成「已选比例」写进 CSS 变量 --p。
+     B 方案的刻度轨靠 linear-gradient 画已选段，CSS 自己读不到 range 的 value（2026-11-23）。 */
+  function syncRange(el) {
+    if (!el || el.type !== 'range') return;
+    var min = +(el.min || 0), max = +(el.max || 100), v = +el.value;
+    el.style.setProperty('--p', (max > min ? (v - min) / (max - min) * 100 : 0).toFixed(2) + '%');
+  }
   function pad(n) { return App.pad(n); }
   function elClass(wx) { return App.elClass(wx); }
   function fmtLL(lat, lon) { return App.fmtLL(lat, lon); }
@@ -556,7 +564,7 @@
       /* 2026-11-13 用户：**盘面同显开着时，点中宫不切换界面** —— 同显下中宫已清空
          （地盘干 / 金环 / 中心晕染都不画），再点它去切「卦象·地支面」只是误触，直接无操作。 */
       if (pal === 5 && !flyMode()) {
-        if (S.settings.panLesson) return;
+        if (panLessonOn()) return;
         cycleFace(); return;
       }
       openPalace(pal);
@@ -622,8 +630,8 @@
          每轮整串重写，插件一关残类自己就没了；qm-cell / qm-mid 是宿主的底类。 */
       var pcls = face ? '' : Plugins.cellClass(p.pal, plugCtx(p, c));
       cell.className = 'qm-cell' + (p.pal === 5 ? ' qm-mid' : '') + (pcls ? ' ' + pcls : '');
-      /* 面模式下不点亮格局标（那一层信息跟卦象/地支无关） */
-      cell.classList.toggle('has-pat', !face && !!(byPal[p.pal] && byPal[p.pal].length));
+      /* 面模式下不点亮格局标（那一层信息跟卦象/地支无关）。
+         原 has-pat 类在 CSS 里没有任何规则、全库仅此一处挂载，2026-11-23 一并删掉。 */
 
     });
     applyOpacity();
@@ -696,7 +704,7 @@
     }
     /* 同显（课放进中宫）：renderPan 会重建各宫内容，而课块是挂在盘容器 .qm-text-pan 上的 ——
        这里再走一遍，防止"renderMiniLesson 先跑、buildPan 后建"时课块留在抬头带里。 */
-    if (S.settings.panLesson) renderMiniLesson(state.chart);
+    if (panLessonOn()) renderMiniLesson(state.chart);
   }
 
   /* ---------------------------------------------------- 长方形盘自适应 */
@@ -725,9 +733,17 @@
   /* 上移读数：量得到就把 px 写出来，量不到（没起过盘／盘面页没显示）就只写百分比 ——
      不能因为"还没量到"就显示成"居中"，那会让人以为设置没生效。 */
   /* 「加串星课」时课块占掉一截，抬头角度要另算 —— 所以盘面上移分两套值 */
+  /* 盘面同显三档（2026-11-23 用户定）：'off' | 'time' | 'rand'。
+     旧存档里是 true/false，true 迁移成 'rand'（原来开启就是随机取数）。 */
+  function panLessonSrc() {
+    var v = S.settings.panLesson;
+    if (v === 'time' || v === 'rand' || v === 'off') return v;
+    return (v === true || v === 1) ? 'rand' : 'off';
+  }
+  function panLessonOn() { return panLessonSrc() !== 'off'; }
   function lessonOn() {
     var m = $('xkMini');
-    return !!(m && S.settings.panLesson && m.style.display !== 'none');
+    return !!(m && panLessonOn() && m.style.display !== 'none');
   }
   /* 「加串星课」不再占抬头带的高度（课已放进中宫）→ 盘的"上移"只有一套值，
      开/关同显完全一致；lessonOn() 仍保留给别处判断用。 */
@@ -1765,7 +1781,7 @@
     var sc = Math.max(0, Math.min(90, S.settings.bgScrim == null ? 70 : S.settings.bgScrim));
     root.style.setProperty('--app-scrim', (sc / 100).toFixed(2));
     var sv = $('scrimVal'); if (sv) sv.textContent = sc + '%';
-    var rs = $('rngScrim'); if (rs) rs.value = sc;
+    var rs = $('rngScrim'); if (rs) { rs.value = sc; syncRange(rs); }
     syncBgFold();
     var st = $('bgStrip');
     if (st) {
@@ -1942,6 +1958,7 @@
         crop.tx = 0; crop.ty = 0; crop.zoom = 1; crop.outW = outW;
         $('cropTitle').textContent = title;
         $('cropZoom').value = 100;
+        syncRange($('cropZoom'));
         $('cropImg').src = img.src;
         var outH = Math.round(outW / aspect);
         var shp = $('cropShape');
@@ -2118,6 +2135,16 @@
   function boardLesson(c) {
     /* 2026-11-13 用户：阴盘也显（角标/课与排法无关）；心盘与四层仍不显（给不出四数）。 */
     if (!c || c.xinpan || c.layer) return null;
+    var src = panLessonSrc();
+    if (src === 'off') return null;
+    var mode = cxMode();
+    /* 时间档：按**盘面那一刻**直译四数（与起课页「时间」档同一函数）；
+       年 / 月 / 日家、手动局给不出农历月日 → castFromChart 失败 → 不显。 */
+    if (src === 'time') {
+      var rt = CX.castFromChart(c, mode);
+      return rt.ok ? cxMakeLesson(rt, 'time') : null;
+    }
+    /* 随机档：不跟盘面时刻走，每盘抽一次、盘内稳定（2026-11-13 定案）。 */
     if (state.cxBoardRef !== c || !state.cxBoardNums) {
       state.cxBoardRef = c;
       state.cxBoardNums = {
@@ -2125,8 +2152,8 @@
         star: CX.randomNums('star')
       };
     }
-    var nums = state.cxBoardNums[cxMode()] || state.cxBoardNums.six;
-    var r = CX.castByNumbers(nums, cxMode());
+    var nums = state.cxBoardNums[mode] || state.cxBoardNums.six;
+    var r = CX.castByNumbers(nums, mode);
     return r.ok ? cxMakeLesson(r, 'rand') : null;
   }
 
@@ -2239,7 +2266,7 @@
       syncCxMode();
       paintCxNums();
       /* 盘面页开着「盘面同显」时，那段迷你课也跟着换名字（不重排，只重绘） */
-      if (state.chart && S.settings.panLesson) renderMiniLesson(state.chart);
+      if (state.chart && panLessonOn()) renderMiniLesson(state.chart);
     }
     if (reduceMotion()) { applyAll(); return; }
     /* 课页开着就做一次原位交叉淡变（页面三档不显示结果，没什么可淡的） */
@@ -2259,7 +2286,9 @@
     var g = c.calendar.ganzhi;
     $('cxTime').textContent = fmtParts(solarParts(p));
     $('cxPillars').textContent = g.year + ' ' + g.month + ' ' + g.day + ' ' + g.hour;
-    $('cxSub').textContent = c.ju.juText + ' · 农历' + c.calendar.lunarText
+    /* 串星课只要农历与时辰 —— 「阴遁八局」是奇门排盘的口径，串星用不上（2026-11-23 用户：
+       这是古早逻辑残留，别再往串星页塞局）。 */
+    $('cxSub').textContent = '农历' + c.calendar.lunarText
       + ' · ' + g.hour + '时' + tsTag(p);
     /* 透明感应层：#cxPick 的值始终跟着当前时刻，点开选择器就停在它上面 */
     $('cxPick').value = p.y + '-' + pad(p.m) + '-' + pad(p.d) + 'T' + pad(p.h) + ':' + pad(p.mi);
@@ -2299,7 +2328,7 @@
   function renderMiniLesson(c) {
     var box = $('xkMini'); if (!box) return;
     /* 中宫那门课＝**随机取数**（boardLesson；不跟盘面时刻走），每盘抽一次、盘内稳定。 */
-    var L = (c && S.settings.panLesson) ? boardLesson(c) : null;
+    var L = (c && panLessonOn()) ? boardLesson(c) : null;
     var on = !!L;
     box.style.display = on ? '' : 'none';
     /* ★ 2026-11-13 用户定稿：**课放进中宫，其余一切照旧**。
@@ -2462,7 +2491,7 @@
     if (m) m.classList.remove('on');
     if (p) popModal(p);
   }
-  /* 串星课弹层里的「截图」：同一份课数据交给 Snapshot，走 renderLesson（横 1000×460） */
+  /* 串星课弹层里的「截图」：同一份课数据交给 Snapshot，走 renderLesson（横 1000×667） */
   function shotCxLesson() {
     var L = state.cxLesson, c = state.cxTimeChart;
     if (!state.cxBuilt || !L) { toast('先点「起课」生成串星课'); return; }
@@ -2935,6 +2964,23 @@
     $('btnRandTime').classList.toggle('on', state.randKind === 'time');
     $('btnRandJu').classList.toggle('on', state.randKind === 'ju');
 
+    /* 起盘 / 起课的按下反馈：从触点扩散一圈金晕（2026-11-23 方案一） */
+    function castRipple(btn, e) {
+      var r = btn.getBoundingClientRect();
+      var x = (e && e.clientX) ? e.clientX - r.left : r.width / 2;
+      var y = (e && e.clientY) ? e.clientY - r.top : r.height / 2;
+      var size = Math.max(r.width, r.height) * 2.2;
+      var s = document.createElement('span');
+      s.className = 'cast-rip';
+      s.style.width = s.style.height = size + 'px';
+      s.style.left = x + 'px'; s.style.top = y + 'px';
+      btn.appendChild(s);
+      setTimeout(function () { if (s.parentNode) s.remove(); }, 600);
+    }
+    ['btnCast', 'btnCastX'].forEach(function (id) {
+      var b = $(id); if (!b) return;
+      b.addEventListener('pointerdown', function (e) { castRipple(b, e); });
+    });
     $('btnCast').addEventListener('click', onCast);
   }
 
@@ -3001,7 +3047,7 @@
       /* 盘面同显 —— 屏幕上课与盘同框，出图也得同框（形状仍按奇门盘 1000×1370）。
          盘面同显只在时家盘上有意义（阴盘/心盘不走串星课那套）。 */
       /* 2026-11-13：阴盘也出同显图（心盘仍不显） */
-      var isBoth = !!S.settings.panLesson && state.chartSub !== 'xin';
+      var isBoth = panLessonOn() && state.chartSub !== 'xin';
       var so = { rendImage: S.settings.rendImage, opacity: S.settings.opacity };
       if (isBoth) {
         /* 课与屏幕同源：走 boardLesson（**随机取数**，不用盘面时刻），
@@ -3044,14 +3090,18 @@
       if (state.chart && !state.chart.manual) recastQuiet();
     });
     $('rngOp').value = S.settings.opacity;
+    ['rngScrim', 'rngOp', 'rngLift', 'cropZoom'].forEach(function (id) {
+      var el = $(id); if (el) syncRange(el);
+    });
+    document.addEventListener('input', function (e) { syncRange(e.target); });
     $('opVal').textContent = S.settings.opacity + '%';
     /* ---- 两张背景图 + 裁剪 ---- */
     applyBackground();
     $('btnBgPick').addEventListener('click', function () { $('bgFile').click(); });
     /* 壁纸比例挪到裁剪界面（#cropAspects）去了，这里不再挂设置项 */
     /* 截图渲染背景：先问"给哪一种截图配底图"，再进裁剪 —— 两种出图比例不同，
-       裁剪框必须跟着变形，否则盘（竖 1000×1370）与课（横 1000×460）用同一张底图必然裁错。 */
-    var REND_ASP = { pan: 1000 / 1370, lesson: 1000 / 460 };
+       裁剪框必须跟着变形，否则盘（竖 1000×1370）与课（横 1000×667）用同一张底图必然裁错。 */
+    var REND_ASP = { pan: 1000 / 1370, lesson: 1000 / 667 };
     state.rendTarget = 'pan';
     $('btnRendPick').addEventListener('click', function () {
       /* 两个选项各配一个**按出图比例画的示意框**（竖的是盘、横的是课） */
@@ -3059,7 +3109,7 @@
         + '<div class="sub">给哪一种截图配底图？裁剪框会按它自己的比例</div>'
         + '<div class="rendpick">'
         + '<div class="rp pan" id="rendForPan"><em></em><b>奇门盘</b><i>竖 1000 × 1370</i></div>'
-        + '<div class="rp lesson" id="rendForLesson"><em></em><b>串星课</b><i>横 1000 × 460</i></div>'
+        + '<div class="rp lesson" id="rendForLesson"><em></em><b>串星课</b><i>横 1000 × 667</i></div>'
         + '</div>');
       $('rendForPan').addEventListener('click', function () {
         state.rendTarget = 'pan'; closeSheet(); $('rendFile').click();
@@ -3205,16 +3255,6 @@
         ? '混合：' + [['flyStar', '星'], ['flyGate', '门'], ['flyGod', '神']]
             .filter(function (p) { return !!S.settings[p[0]]; }).map(function (p) { return p[1]; }).join('·') + '走飞盘'
         : '';
-      /* 子设置显隐：转盘侧 / 飞盘侧各一组；混盘时两组都亮，够用 */
-      var z = $('subZhuan'), f = $('subFei');
-      if (z) z.classList.toggle('hide', mode === 'fei');
-      if (f) f.classList.toggle('hide', mode === 'zhuan');
-      var sum = $('panSum');
-      if (sum) {
-        sum.textContent = (mode === 'fei' ? '飞盘' : mode === 'zhuan' ? '转盘' : '混盘') +
-          (mode === 'zhuan' ? '' : ' · ' + (S.settings.sgDir === 'yinyang' ? '星门阳顺阴逆' : '星门顺飞') +
-            ' · ' + (S.settings.godDir === 'yang' ? '八神顺飞' : '八神阳顺阴逆'));
-      }
       PAN_KEYS.forEach(function (k) {
         var box = $({ flyStar: 'segFlyStar', flyGate: 'segFlyGate', flyGod: 'segFlyGod' }[k]);
         setSeg(box, S.settings[k] ? '1' : '0');
@@ -3223,14 +3263,14 @@
       /* ★ 2026-11-13 用户：盘面同显**仅限转盘** ——
          盘式切「飞盘」，或 九星/八门/八神 任一走飞盘（flyMode 三者取或），都与同显互斥：
          自动关掉同显（存档同步），并把「盘面同显」那一格置灰（class lock：仍可点，点了给提示）。 */
-      if (flyMode() && S.settings.panLesson) {
-        S.settings.panLesson = false;
+      if (flyMode() && panLessonOn()) {
+        S.settings.panLesson = 'off';
         S.saveSettings();
         if (state.chart) renderMiniLesson(state.chart);
       }
       var lp = $('segPanLesson');
       if (lp) Array.prototype.forEach.call(lp.children, function (b) { b.classList.toggle('lock', flyMode()); });
-      setSeg($('segPanLesson'), S.settings.panLesson ? '1' : '0');
+      setSeg($('segPanLesson'), panLessonSrc());
       setSeg($('segSizhu'), (+S.settings.sizhu === 1) ? '1' : '0');
       setSeg($('segGodDir'), S.settings.godDir === 'yang' ? 'yang' : 'yinyang');
       setSeg($('segGouChen'), (S.settings.gouChen === 'on' || S.settings.gouChen === true) ? 'on'
@@ -3241,31 +3281,33 @@
     $('segPanMode').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
       var fei = b.dataset.v === 'fei';
-      var hadLesson = !!S.settings.panLesson;
+      var hadLesson = panLessonOn();
       PAN_KEYS.forEach(function (k) { S.settings[k] = fei; });
       S.saveSettings();
       syncPanOpts();
       afterPanOpt(fei
-        ? (hadLesson && !S.settings.panLesson ? '已切到飞盘 · 盘面同显已关（仅限转盘）' : '已切到飞盘')
+        ? (hadLesson && !panLessonOn() ? '已切到飞盘 · 盘面同显已关（仅限转盘）' : '已切到飞盘')
         : '已切到转盘');
     });
     /* 分项微调：星 / 门 / 神 各自转↔飞 */
     [['segFlyStar', 'flyStar'], ['segFlyGate', 'flyGate'], ['segFlyGod', 'flyGod']].forEach(function (pair) {
       $(pair[0]).addEventListener('click', function (e) {
         var b = e.target.closest('button'); if (!b) return;
-        var hadLesson = !!S.settings.panLesson;
+        var hadLesson = panLessonOn();
         S.settings[pair[1]] = b.dataset.v === '1'; S.saveSettings();
         syncPanOpts();
-        afterPanOpt(hadLesson && !S.settings.panLesson ? '盘式已改 · 盘面同显已关（仅限转盘）' : '盘式已改');
+        afterPanOpt(hadLesson && !panLessonOn() ? '盘式已改 · 盘面同显已关（仅限转盘）' : '盘式已改');
       });
     });
     /* 排法 · 盘面同显串星课（仅限转盘：飞盘下这一格置灰，点了给提示、不改设置） */
     $('segPanLesson').addEventListener('click', function (e) {
       var b = e.target.closest('button'); if (!b) return;
-      if (b.dataset.v === '1' && flyMode()) { toast('盘面同显仅限转盘：先把盘式切回转盘'); return; }
-      S.settings.panLesson = b.dataset.v === '1'; S.saveSettings();
+      var v = b.dataset.v;   /* off | time | rand */
+      if (v !== 'off' && flyMode()) { toast('盘面同显仅限转盘：先把盘式切回转盘'); return; }
+      S.settings.panLesson = v; S.saveSettings();
       syncPanOpts();
-      afterPanOpt(S.settings.panLesson ? '盘面同显串星课：已开启（课放进中宫）' : '盘面同显串星课：已关闭');
+      afterPanOpt(v === 'off' ? '盘面同显串星课：已关闭'
+        : ('盘面同显串星课：已开启（' + (v === 'time' ? '按盘面时刻' : '随机取数') + ' · 课放进中宫）'));
     });
     /* 排法 · 四柱形制（2026-11-02：从插件收进设置；默认＝方块四柱，简洁＝五行色字） */
     $('segSizhu').addEventListener('click', function (e) {
@@ -3337,12 +3379,6 @@
       syncPanOpts();
       afterPanOpt('八神名：' + (b.dataset.v === 'on' ? '勾陈·朱雀' : b.dataset.v === 'off' ? '白虎·玄武' : '自动（转盘白虎·飞盘勾陈）'));
     });
-    /* 分项微调那一折：点标题开合（不落盘，一次会话里记住就行） */
-    (function () {
-      var box = $('advPan'); if (!box) return;
-      var head = box.querySelector('.subhead'); if (!head) return;
-      head.addEventListener('click', function () { box.classList.toggle('closed'); });
-    })();
     function afterPanOpt(msg) {
       /* 飞盘的中宫没有切换入口了，所以开飞盘时把"卦象·地支面"收回本盘，免得回不来 */
       if (flyMode() && state.face !== 'pan') state.face = 'pan';
@@ -3414,6 +3450,7 @@
     var rngLift = $('rngLift'), liftVal = $('liftVal');
     if (rngLift) {
       rngLift.value = liftPctNow();
+      syncRange(rngLift);
       rngLift.addEventListener('input', function () {
         if (lessonOn()) S.settings.liftPctLesson = +this.value; else S.settings.liftPct = +this.value;
         S.saveSettings();

@@ -19,7 +19,7 @@
 
   var CSS = [
     '.qm-mark-mu{position:absolute;top:4px;width:8.5px;height:13px;pointer-events:none;',
-    'background-color:var(--ink);',
+    'background-color:color-mix(in srgb, var(--ink-3) 72%, transparent);',
     '-webkit-mask:var(--qm-mu-mask) center/contain no-repeat;',
     'mask:var(--qm-mu-mask) center/contain no-repeat}'
   ].join('');
@@ -45,6 +45,15 @@
     _img.onload = function () { _ready = true; };
     _img.src = MASK;
   } catch (e) { _img = null; }
+
+  /* 墓碑颜色：2026-11-23 用户两次要求「调淡」——黑 → ink-2 → ink-3 再压到 72% 不透明。
+     屏幕用 color-mix，canvas 需要真 rgba，这里给个最小的 hex→rgba。 */
+  function rgbaHex(hex, a) {
+    var h = String(hex || '#6a7383').replace('#', '');
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    var n = parseInt(h.slice(0, 6), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
 
   function drawMask(c, x, y, w, h, color) {
     if (!_ready || !(w > 0) || !(h > 0)) return;
@@ -97,7 +106,7 @@
       var mw = 8.5 * k, mh = 13 * k;
       var x = ctx.x + S - rightOf(ctx.p) * k - mw;
       var y = ctx.y + 4 * k;
-      drawMask(ctx.ctx, x, y, mw, mh, P.ink);
+      drawMask(ctx.ctx, x, y, mw, mh, rgbaHex(P.ink3, .72));
     }
   });
 })();

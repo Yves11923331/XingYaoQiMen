@@ -113,6 +113,6 @@
     "癸壬": ["复见螣蛇", "xiong", "嫁娶重婚，不保年华。"],
     "癸癸": ["天网四张", "xiong", "行人失伴，病讼皆伤。"]
   };
-  root.Keying = { table: K, get: function (h, e) { return K[h + e] || null; } };
+  root.Keying = { table: K };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.Keying;
 })(typeof window !== 'undefined' ? window : globalThis);

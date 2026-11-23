@@ -262,8 +262,11 @@ async function boot(seed) {
     doc.querySelector('#tabbar button[data-view="chuanxing"]').click();
     ok($('view-chuanxing').classList.contains('on'), '点了串星应显示 #view-chuanxing');
     ok($('cxTime').textContent !== '—', '串星页时刻卡应有内容，实得 ' + $('cxTime').textContent);
-    has($('cxSub').textContent, '局', '串星页副行应含局名');
+    /* 2026-11-23 用户：串星与奇门是两套逻辑，副行不再带「阴遁X局」（古早残留），
+       只写农历与时辰。 */
     has($('cxSub').textContent, '农历', '串星页副行应含农历');
+    has($('cxSub').textContent, '时', '串星页副行应含时辰');
+    ok($('cxSub').textContent.indexOf('局') < 0, '串星页副行不应含奇门局名（实得 ' + $('cxSub').textContent + '）');
     /* 点大时刻即选时刻（同起盘页，1px 隐形锚点 + JS openTimePicker） */
     ok($('view-chuanxing').contains($('cxPick')), '#cxPick 应压在串星页的时刻卡里');
     let cxPicked = 0;
@@ -858,7 +861,7 @@ async function boot(seed) {
     const sh = doc.querySelectorAll('.shapehint .sh');
     eq(sh.length, 2, '设置里应有两种示意框（九宫盘 / 串星课）');
     ok(!!doc.querySelector('.shapehint .sh.pan'), '缺九宫盘（竖 1000×1370）的示意框');
-    ok(!!doc.querySelector('.shapehint .sh.lesson'), '缺串星课（横 1000×460）的示意框');
+    ok(!!doc.querySelector('.shapehint .sh.lesson'), '缺串星课（横 1000×667）的示意框');
     const css = readFile('web/css/app.css');
     ok(/\.sh\.pan em\s*\{[^}]*width: 18px/.test(css) && /\.sh\.lesson em\s*\{[^}]*width: 36px/.test(css),
       '两枚示意框的宽高要按各自真实比例（盘 0.73 / 课 2.17）');

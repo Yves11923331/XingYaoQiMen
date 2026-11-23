@@ -591,7 +591,7 @@ html.booting { background: var(--bg, #fff); }
           <div class="bgstrip" id="rendStrip2"><span>串星课：未设</span></div>
           <div class="shapehint">
             <span class="sh pan"><em></em>奇门盘底图 · 竖 1000×1370</span>
-            <span class="sh lesson"><em></em>串星课底图 · 横 1000×460</span>
+            <span class="sh lesson"><em></em>串星课底图 · 横 1000×667</span>
           </div>
         </div>
 
@@ -631,7 +631,7 @@ html.booting { background: var(--bg, #fff); }
             <div class="seg" id="segSizhu"><button data-v="0" class="on">默认</button><button data-v="1">简洁</button></div>
           </div>
           <div class="g"><i>盘面同显</i>
-            <div class="seg" id="segPanLesson"><button data-v="0" class="on">只盘</button><button data-v="1">加串星课</button></div>
+            <div class="seg" id="segPanLesson"><button data-v="off" class="on">关闭</button><button data-v="time">时间</button><button data-v="rand">随机</button></div>
           </div>
           <div class="g"><i>盘式</i>
             <div class="seg" id="segPanMode"><button data-v="zhuan" class="on">转盘</button><button data-v="fei">飞盘</button></div>
@@ -807,12 +807,14 @@ html.booting { background: var(--bg, #fff); }
      源文件与生成脚本见 web/licenses/ 与 校验/_gen-license-js.js。 -->
 <script src="licenses/licenses.js"></script>
 <script src="js/marks.js"></script>
+<!-- 插件注册顺序即「设置 → 插件」里的卡片顺序（2026-11-23 用户定）：
+     日月年家 → 长生尺 → 虚实法 在前，其余按原顺序延后。 -->
+<script src="plugins/layers.js"></script>
+<script src="plugins/changshengchi.js"></script>
+<script src="plugins/xushi.js"></script>
 <script src="plugins/mu.js"></script>
 <script src="plugins/sizhu.js"></script>
-<script src="plugins/changshengchi.js"></script>
 <script src="plugins/huny.js"></script>
-<script src="plugins/layers.js"></script>
-<script src="plugins/xushi.js"></script>
 <script src="js/changsheng.js"></script>
 <script src="js/ui.js"></script>
 </body>

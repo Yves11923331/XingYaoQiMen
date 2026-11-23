@@ -110,7 +110,7 @@ async function rowBands(file, sc) {
   if (f && sharp) {
     const meta = await sharp(f).metadata(); const sz = fs.statSync(f).size;
     console.log(`  PNG：${meta.width}×${meta.height}  ${sz} 字节`);
-    eq(meta.width + 'x' + meta.height, '2000x920', 'PNG 应是 2000×920（1000×460@2x）');
+    eq(meta.width + 'x' + meta.height, '2000x1334', 'PNG 应是 2000×1334（1000×667@2x）');
     const rb = await rowBands(f, 2);
     console.log('  我从像素量的行带（CSS px，[起,止)）：', JSON.stringify(rb.bands));
     const LEDGER = [[53.5, 92], [108.5, 124], [138, 171], [182.5, 200], [215.5, 234.5], [261.5, 410]];

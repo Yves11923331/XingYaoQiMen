@@ -143,7 +143,7 @@ const parse = s => (s.match(/\d+/g) || [0, 0, 0]).slice(0, 3).map(Number);
     const sharp = require('sharp');
     const meta = await sharp(f).metadata();
     console.log(`  时间/九星 PNG：${meta.width}×${meta.height}   ${fs.statSync(f).size} 字节`);
-    eq(`${meta.width}x${meta.height}`, '2000x920', '时间课 PNG 仍是 2000×920（1000×460 @2x）');
+    eq(`${meta.width}x${meta.height}`, '2000x1334', '时间课 PNG 是 2000×1334（1000×667 @2x）');
   } else ok(false, '时间/九星没拿到导出 PNG');
   const tx = await page.evaluate(() => window.__t7.texts.join(' / '));
   console.log('  图上文字：', tx);

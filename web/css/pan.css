@@ -566,50 +566,6 @@ html[data-theme="white"] .qm-text-pan {
      ④ 两栏之间一道发丝竖线（inset 阴影，不占宽 → 两栏等宽）；
      ⑤ 最挤（2 主星 + 2 带化辅星 = 4 行，实测 0.2% 的盘）用 .dense 收行距，仍不破版。
    位置紧跟八门行；紫微开着时星曜与其他插件都让位；阴盘一律不渲染（硬规矩）。 */
-.qm-zw2 {
-    position: absolute;
-    left: 8px; right: 8px;
-    /* 紧跟八门行（八门行底 ≈ 6.56em）；块高随内容 —— 支头在同一高度起排，
-       所以"对齐"靠支头与星行，不靠块底（第三版钉块高，空宫反而显得空）。 */
-    top: 6.92em; bottom: .55em;
-    display: flex; align-items: stretch;
-}
-.qm-zw2 .zw-col {
-    flex: 1 1 0; min-width: 0; position: relative; height: 100%;
-    display: flex; flex-direction: column;
-    padding: 0 2px;                        /* 2px：行内「星名+亮度+四化」刚好放得下 39/43px */
-}
-/* 两栏之间的发丝竖线：inset 阴影不占宽（border 会让两栏差 1px） */
-.qm-zw2 .zw-col + .zw-col { box-shadow: inset 1px 0 0 var(--qm-hair); }
-/* 四正宫只有一支：固定占左半栏，与四隅宫的左栏同一位置 */
-.qm-zw2 .zw-col.one { flex: 0 0 50%; max-width: 50%; margin: 0; }
-/* 地支：列头（只写一次） */
-.qm-zw2 .zw-head {
-    font-size: .44em; line-height: 1.6;
-    color: var(--qm-dim); opacity: .68; letter-spacing: .08em;
-}
-.qm-zw2 .zw-rows { display: flex; flex-direction: column; }
-/* 一行一颗星：星名 → 亮度 → 四化（靠 margin-left:auto 推到行右缘） */
-.qm-zw2 .zw-row {
-    display: flex; align-items: baseline; gap: 1px;
-    font-size: .62em; line-height: 1.85; white-space: nowrap;
-}
-.qm-zw2 .zw-row .nm { font-weight: 700; color: var(--qm-ink-soft); }
-.qm-zw2 .zw-row .b { font-size: .76em; opacity: .50; font-weight: 600; margin-left: 1px; }
-/* 四化：加大到接近星名字号（.98em×.62em≈8.5px），加粗更醒目；颜色下更亮 */
-.qm-zw2 .zw-row .h {
-    margin-left: auto; padding-left: 2px;
-    font-size: .98em; font-weight: 800; font-style: normal; line-height: 1;
-}
-/* 辅星行（只显示吃到四化的昌曲辅弼）：比主星淡一档，仍与主星同一套行位 */
-.qm-zw2 .zw-row.mm .nm { font-weight: 600; color: var(--qm-dim); font-size: .90em; }
-/* 最挤的盘：一栏 4 行时收行距（4 × 1.5 × .62em ≈ 53px，仍留得下支头） */
-.qm-zw2 .zw-rows.dense .zw-row { line-height: 1.5; }
-/* 四化：禄（木青）· 权（火朱）· 科（水蓝）· 忌（墨） */
-.qm-zw2 .h.lu { color: var(--qm-el-wood); }
-.qm-zw2 .h.quan { color: var(--qm-el-fire); }
-.qm-zw2 .h.ke { color: var(--qm-el-water); }
-.qm-zw2 .h.ji { color: var(--qm-ink); }
 
 /* ---------------- 阴盘 · 标准盘主体 + 暗干占星曜（政余）位 ----------------
    神/星/门/天地盘干直接使用标准盘，不重写字号与横向位置。
@@ -728,12 +684,6 @@ html[data-theme="brown"] .qm-cell.qm-mid::after {
     justify-content: center;
     pointer-events: none;
 }
-.qm-gua {
-    font-size: 2.05em;
-    line-height: 1;
-    color: var(--qm-accent);
-    opacity: .88;
-}
 .qm-fglb {
     font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
     font-size: 1.0em;
@@ -770,25 +720,6 @@ html[data-theme="brown"] .qm-cell.qm-mid::after {
     row-gap: .5em;
 }
 /* 寄干：不进主表（三列在 98px 内容宽里必挤），只在表下一行小字 */
-.qm-cs4-m {
-    margin-top: .5em;
-    font-size: .62em;
-    line-height: 1.3;
-    letter-spacing: .02em;
-    color: var(--qm-dim);
-}
-.qm-cs4-m i {
-    font-style: normal;
-    font-size: .85em;
-    margin-right: 2px;
-    color: var(--qm-dim);
-}
-.qm-cs4-m em {
-    font-style: normal;
-    margin-left: .4em;
-    letter-spacing: .08em;
-    color: var(--qm-ink-soft);
-}
 .qm-cs4-h {
     font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
     font-weight: 400;
@@ -798,12 +729,6 @@ html[data-theme="brown"] .qm-cell.qm-mid::after {
     letter-spacing: .02em;
     color: var(--qm-dim);
     padding-bottom: .15em;
-}
-.qm-cs4-h i {
-    font-style: normal;
-    font-size: .86em;
-    margin-right: 1px;
-    color: var(--qm-dim);
 }
 .qm-cs4-z {
     font-family: "QM Serif", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
