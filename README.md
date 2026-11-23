@@ -6,19 +6,23 @@
 
 [![Build APK](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml/badge.svg)](https://github.com/Yves11923331/XingYaoQiMen/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-3.4.7-orange)
+![Version](https://img.shields.io/badge/version-3.4.8-orange)
 ![Android](https://img.shields.io/badge/Android-10%2B%20(minSdk%2029)-blue)
 
 ## 下载
 
-最新版 **3.4.7（252）**，已签名、可直接覆盖安装：
+最新版 **3.4.8（253）**，已签名、可直接覆盖安装：
 
 | 文件 | 大小 | SHA-256 |
 |---|---|---|
-| [`dist/星曜奇门-3.4.7.apk`](dist/星曜奇门-3.4.7.apk) | 807,409 bytes | `6e2ca13900a55f9e49bf693a4c0cccab99072e101d3b5f61093b5565c42d3553` |
+| [`dist/星曜奇门-3.4.8.apk`](dist/星曜奇门-3.4.8.apk) | 807409 bytes | `2240f788635c326cf3c34b907f8b2a387f9cf8156ec2c454a7eaf57939413c24` |
 
 > 包名 `com.momen.xingyaoqimen`，minSdk 29（Android 10+）。
 > 自行构建见文末「构建」；签名密钥不入库，按说明自备即可。
+
+## 3.4.8 主要变化
+
+- **修复象义弹层自动弹键盘**：弹层打开时不再把焦点落到搜索框（`pushModal` 跳过输入类元素）。
 
 ## 3.4.7 主要变化
 
